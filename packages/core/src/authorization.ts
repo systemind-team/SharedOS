@@ -112,6 +112,13 @@ export interface AuthorizationExplanation {
 export interface GrantUsageStore {
   getUsage(namespaceId: string, grantId: string): Promise<number>;
   tryConsume(namespaceId: string, grantId: string, maximumUses: number): Promise<boolean>;
+  /**
+   * Give back one use `tryConsume` took, for a decision whose operation never
+   * ran because its record could not be written. Atomic, and never below zero.
+   *
+   * Optional. Without it, or when it throws, the use stays spent.
+   */
+  release?(namespaceId: string, grantId: string): Promise<void>;
 }
 
 export interface CapabilityGrantVerifier {
@@ -336,6 +343,14 @@ export class InMemoryGrantUsageStore implements GrantUsageStore {
     namespaceUsage.set(grantId, current + 1);
     return true;
   }
+
+  async release(namespaceId: string, grantId: string): Promise<void> {
+    const namespaceUsage = this.#usageByNamespace.get(namespaceId);
+    const current = namespaceUsage?.get(grantId) ?? 0;
+    if (current > 0) {
+      namespaceUsage?.set(grantId, current - 1);
+    }
+  }
 }
 
 export class CapabilityAuthorizer {
@@ -365,6 +380,20 @@ export class CapabilityAuthorizer {
    */
   get hasHostCeiling(): boolean {
     return this.#hostCeiling !== undefined;
+  }
+
+  /**
+   * Give back the bounded use an allowed decision spent.
+   *
+   * For the kernel, when that decision's record could not be written and its
+   * operation therefore never ran. Nothing happens for a grant with no
+   * `maxUses`, or a store with no `release`.
+   */
+  async release(authority: ResolvedAuthority, grantId: string): Promise<void> {
+    const grant = authority.grants.find(({ id }) => id === grantId);
+    if (grant?.constraints.maxUses !== undefined) {
+      await this.#usageStore?.release?.(authority.context.namespaceId, grantId);
+    }
   }
 
   async authorize(

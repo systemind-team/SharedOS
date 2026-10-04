@@ -451,6 +451,10 @@ instances. The kernel has no implicit process-local fallback: a bounded grant
 fails closed unless the host explicitly supplies a store. The exported in-memory
 store is suitable only for tests or a guaranteed single-process host.
 
+A use is spent when the decision is made, before its record is written. If that
+record cannot be written the call is refused, and the kernel gives the use back
+through the store's optional `release`. A store without one keeps it (ADR 0023).
+
 Authority is loaded from the trusted source once, when a turn is admitted, and
 held for that turn. Every way a grant leaves an actor's authority -- not yet
 active, expired, revoked, or withdrawn from the requested purpose -- runs through

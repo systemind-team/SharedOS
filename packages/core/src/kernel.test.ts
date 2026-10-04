@@ -18,6 +18,7 @@ import type { GrantSource, LoadedPolicy, PolicySource } from "./authority.js";
 import {
   CapabilityAuthorizer,
   type HostCeiling,
+  type GrantUsageStore,
   InMemoryGrantUsageStore,
 } from "./authorization.js";
 import type { ProviderErrorContext, ProviderErrorReporter } from "./diagnostics.js";
@@ -2381,6 +2382,76 @@ describe("what a failing audit sink does, by when the record is written", () => 
 
     expect(invoke).not.toHaveBeenCalled();
     expect(onAuditError).not.toHaveBeenCalled();
+  });
+
+  describe("a bounded use spent by a decision that could not be recorded", () => {
+    const BOUNDED = grant("grant-search", FILE_RESOURCE, ["search"], { maxUses: 1 });
+    const used = (store: GrantUsageStore) => store.getUsage("world-alpha", BOUNDED.id);
+
+    /** A kernel whose sink is down, while `sink.down`, for the decision that spends. */
+    function boundedKernel(usageStore: GrantUsageStore) {
+      const sink = { down: true };
+      const invoke = vi.fn(successfulTool().invoke);
+      const kernel = kernelWith([BOUNDED], {
+        authorizer: new CapabilityAuthorizer({ usageStore }),
+        audit: {
+          async record(event) {
+            if (sink.down && event.type === "authorization.checked" && event.consumed === true) {
+              throw new Error("audit store unavailable");
+            }
+          },
+        },
+      });
+      kernel.registerTool({ ...successfulTool(), invoke });
+      return { kernel, sink, invoke };
+    }
+
+    it("is given back, so the call can be made once the sink answers", async () => {
+      const usageStore = new InMemoryGrantUsageStore();
+      const { kernel, sink, invoke } = boundedKernel(usageStore);
+
+      await expect(kernel.invokeTool(context(), toolCall())).rejects.toBeInstanceOf(
+        AuditUnavailableError,
+      );
+      expect(invoke).not.toHaveBeenCalled();
+      await expect(used(usageStore)).resolves.toBe(0);
+
+      sink.down = false;
+      await expect(kernel.invokeTool(context(), toolCall())).resolves.toMatchObject({
+        status: "succeeded",
+      });
+      expect(invoke).toHaveBeenCalledTimes(1);
+      await expect(used(usageStore)).resolves.toBe(1);
+    });
+
+    // The port's `release` is optional and may itself be down. Either way the
+    // use stays spent, which is the behaviour before the port could give it
+    // back, and the caller is still told of the audit outage and nothing else.
+    it.each([
+      ["has no release", undefined],
+      [
+        "cannot release",
+        async (): Promise<void> => {
+          throw new Error("usage store unavailable");
+        },
+      ],
+    ])("stays spent when the store %s", async (_name, release) => {
+      const counted = new InMemoryGrantUsageStore();
+      const usageStore: GrantUsageStore = {
+        getUsage: (namespaceId, grantId) => counted.getUsage(namespaceId, grantId),
+        tryConsume: (namespaceId, grantId, maximumUses) =>
+          counted.tryConsume(namespaceId, grantId, maximumUses),
+        ...(release === undefined ? {} : { release }),
+      };
+      const { kernel, invoke } = boundedKernel(usageStore);
+
+      await expect(kernel.invokeTool(context(), toolCall())).rejects.toMatchObject({
+        code: "audit_unavailable",
+        cause: { message: "audit store unavailable" },
+      });
+      expect(invoke).not.toHaveBeenCalled();
+      await expect(used(usageStore)).resolves.toBe(1);
+    });
   });
 
   it("says the effect is unknown when the outage is met inside a port already entered", async () => {

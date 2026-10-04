@@ -1862,15 +1862,25 @@ export class SharedOSKernel {
       },
     });
 
-    await this.#recordAuthorizationDecision(
-      context,
-      request,
-      decision,
-      consume,
-      authority.snapshot.hash,
-      operationId,
-      explanation,
-    );
+    try {
+      await this.#recordAuthorizationDecision(
+        context,
+        request,
+        decision,
+        consume,
+        authority.snapshot.hash,
+        operationId,
+        explanation,
+      );
+    } catch (error) {
+      // An unrecorded decision is not acted on, so the use it spent goes back.
+      // A store that cannot return it keeps it; the caller is told of the
+      // outage either way.
+      if (consume && decision.allowed && decision.matchedGrantId !== undefined) {
+        await this.#authorizer.release(authority, decision.matchedGrantId).catch(() => undefined);
+      }
+      throw error;
+    }
 
     return decision;
   }

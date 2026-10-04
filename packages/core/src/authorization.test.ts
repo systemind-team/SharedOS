@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type {
   AccessContext,
@@ -261,6 +261,40 @@ describe("CapabilityAuthorizer", () => {
 
     await expect(store.tryConsume("tenant-a", "grant\u0000victim", 1)).resolves.toBe(true);
     await expect(store.getUsage("tenant-a\u0000grant", "victim")).resolves.toBe(0);
+  });
+
+  it("gives one use back at a time and never counts below zero", async () => {
+    const store = new InMemoryGrantUsageStore();
+
+    await store.release("tenant-a", "grant-1");
+    await expect(store.getUsage("tenant-a", "grant-1")).resolves.toBe(0);
+
+    await expect(store.tryConsume("tenant-a", "grant-1", 1)).resolves.toBe(true);
+    await store.release("tenant-b", "grant-1");
+    await expect(store.tryConsume("tenant-a", "grant-1", 1)).resolves.toBe(false);
+    await store.release("tenant-a", "grant-1");
+    await expect(store.tryConsume("tenant-a", "grant-1", 1)).resolves.toBe(true);
+  });
+
+  it("releases nothing for a grant that is not bounded", async () => {
+    const release = vi.fn(async () => undefined);
+    const usageStore: GrantUsageStore = {
+      getUsage: async () => 0,
+      tryConsume: async () => true,
+      release,
+    };
+    const authorizer = new CapabilityAuthorizer({ usageStore });
+    const unbounded = grant();
+    const bounded = grant({ id: "grant-bounded", constraints: { maxUses: 1 } });
+    const access = context([unbounded, bounded]);
+
+    await authorizer.release(access, unbounded.id);
+    await authorizer.release(access, "grant-unknown");
+    expect(release).not.toHaveBeenCalled();
+
+    await authorizer.release(access, bounded.id);
+    expect(release).toHaveBeenCalledTimes(1);
+    expect(release).toHaveBeenCalledWith(access.context.namespaceId, bounded.id);
   });
 
   describe("the operation instant", () => {

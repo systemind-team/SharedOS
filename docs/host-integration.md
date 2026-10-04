@@ -437,6 +437,11 @@ because a bounded grant is only bounded if two nodes cannot both spend its last
 use. Both denials carry `missingDependency` on the audit record naming the port
 that was absent, so this is diagnosable from the trail rather than by inspection.
 
+A usage store may also implement `release(namespaceId, grantId)`: an atomic
+decrement that stops at zero. The kernel calls it when the decision that spent a
+use could not be recorded, so the call never ran. Without it that use stays
+spent.
+
 **A denial you did not expect is answered by the audit record, not the response
 body.** The reason codes collapse deliberately — `no_matching_grant` covers nine
 causes and `authority_unavailable` covers four — so that a caller cannot map the
