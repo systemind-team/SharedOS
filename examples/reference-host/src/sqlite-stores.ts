@@ -84,6 +84,15 @@ export class SqliteHostStores
     return result.changes > 0;
   }
 
+  /** Gives back a use whose decision could not be recorded. Never below zero. */
+  async release(namespaceId: string, grantId: string): Promise<void> {
+    this.#db
+      .prepare(
+        "UPDATE grant_usage SET used = used - 1 WHERE namespace_id = ? AND grant_id = ? AND used > 0",
+      )
+      .run(namespaceId, grantId);
+  }
+
   // ---- grant store + verifier -------------------------------------------
 
   storeGrant(namespaceId: string, grant: CapabilityGrant): void {
