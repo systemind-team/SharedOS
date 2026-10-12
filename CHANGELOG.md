@@ -8,6 +8,20 @@ each entry calls out what a host has to update.
 
 ## Unreleased
 
+### Added
+
+- **A host can write files into the turn's workspace before the CLI starts.**
+  `createMcpHarnessRuntime` takes `turnFiles`, a function of the turn request
+  returning `{ filename, contents }` pairs, written beside the generated
+  configuration and named in `configPaths`. The workspace is the CLI's working
+  directory, which is where Codex, Claude Code and Pi read a project
+  instruction file from, so a host can hand a vendor CLI its standing
+  instructions as the `AGENTS.md` the CLI's own loader reads rather than as
+  prompt text. A name that would leave the workspace fails the turn before
+  launch. The Codex spec now passes `project_root_markers=[]`, so the scratch
+  workspace is the project root and a checkout anywhere above it is never
+  read as this turn's instructions. Nothing a host already does changes.
+
 ### Changed
 
 - **The repository is `systemind-team/SharedOS`.** It moved from
