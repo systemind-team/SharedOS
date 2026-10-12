@@ -10,6 +10,13 @@ each entry calls out what a host has to update.
 
 ### Changed
 
+- **Claude Code's in-process subagent is no longer refused.** `Task` leaves
+  the `--disallowedTools` list of `CLAUDE_CODE_MCP_HARNESS`. A subagent runs in
+  the same process under the same identity and MCP configuration, so its calls
+  reach the bridge and are re-authorized by the kernel like the parent's, and
+  the rest of the deny list applies to it too. A host that wants the old
+  behaviour appends `--disallowedTools Task` through `args`.
+
 - **The repository is `systemind-team/SharedOS`.** It moved from
   `Aicoo-Team/SharedOS`, and old URLs redirect. Each package's `repository`
   field, the release workflow's repository guard and the documentation links

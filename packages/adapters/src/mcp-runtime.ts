@@ -594,6 +594,14 @@ const DEFAULT_SESSION_IDLE_MS = 120_000;
  * *prompt* decision, not an authorization one: Claude separates the two, print
  * mode has no human to prompt, and what actually secures the run is that every
  * one of those calls is re-authorized by the kernel.
+ *
+ * `Task`, Claude's in-process subagent, is not refused. A subagent runs inside
+ * the same process, under the same identity and the same MCP configuration, so
+ * every call it makes goes to the bridge and is re-authorized by the kernel
+ * like the parent's; the deny list above applies to it as well, so it has no
+ * native file or shell tool either. Refusing it would only make the harness
+ * do in one context what it would otherwise split across several, with no
+ * gain in evidence.
  */
 export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: CLAUDE_CODE_VENDOR.id,
@@ -614,7 +622,7 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
       "--allowedTools",
       `mcp__${mcpServerName(connection)}`,
       "--disallowedTools",
-      "Bash,Edit,Write,Read,Glob,Grep,NotebookEdit,Task,WebFetch,WebSearch,TodoWrite",
+      "Bash,Edit,Write,Read,Glob,Grep,NotebookEdit,WebFetch,WebSearch,TodoWrite",
       "--max-turns",
       "24",
     ],
