@@ -149,6 +149,10 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+    devDependencies:
+      '@aicoo/sharedos-http':
+        specifier: workspace:*
+        version: link:../http
 
   packages/contracts:
     dependencies:

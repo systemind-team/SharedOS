@@ -25,11 +25,24 @@ host store would, and throw on an id the store does not hold.
 
 SharedOS is currently a `1.0.0` preview.
 
+## Replay storage
+
+`SharedOSKernelOptions.replayStore` enables the kernel-owned replay state machine
+for execution, tool, resource and message IDs. Hosts implement `ReplayStore` with
+atomic durable claims and fenced settlement. Keep identity tombstones after
+result expiry; never reclaim pending operations solely because a timeout passed.
+See [ADR 0028](https://github.com/systemind-team/SharedOS/blob/main/docs/adr/0028-durable-operation-replay.md).
+
+`InMemoryReplayStore` is exported by `@aicoo/sharedos-testkit` for isolated tests.
+It is not durable or suitable for production. Protocol v1 without a configured
+store preserves legacy unprotected behavior. External effects still require
+provider idempotency or reconciliation for crash ambiguity.
+
 ## Classes
 
 ### InMemoryAuditSink
 
-Defined in: [testkit/src/index.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L31)
+Defined in: [testkit/src/index.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L32)
 
 #### Implements
 
@@ -49,7 +62,7 @@ Defined in: [testkit/src/index.ts:31](https://github.com/systemind-team/SharedOS
 
 | Property                              | Modifier   | Type       | Default value | Defined in                                                                                                        |
 | ------------------------------------- | ---------- | ---------- | ------------- | ----------------------------------------------------------------------------------------------------------------- |
-| <a id="property-events"></a> `events` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L32) |
+| <a id="property-events"></a> `events` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:33](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L33) |
 
 #### Methods
 
@@ -57,13 +70,13 @@ Defined in: [testkit/src/index.ts:31](https://github.com/systemind-team/SharedOS
 
 > **record**(`event`): `Promise`\<`void`>\>
 
-Defined in: [testkit/src/index.ts:34](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L34)
+Defined in: [testkit/src/index.ts:35](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L35)
 
 ###### Parameters
 
 | Parameter                                               | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `event`                                                 | \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"denied"` \| `"failed"` \| `"succeeded"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `source?`: `"envelope"` \| `"kernel"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authorization.checked"` \| `"authority.resolved"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`; `version`: `"1"`; \} |
+| `event`                                                 | \{ `action?`: `string`; `actor`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `at`: `string`; `authority`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `authorityHash?`: `string`; `cause?`: `string`; `consumed?`: `boolean`; `endedBy?`: `"envelope"` \| `"runtime"`; `failClosed?`: `boolean`; `grantId?`: `string`; `id`: `string`; `messageId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `operationId?`: `string`; `outcome`: `"failed"` \| `"interrupted"` \| `"denied"` \| `"succeeded"` \| `"allowed"` \| `"escalated"`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `reason?`: `string`; `receiver?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `resource?`: \{ `namespace`: `string`; `owner?`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `path`: `string`[]; \}; `source?`: `"envelope"` \| `"kernel"`; `tool?`: `string`; `traceId`: `string`; `type`: `"authorization.checked"` \| `"tool.invoked"` \| `"authority.resolved"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"message.sent"` \| `"turn.ended"`; `version`: `"1"`; \} |
 | `event.action?`                                         | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `event.actor`                                           | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `event.at`                                              | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -79,7 +92,7 @@ Defined in: [testkit/src/index.ts:34](https://github.com/systemind-team/SharedOS
 | `event.metadata?`                                       | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `event.namespaceId`                                     | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `event.operationId?`                                    | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `event.outcome`                                         | `"denied"` \| `"failed"` \| `"succeeded"` \| `"allowed"` \| `"escalated"` \| `"interrupted"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `event.outcome`                                         | `"failed"` \| `"interrupted"` \| `"denied"` \| `"succeeded"` \| `"allowed"` \| `"escalated"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `event.owner`                                           | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `event.purpose`                                         | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `event.reason?`                                         | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -106,7 +119,7 @@ Defined in: [testkit/src/index.ts:34](https://github.com/systemind-team/SharedOS
 | `event.source?`                                         | `"envelope"` \| `"kernel"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `event.tool?`                                           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `event.traceId`                                         | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `event.type`                                            | `"authorization.checked"` \| `"authority.resolved"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"tool.invoked"` \| `"message.sent"` \| `"turn.ended"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `event.type`                                            | `"authorization.checked"` \| `"tool.invoked"` \| `"authority.resolved"` \| `"escalation.requested"` \| `"escalation.auto_decided"` \| `"resource.invoked"` \| `"tool.catalog.listed"` \| `"tool.namespace.catalog.listed"` \| `"tool.namespace.selection.updated"` \| `"message.sent"` \| `"turn.ended"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `event.version`                                         | `"1"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ###### Returns
@@ -121,7 +134,7 @@ Defined in: [testkit/src/index.ts:34](https://github.com/systemind-team/SharedOS
 
 ### InMemoryDelegationChainResolver
 
-Defined in: [testkit/src/index.ts:190](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L190)
+Defined in: [testkit/src/index.ts:191](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L191)
 
 Namespace-scoped ancestor lookup for delegated-grant fixtures.
 
@@ -135,7 +148,7 @@ Namespace-scoped ancestor lookup for delegated-grant fixtures.
 
 > **new InMemoryDelegationChainResolver**(`grants?`): [`InMemoryDelegationChainResolver`](#inmemorydelegationchainresolver)
 
-Defined in: [testkit/src/index.ts:193](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L193)
+Defined in: [testkit/src/index.ts:194](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L194)
 
 ###### Parameters
 
@@ -153,7 +166,7 @@ Defined in: [testkit/src/index.ts:193](https://github.com/systemind-team/SharedO
 
 > **add**(`grant`): `this`
 
-Defined in: [testkit/src/index.ts:199](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L199)
+Defined in: [testkit/src/index.ts:200](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L200)
 
 ###### Parameters
 
@@ -184,7 +197,7 @@ Defined in: [testkit/src/index.ts:199](https://github.com/systemind-team/SharedO
 
 > **expire**(`namespaceId`, `grantId`, `expiresAt`): `this`
 
-Defined in: [testkit/src/index.ts:220](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L220)
+Defined in: [testkit/src/index.ts:221](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L221)
 
 Move a grant's expiry in place, as [InMemoryGrantSource.expire](#expire-1) does.
 
@@ -204,7 +217,7 @@ Move a grant's expiry in place, as [InMemoryGrantSource.expire](#expire-1) does.
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [testkit/src/index.ts:231](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L231)
+Defined in: [testkit/src/index.ts:232](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L232)
 
 ###### Parameters
 
@@ -225,7 +238,7 @@ Defined in: [testkit/src/index.ts:231](https://github.com/systemind-team/SharedO
 
 > **revoke**(`namespaceId`, `grantId`, `revokedAt`): `this`
 
-Defined in: [testkit/src/index.ts:210](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L210)
+Defined in: [testkit/src/index.ts:211](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L211)
 
 Record a revocation the way a host grant store would, in place.
 
@@ -245,7 +258,7 @@ Record a revocation the way a host grant store would, in place.
 
 ### InMemoryGrantSource
 
-Defined in: [testkit/src/index.ts:130](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L130)
+Defined in: [testkit/src/index.ts:131](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L131)
 
 A host grant store fixture.
 
@@ -263,7 +276,7 @@ authority inside its namespace, which is the contract every production
 
 > **new InMemoryGrantSource**(`grants?`): [`InMemoryGrantSource`](#inmemorygrantsource)
 
-Defined in: [testkit/src/index.ts:133](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L133)
+Defined in: [testkit/src/index.ts:134](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L134)
 
 ###### Parameters
 
@@ -281,7 +294,7 @@ Defined in: [testkit/src/index.ts:133](https://github.com/systemind-team/SharedO
 
 > **add**(...`grants`): `this`
 
-Defined in: [testkit/src/index.ts:139](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L139)
+Defined in: [testkit/src/index.ts:140](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L140)
 
 ###### Parameters
 
@@ -297,7 +310,7 @@ Defined in: [testkit/src/index.ts:139](https://github.com/systemind-team/SharedO
 
 > **expire**(`grantId`, `expiresAt`): `this`
 
-Defined in: [testkit/src/index.ts:158](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L158)
+Defined in: [testkit/src/index.ts:159](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L159)
 
 Move a grant's expiry, the way a host store would record a shortened window.
 
@@ -316,7 +329,7 @@ Move a grant's expiry, the way a host store would record a shortened window.
 
 > **load**(`context`): `Promise`\<readonly `object`[]\>
 
-Defined in: [testkit/src/index.ts:168](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L168)
+Defined in: [testkit/src/index.ts:169](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L169)
 
 ###### Parameters
 
@@ -345,7 +358,7 @@ Defined in: [testkit/src/index.ts:168](https://github.com/systemind-team/SharedO
 
 > **revoke**(`grantId`, `revokedAt`): `this`
 
-Defined in: [testkit/src/index.ts:147](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L147)
+Defined in: [testkit/src/index.ts:148](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L148)
 
 Record a revocation the way a host store would, without deleting history.
 
@@ -364,7 +377,7 @@ Record a revocation the way a host store would, without deleting history.
 
 ### InMemoryMessageRequestRouter
 
-Defined in: [testkit/src/index.ts:63](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L63)
+Defined in: [testkit/src/index.ts:64](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L64)
 
 Answers a request from the transport's own log of accepted deliveries.
 
@@ -383,7 +396,7 @@ has no reply to give, and asking for one throws.
 
 > **new InMemoryMessageRequestRouter**(`transport`): [`InMemoryMessageRequestRouter`](#inmemorymessagerequestrouter)
 
-Defined in: [testkit/src/index.ts:66](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L66)
+Defined in: [testkit/src/index.ts:67](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L67)
 
 ###### Parameters
 
@@ -401,7 +414,7 @@ Defined in: [testkit/src/index.ts:66](https://github.com/systemind-team/SharedOS
 
 > **resolveReply**(`context`, `request`, `delivery`): `Promise`\<\{ `createdAt`: `string`; `id`: `string`; `payload`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `provenance?`: \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `parentIds`: `string`[]; `source`: `string`; \}; `purpose`: `string`; `receiver`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `replyTo?`: `string`; `sender`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [testkit/src/index.ts:70](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L70)
+Defined in: [testkit/src/index.ts:71](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L71)
 
 ###### Parameters
 
@@ -445,7 +458,7 @@ Defined in: [testkit/src/index.ts:70](https://github.com/systemind-team/SharedOS
 
 ### InMemoryMessageTransport
 
-Defined in: [testkit/src/index.ts:39](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L39)
+Defined in: [testkit/src/index.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L40)
 
 #### Implements
 
@@ -465,7 +478,7 @@ Defined in: [testkit/src/index.ts:39](https://github.com/systemind-team/SharedOS
 
 | Property                                      | Modifier   | Type       | Default value | Defined in                                                                                                        |
 | --------------------------------------------- | ---------- | ---------- | ------------- | ----------------------------------------------------------------------------------------------------------------- |
-| <a id="property-deliveries"></a> `deliveries` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L40) |
+| <a id="property-deliveries"></a> `deliveries` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:41](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L41) |
 
 #### Methods
 
@@ -473,7 +486,7 @@ Defined in: [testkit/src/index.ts:39](https://github.com/systemind-team/SharedOS
 
 > **deliver**(`context`, `envelope`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [testkit/src/index.ts:42](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L42)
+Defined in: [testkit/src/index.ts:43](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L43)
 
 ###### Parameters
 
@@ -514,9 +527,112 @@ Defined in: [testkit/src/index.ts:42](https://github.com/systemind-team/SharedOS
 
 ---
 
+### InMemoryReplayStore
+
+Defined in: [testkit/src/replay.ts:6](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/replay.ts#L6)
+
+Isolated test fixture. Not durable and never suitable for production.
+
+#### Implements
+
+- [`ReplayStore`](sharedos-core.md#replaystore)
+
+#### Constructors
+
+##### Constructor
+
+> **new InMemoryReplayStore**(): [`InMemoryReplayStore`](#inmemoryreplaystore)
+
+###### Returns
+
+[`InMemoryReplayStore`](#inmemoryreplaystore)
+
+#### Methods
+
+##### claim()
+
+> **claim**(`key`, `fingerprint`): `Promise`\<\{ `claimed`: `boolean`; `record`: \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"resource"` \| `"message"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `state`: `"completed"` \| `"failed"` \| `"interrupted"` \| `"pending"` \| `"expired"`; `token`: `string`; \}; \}\>
+
+Defined in: [testkit/src/replay.ts:9](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/replay.ts#L9)
+
+Insert pending or return the existing record, including a conflicting fingerprint.
+
+###### Parameters
+
+| Parameter         | Type                                                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `key`             | \{ `id`: `string`; `kind`: `"resource"` \| `"message"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \} |
+| `key.id`          | `string`                                                                                                                            |
+| `key.kind`        | `"resource"` \| `"message"` \| `"tool"` \| `"execution"`                                                                            |
+| `key.namespaceId` | `string`                                                                                                                            |
+| `key.scope`       | `string`                                                                                                                            |
+| `fingerprint`     | `string`                                                                                                                            |
+
+###### Returns
+
+`Promise`\<\{ `claimed`: `boolean`; `record`: \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"resource"` \| `"message"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `state`: `"completed"` \| `"failed"` \| `"interrupted"` \| `"pending"` \| `"expired"`; `token`: `string`; \}; \}\>
+
+###### Implementation of
+
+[`ReplayStore`](sharedos-core.md#replaystore).[`claim`](sharedos-core.md#claim)
+
+##### expire()
+
+> **expire**(`key`): `boolean`
+
+Defined in: [testkit/src/replay.ts:46](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/replay.ts#L46)
+
+Drop a sensitive result body while preserving its unclaimable identity.
+
+###### Parameters
+
+| Parameter         | Type                                                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `key`             | \{ `id`: `string`; `kind`: `"resource"` \| `"message"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \} |
+| `key.id`          | `string`                                                                                                                            |
+| `key.kind`        | `"resource"` \| `"message"` \| `"tool"` \| `"execution"`                                                                            |
+| `key.namespaceId` | `string`                                                                                                                            |
+| `key.scope`       | `string`                                                                                                                            |
+
+###### Returns
+
+`boolean`
+
+##### settle()
+
+> **settle**(`key`, `token`, `outcome`): `Promise`\<`boolean`>\>
+
+Defined in: [testkit/src/replay.ts:26](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/replay.ts#L26)
+
+CAS pending -> terminal, fenced by token. False means ownership was lost.
+
+###### Parameters
+
+| Parameter         | Type                                                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `key`             | \{ `id`: `string`; `kind`: `"resource"` \| `"message"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \} |
+| `key.id`          | `string`                                                                                                                            |
+| `key.kind`        | `"resource"` \| `"message"` \| `"tool"` \| `"execution"`                                                                            |
+| `key.namespaceId` | `string`                                                                                                                            |
+| `key.scope`       | `string`                                                                                                                            |
+| `token`           | `string`                                                                                                                            |
+| `outcome`         | \{ `result?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `state`: `"completed"` \| `"failed"` \| `"interrupted"`; \}           |
+| `outcome.result?` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                                                                                      |
+| `outcome.state`   | `"completed"` \| `"failed"` \| `"interrupted"`                                                                                      |
+
+###### Returns
+
+`Promise`\<`boolean`\>
+
+###### Implementation of
+
+[`ReplayStore`](sharedos-core.md#replaystore).[`settle`](sharedos-core.md#settle)
+
+---
+
 ### InMemoryResourceProvider
 
-Defined in: [testkit/src/index.ts:270](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L270)
+Defined in: [testkit/src/index.ts:271](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L271)
 
 A host-neutral recording provider for examples, conformance tests, and isolated experiment worlds.
 
@@ -530,7 +646,7 @@ A host-neutral recording provider for examples, conformance tests, and isolated 
 
 > **new InMemoryResourceProvider**(`namespace`, `handler?`): [`InMemoryResourceProvider`](#inmemoryresourceprovider)
 
-Defined in: [testkit/src/index.ts:275](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L275)
+Defined in: [testkit/src/index.ts:276](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L276)
 
 ###### Parameters
 
@@ -547,8 +663,8 @@ Defined in: [testkit/src/index.ts:275](https://github.com/systemind-team/SharedO
 
 | Property                                      | Modifier   | Type       | Default value | Defined in                                                                                                          |
 | --------------------------------------------- | ---------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-namespace"></a> `namespace`   | `readonly` | `string`   | `undefined`   | [testkit/src/index.ts:271](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L271) |
-| <a id="property-operations"></a> `operations` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:272](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L272) |
+| <a id="property-namespace"></a> `namespace`   | `readonly` | `string`   | `undefined`   | [testkit/src/index.ts:272](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L272) |
+| <a id="property-operations"></a> `operations` | `readonly` | `object`[] | `[]`          | [testkit/src/index.ts:273](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L273) |
 
 #### Methods
 
@@ -556,7 +672,7 @@ Defined in: [testkit/src/index.ts:275](https://github.com/systemind-team/SharedO
 
 > **invoke**(`operation`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [testkit/src/index.ts:280](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L280)
+Defined in: [testkit/src/index.ts:281](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L281)
 
 ###### Parameters
 
@@ -594,7 +710,7 @@ Defined in: [testkit/src/index.ts:280](https://github.com/systemind-team/SharedO
 
 ### InMemoryToolNamespaceSettingsStore
 
-Defined in: [testkit/src/index.ts:97](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L97)
+Defined in: [testkit/src/index.ts:98](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L98)
 
 Namespace settings fixture keyed by the access-context namespace/world.
 
@@ -608,7 +724,7 @@ Namespace settings fixture keyed by the access-context namespace/world.
 
 > **new InMemoryToolNamespaceSettingsStore**(`initial?`): [`InMemoryToolNamespaceSettingsStore`](#inmemorytoolnamespacesettingsstore)
 
-Defined in: [testkit/src/index.ts:100](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L100)
+Defined in: [testkit/src/index.ts:101](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L101)
 
 ###### Parameters
 
@@ -626,7 +742,7 @@ Defined in: [testkit/src/index.ts:100](https://github.com/systemind-team/SharedO
 
 > **applyUpdate**(`context`, `update`): `Promise`\<readonly `string`[]\>
 
-Defined in: [testkit/src/index.ts:106](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L106)
+Defined in: [testkit/src/index.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L107)
 
 ###### Parameters
 
@@ -658,7 +774,7 @@ Defined in: [testkit/src/index.ts:106](https://github.com/systemind-team/SharedO
 
 > **get**(`namespaceId`): readonly `string`[]
 
-Defined in: [testkit/src/index.ts:118](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L118)
+Defined in: [testkit/src/index.ts:119](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L119)
 
 ###### Parameters
 
@@ -674,7 +790,7 @@ readonly `string`[]
 
 ### UnavailableDelegationChainResolver
 
-Defined in: [testkit/src/index.ts:260](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L260)
+Defined in: [testkit/src/index.ts:261](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L261)
 
 A resolver whose authoritative source is down; every lookup must fail closed.
 
@@ -698,7 +814,7 @@ A resolver whose authoritative source is down; every lookup must fail closed.
 
 > **resolve**(): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [testkit/src/index.ts:261](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L261)
+Defined in: [testkit/src/index.ts:262](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L262)
 
 ###### Returns
 
@@ -712,7 +828,7 @@ Defined in: [testkit/src/index.ts:261](https://github.com/systemind-team/SharedO
 
 ### UnavailableGrantSource
 
-Defined in: [testkit/src/index.ts:182](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L182)
+Defined in: [testkit/src/index.ts:183](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L183)
 
 A grant store that is down; every decision made against it must fail closed.
 
@@ -736,7 +852,7 @@ A grant store that is down; every decision made against it must fail closed.
 
 > **load**(): `Promise`\<readonly `object`[]\>
 
-Defined in: [testkit/src/index.ts:183](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L183)
+Defined in: [testkit/src/index.ts:184](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L184)
 
 ###### Returns
 
@@ -750,7 +866,7 @@ Defined in: [testkit/src/index.ts:183](https://github.com/systemind-team/SharedO
 
 ### UnavailableGrantUsageStore
 
-Defined in: [testkit/src/index.ts:247](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L247)
+Defined in: [testkit/src/index.ts:248](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L248)
 
 A usage store that cannot answer.
 
@@ -780,7 +896,7 @@ execution.
 
 > **getUsage**(): `Promise`\<`number`>\>
 
-Defined in: [testkit/src/index.ts:248](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L248)
+Defined in: [testkit/src/index.ts:249](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L249)
 
 ###### Returns
 
@@ -794,7 +910,7 @@ Defined in: [testkit/src/index.ts:248](https://github.com/systemind-team/SharedO
 
 > **tryConsume**(): `Promise`\<`boolean`>\>
 
-Defined in: [testkit/src/index.ts:253](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L253)
+Defined in: [testkit/src/index.ts:254](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L254)
 
 ###### Returns
 
@@ -808,73 +924,73 @@ Defined in: [testkit/src/index.ts:253](https://github.com/systemind-team/SharedO
 
 ### TestContextOptions
 
-Defined in: [testkit/src/index.ts:325](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L325)
+Defined in: [testkit/src/index.ts:327](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L327)
 
 #### Properties
 
 | Property                                                             | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                          |
 | -------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-actor"></a> `actor?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:326](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L326) |
-| <a id="property-authority"></a> `authority?`                         | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:327](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L327) |
-| <a id="property-enabledtoolnamespaces"></a> `enabledToolNamespaces?` | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:330](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L330) |
-| <a id="property-namespaceid"></a> `namespaceId?`                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:329](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L329) |
-| <a id="property-now"></a> `now?`                                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:333](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L333) |
-| <a id="property-owner"></a> `owner?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:328](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L328) |
-| <a id="property-purpose"></a> `purpose?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:331](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L331) |
-| <a id="property-traceid"></a> `traceId?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:332](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L332) |
+| <a id="property-actor"></a> `actor?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:328](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L328) |
+| <a id="property-authority"></a> `authority?`                         | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:329](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L329) |
+| <a id="property-enabledtoolnamespaces"></a> `enabledToolNamespaces?` | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:332](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L332) |
+| <a id="property-namespaceid"></a> `namespaceId?`                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:331](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L331) |
+| <a id="property-now"></a> `now?`                                     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:335](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L335) |
+| <a id="property-owner"></a> `owner?`                                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:330](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L330) |
+| <a id="property-purpose"></a> `purpose?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:333](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L333) |
+| <a id="property-traceid"></a> `traceId?`                             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:334](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L334) |
 
 ---
 
 ### TestGrantOptions
 
-Defined in: [testkit/src/index.ts:350](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L350)
+Defined in: [testkit/src/index.ts:352](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L352)
 
 #### Properties
 
 | Property                                                 | Modifier   | Type                                                                                                                                                                                                       | Defined in                                                                                                          |
 | -------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-capabilities"></a> `capabilities`        | `readonly` | readonly `object`[]                                                                                                                                                                                        | [testkit/src/index.ts:355](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L355) |
-| <a id="property-delegationdepth"></a> `delegationDepth?` | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:362](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L362) |
-| <a id="property-expiresat"></a> `expiresAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:359](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L359) |
-| <a id="property-id"></a> `id?`                           | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:351](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L351) |
-| <a id="property-issuedat"></a> `issuedAt?`               | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:357](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L357) |
-| <a id="property-issuer"></a> `issuer?`                   | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:354](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L354) |
-| <a id="property-maxuses"></a> `maxUses?`                 | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:361](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L361) |
-| <a id="property-namespaceid-1"></a> `namespaceId?`       | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:352](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L352) |
-| <a id="property-notbefore"></a> `notBefore?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:358](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L358) |
-| <a id="property-parentgrantid"></a> `parentGrantId?`     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:363](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L363) |
-| <a id="property-purposes"></a> `purposes?`               | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:356](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L356) |
-| <a id="property-revokedat"></a> `revokedAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:360](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L360) |
-| <a id="property-subject"></a> `subject?`                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:353](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L353) |
+| <a id="property-capabilities"></a> `capabilities`        | `readonly` | readonly `object`[]                                                                                                                                                                                        | [testkit/src/index.ts:357](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L357) |
+| <a id="property-delegationdepth"></a> `delegationDepth?` | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:364](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L364) |
+| <a id="property-expiresat"></a> `expiresAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:361](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L361) |
+| <a id="property-id"></a> `id?`                           | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:353](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L353) |
+| <a id="property-issuedat"></a> `issuedAt?`               | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:359](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L359) |
+| <a id="property-issuer"></a> `issuer?`                   | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:356](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L356) |
+| <a id="property-maxuses"></a> `maxUses?`                 | `readonly` | `number`                                                                                                                                                                                                   | [testkit/src/index.ts:363](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L363) |
+| <a id="property-namespaceid-1"></a> `namespaceId?`       | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:354](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L354) |
+| <a id="property-notbefore"></a> `notBefore?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:360](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L360) |
+| <a id="property-parentgrantid"></a> `parentGrantId?`     | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:365](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L365) |
+| <a id="property-purposes"></a> `purposes?`               | `readonly` | readonly `string`[]                                                                                                                                                                                        | [testkit/src/index.ts:358](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L358) |
+| <a id="property-revokedat"></a> `revokedAt?`             | `readonly` | `string`                                                                                                                                                                                                   | [testkit/src/index.ts:362](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L362) |
+| <a id="property-subject"></a> `subject?`                 | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | [testkit/src/index.ts:355](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L355) |
 
 ---
 
 ### TestKernel
 
-Defined in: [testkit/src/index.ts:286](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L286)
+Defined in: [testkit/src/index.ts:287](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L287)
 
 #### Properties
 
 | Property                                  | Modifier   | Type                                                    | Description                                                                      | Defined in                                                                                                          |
 | ----------------------------------------- | ---------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-audit"></a> `audit`       | `readonly` | [`InMemoryAuditSink`](#inmemoryauditsink)               | -                                                                                | [testkit/src/index.ts:288](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L288) |
-| <a id="property-grants"></a> `grants`     | `readonly` | [`InMemoryGrantSource`](#inmemorygrantsource)           | The trusted store the kernel loads authority from; mutate it to grant or revoke. | [testkit/src/index.ts:291](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L291) |
-| <a id="property-kernel"></a> `kernel`     | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)     | -                                                                                | [testkit/src/index.ts:287](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L287) |
-| <a id="property-messages"></a> `messages` | `readonly` | [`InMemoryMessageTransport`](#inmemorymessagetransport) | -                                                                                | [testkit/src/index.ts:289](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L289) |
+| <a id="property-audit"></a> `audit`       | `readonly` | [`InMemoryAuditSink`](#inmemoryauditsink)               | -                                                                                | [testkit/src/index.ts:289](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L289) |
+| <a id="property-grants"></a> `grants`     | `readonly` | [`InMemoryGrantSource`](#inmemorygrantsource)           | The trusted store the kernel loads authority from; mutate it to grant or revoke. | [testkit/src/index.ts:292](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L292) |
+| <a id="property-kernel"></a> `kernel`     | `readonly` | [`SharedOSKernel`](sharedos-core.md#sharedoskernel)     | -                                                                                | [testkit/src/index.ts:288](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L288) |
+| <a id="property-messages"></a> `messages` | `readonly` | [`InMemoryMessageTransport`](#inmemorymessagetransport) | -                                                                                | [testkit/src/index.ts:290](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L290) |
 
 ---
 
 ### TestKernelOptions
 
-Defined in: [testkit/src/index.ts:294](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L294)
+Defined in: [testkit/src/index.ts:295](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L295)
 
 #### Properties
 
 | Property                                                       | Modifier   | Type                                                                  | Description                                                           | Defined in                                                                                                          |
 | -------------------------------------------------------------- | ---------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-delegationresolver"></a> `delegationResolver?` | `readonly` | [`DelegationChainResolver`](sharedos-core.md#delegationchainresolver) | Installs ancestor validation so delegated grants can be exercised.    | [testkit/src/index.ts:300](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L300) |
-| <a id="property-grants-1"></a> `grants?`                       | `readonly` | readonly `object`[]                                                   | Seed authority for the kernel's trusted grant source.                 | [testkit/src/index.ts:296](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L296) |
-| <a id="property-grantsource"></a> `grantSource?`               | `readonly` | [`GrantSource`](sharedos-core.md#grantsource)                         | Replaces the trusted grant source, for example to exercise an outage. | [testkit/src/index.ts:298](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L298) |
+| <a id="property-delegationresolver"></a> `delegationResolver?` | `readonly` | [`DelegationChainResolver`](sharedos-core.md#delegationchainresolver) | Installs ancestor validation so delegated grants can be exercised.    | [testkit/src/index.ts:301](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L301) |
+| <a id="property-grants-1"></a> `grants?`                       | `readonly` | readonly `object`[]                                                   | Seed authority for the kernel's trusted grant source.                 | [testkit/src/index.ts:297](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L297) |
+| <a id="property-grantsource"></a> `grantSource?`               | `readonly` | [`GrantSource`](sharedos-core.md#grantsource)                         | Replaces the trusted grant source, for example to exercise an outage. | [testkit/src/index.ts:299](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L299) |
 
 ## Type Aliases
 
@@ -882,7 +998,7 @@ Defined in: [testkit/src/index.ts:294](https://github.com/systemind-team/SharedO
 
 > **ResourceHandler** = (`operation`) => `Promise`\<[`ResourceResult`](sharedos-contracts.md#resourceresult)>\>
 
-Defined in: [testkit/src/index.ts:267](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L267)
+Defined in: [testkit/src/index.ts:268](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L268)
 
 #### Parameters
 
@@ -900,7 +1016,7 @@ Defined in: [testkit/src/index.ts:267](https://github.com/systemind-team/SharedO
 
 > **createTestContext**(`options?`): `object`
 
-Defined in: [testkit/src/index.ts:336](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L336)
+Defined in: [testkit/src/index.ts:338](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L338)
 
 #### Parameters
 
@@ -954,7 +1070,7 @@ Defined in: [testkit/src/index.ts:336](https://github.com/systemind-team/SharedO
 
 > **createTestGrant**(`options`): `object`
 
-Defined in: [testkit/src/index.ts:366](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L366)
+Defined in: [testkit/src/index.ts:368](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L368)
 
 #### Parameters
 
@@ -1032,7 +1148,7 @@ Defined in: [testkit/src/index.ts:366](https://github.com/systemind-team/SharedO
 
 > **createTestKernel**(`options?`): [`TestKernel`](#testkernel)
 
-Defined in: [testkit/src/index.ts:303](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L303)
+Defined in: [testkit/src/index.ts:304](https://github.com/systemind-team/SharedOS/blob/main/packages/testkit/src/index.ts#L304)
 
 #### Parameters
 

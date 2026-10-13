@@ -71,7 +71,7 @@ import {
   RecipientScopedMessageCapabilityResolver,
   addressPath,
 } from "./message-service.js";
-import { createMessageRequestTool } from "./message-tool.js";
+import { createMessageRequestTool, MESSAGE_REQUEST_TOOL_NAME } from "./message-tool.js";
 import {
   type ResourceInvocationRequest,
   type ResourceProvider,
@@ -79,6 +79,14 @@ import {
   toResourceOperation,
 } from "./resource-registry.js";
 import { buildToolCatalog, catalogHash, publishToolCatalog } from "./published-tool.js";
+import {
+  ReplayProtection,
+  ReplayError,
+  replayContext,
+  canonicalReplayJson,
+  type ReplayStore,
+} from "./replay.js";
+import { sha256Hex } from "./hashing.js";
 import { SPAN, measure, type SpanSink } from "./spans.js";
 import { type ContextToolProvider, type ToolHandler, ToolRegistry } from "./tool-registry.js";
 import type { ToolNamespaceSettingsStore } from "./tool-namespace-control.js";
@@ -100,6 +108,8 @@ import {
 } from "./internal.js";
 
 export interface SharedOSKernelOptions {
+  /** Activate durable replay enforcement for all effect and execution paths (ADR 0028). */
+  readonly replayStore?: ReplayStore;
   /**
    * The trusted boundary that loads authority. It is required: a kernel with
    * no authoritative grant source can only fail closed.
@@ -187,6 +197,8 @@ export interface SharedOSKernelOptions {
 }
 
 export interface KernelOperationOptions {
+  /** Trusted executor scope for tool-call IDs; standalone calls use context.traceId. */
+  readonly executionId?: string;
   readonly signal?: AbortSignal;
 }
 
@@ -334,6 +346,7 @@ interface AuthorityLease {
  * unverified request body.
  */
 export class SharedOSKernel {
+  readonly replayProtection: ReplayProtection;
   readonly #authority: TrustedAuthorityResolver;
   readonly #policySource: PolicySource | undefined;
   readonly #leases = new Map<string, AuthorityLease>();
@@ -358,6 +371,7 @@ export class SharedOSKernel {
   readonly #messageTransport: MessageTransport | undefined;
   readonly #messageRequestRouter: MessageRequestRouter | undefined;
   readonly #messageCapabilityResolver: MessageCapabilityResolver;
+  readonly #messageIds = new WeakMap<ToolCall, string>();
   readonly #createMessageId: (context: AccessContext, call: ToolCall) => string;
   readonly #createAuditId: () => string;
   readonly #audit: AuditSink;
@@ -367,6 +381,7 @@ export class SharedOSKernel {
   readonly #spans: SpanSink | undefined;
 
   constructor(options: SharedOSKernelOptions) {
+    this.replayProtection = new ReplayProtection(options.replayStore);
     this.#authority = new TrustedAuthorityResolver(options?.grantSource);
     if (options.policySource !== undefined && typeof options.policySource?.load !== "function") {
       throw new TypeError("SharedOS requires a policy source that provides a load function");
@@ -384,7 +399,13 @@ export class SharedOSKernel {
     this.#messageRequestRouter = options.messageRequestRouter;
     this.#messageCapabilityResolver =
       options.messageCapabilityResolver ?? new RecipientScopedMessageCapabilityResolver();
-    this.#createMessageId = options.createMessageId ?? (() => crypto.randomUUID());
+    this.#createMessageId =
+      options.createMessageId ??
+      ((_context, call) => {
+        const id = this.#messageIds.get(call);
+        if (id === undefined) throw new Error("Message identity was not prepared");
+        return id;
+      });
     this.#createAuditId = options.createAuditId ?? (() => crypto.randomUUID());
     this.#audit = options.audit ?? new NoopAuditSink();
     this.#onAuditError = options.onAuditError;
@@ -1039,10 +1060,50 @@ export class SharedOSKernel {
       (span) => {
         span.set("callId", call.id);
         span.set("tool", call.tool);
-        return this.#invokeTool(context, call, options);
+        const snapshot = structuredClone({ context, call });
+        const { requestedAt: _requestedAt, ...input } = snapshot.call;
+        return this.#replayTool(snapshot.context, snapshot.call, options, input);
       },
       (result, span) => span.set("outcome", result.status),
     );
+  }
+
+  async #replayTool(
+    context: AccessContext,
+    call: ToolCall,
+    options: KernelOperationOptions,
+    input: unknown,
+  ): Promise<ToolResult> {
+    try {
+      return await this.replayProtection.run(
+        {
+          namespaceId: context.namespaceId,
+          kind: "tool",
+          scope: context.executionId ?? options.executionId ?? context.traceId,
+          id: call.id,
+        },
+        { context: replayContext(context), call: input },
+        () => this.#invokeTool(context, call, options),
+        (value) => {
+          const result = ToolResultSchema.parse(value);
+          if (result.callId !== call.id || result.tool !== call.tool)
+            throw new Error("Mismatched replay result");
+          return result;
+        },
+        options.signal,
+      );
+    } catch (error) {
+      if (!(error instanceof ReplayError)) throw error;
+      const result = refusedToolResult(
+        call,
+        error.code === "replay_conflict" ? "denied" : "failed",
+        context.now,
+        error.code,
+        "Operation replay refused",
+      );
+      await this.#recordToolResult(context, call, result);
+      return result;
+    }
   }
 
   async #invokeTool(
@@ -1228,6 +1289,19 @@ export class SharedOSKernel {
 
     let requirement: CapabilityRequirement;
     try {
+      if (call.tool === MESSAGE_REQUEST_TOOL_NAME) {
+        this.#messageIds.set(
+          parsedCall,
+          await sha256Hex(
+            canonicalReplayJson([
+              context.namespaceId,
+              context.executionId ?? options.executionId ?? context.traceId,
+              context.actor,
+              call.id,
+            ]),
+          ),
+        );
+      }
       requirement =
         handler.resolveRequirement?.(context, parsedCall) ?? handler.definition.requiredCapability;
     } catch (error) {
@@ -1312,7 +1386,19 @@ export class SharedOSKernel {
         measure(this.#spans, SPAN.TOOL_HANDLER, (span) => {
           span.set("callId", call.id);
           span.set("tool", call.tool);
-          return handler.invoke(context, parsedCall, options.signal ?? neverAbortedSignal());
+          return handler.invoke(
+            context,
+            parsedCall,
+            options.signal ?? neverAbortedSignal(),
+            this.replayProtection.store === undefined
+              ? undefined
+              : deepFreeze({
+                  namespaceId: context.namespaceId,
+                  kind: "tool",
+                  scope: context.executionId ?? options.executionId ?? context.traceId,
+                  id: call.id,
+                }),
+          );
         }),
       accept: (candidate) => {
         const parsed = ToolResultSchema.safeParse(candidate);
@@ -1354,6 +1440,44 @@ export class SharedOSKernel {
   }
 
   async invokeResource(
+    context: AccessContext,
+    request: ResourceInvocationRequest,
+    options: KernelOperationOptions = {},
+  ): Promise<ResourceResult> {
+    context = structuredClone(context);
+    request = structuredClone(request);
+    request = {
+      ...request,
+      resource: { ...request.resource, owner: request.resource.owner ?? context.owner },
+    };
+    try {
+      return await this.replayProtection.run(
+        { namespaceId: context.namespaceId, kind: "resource", scope: "", id: request.operationId },
+        { context: replayContext(context), request },
+        () => this.#invokeResource(context, request, options),
+        (value) => {
+          const result = ResourceResultSchema.parse(value);
+          if (result.operationId !== request.operationId)
+            throw new Error("Mismatched replay result");
+          return result;
+        },
+        options.signal,
+      );
+    } catch (error) {
+      if (!(error instanceof ReplayError)) throw error;
+      const result = refusedResourceResult(
+        request,
+        error.code === "replay_conflict" ? "denied" : "failed",
+        context.now,
+        error.code,
+        "Operation replay refused",
+      );
+      await this.#recordResourceResult(context, request, result);
+      return result;
+    }
+  }
+
+  async #invokeResource(
     context: AccessContext,
     request: ResourceInvocationRequest,
     options: KernelOperationOptions = {},
@@ -1583,12 +1707,8 @@ export class SharedOSKernel {
           reportProviderError: (error, access, operation) =>
             this.#reportProviderError(error, access, operation),
           deliverAuthorizedMessage: async (access, envelope, operationSignal, call) => {
-            const delivery = await this.#deliverAuthorizedMessage(
-              access,
-              envelope,
-              operationSignal,
-              undefined,
-              call.id,
+            const delivery = await this.#replayMessage(access, envelope, operationSignal, () =>
+              this.#deliverAuthorizedMessage(access, envelope, operationSignal, undefined, call.id),
             );
             if (delivery.status === "denied" || delivery.status === "failed") {
               this.#dispatchCauses.set(call, delivery.error.code);
@@ -1637,6 +1757,53 @@ export class SharedOSKernel {
   }
 
   async sendMessage(
+    context: AccessContext,
+    envelope: MessageEnvelope,
+    options: KernelOperationOptions = {},
+  ): Promise<MessageDeliveryResult> {
+    context = structuredClone(context);
+    const parsed = MessageEnvelopeSchema.safeParse(structuredClone(envelope));
+    if (!parsed.success)
+      throw new TypeError("message envelope does not match the SharedOS contract");
+    envelope = parsed.data;
+    return this.#replayMessage(context, envelope, options.signal, () =>
+      this.#sendMessage(context, envelope, options),
+    );
+  }
+
+  async #replayMessage(
+    context: AccessContext,
+    envelope: MessageEnvelope,
+    signal: AbortSignal | undefined,
+    invoke: () => Promise<MessageDeliveryResult>,
+  ): Promise<MessageDeliveryResult> {
+    try {
+      return await this.replayProtection.run(
+        { namespaceId: context.namespaceId, kind: "message", scope: "", id: envelope.id },
+        { context: replayContext(context), envelope },
+        invoke,
+        (value) => {
+          const result = MessageDeliveryResultSchema.parse(value);
+          if (result.messageId !== envelope.id) throw new Error("Mismatched replay result");
+          return result;
+        },
+        signal,
+      );
+    } catch (error) {
+      if (!(error instanceof ReplayError)) throw error;
+      const result = refusedMessageResult(
+        envelope,
+        error.code === "replay_conflict" ? "denied" : "failed",
+        context.now,
+        error.code,
+        "Operation replay refused",
+      );
+      await this.#recordMessageResult(context, envelope, result);
+      return result;
+    }
+  }
+
+  async #sendMessage(
     context: AccessContext,
     envelope: MessageEnvelope,
     options: KernelOperationOptions = {},
@@ -2347,7 +2514,9 @@ const OPERATION_ABORTED = "operation_aborted";
 /** `failClosed`, present only on a code that is SharedOS failing to establish a fact. */
 function failClosedFor(reasonCode: string | undefined): Pick<AuditEventInput, "failClosed"> {
   return reasonCode !== undefined &&
-    (isInfrastructureDenial(reasonCode) || reasonCode === AUDIT_UNAVAILABLE)
+    (isInfrastructureDenial(reasonCode) ||
+      reasonCode === AUDIT_UNAVAILABLE ||
+      reasonCode === "replay_unavailable")
     ? { failClosed: true }
     : {};
 }

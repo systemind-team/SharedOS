@@ -193,10 +193,7 @@ export function createMessageRequestTool(options: MessageRequestToolOptions): To
       const envelope = deepFreeze(
         MessageEnvelopeSchema.parse({
           version: PROTOCOL_VERSION,
-          id: options.createMessageId(
-            structuredClone(trustedContext),
-            structuredClone(trustedCall),
-          ),
+          id: options.createMessageId(structuredClone(trustedContext), call),
           sender: trustedContext.actor,
           receiver: arguments_.recipient,
           purpose: trustedContext.purpose,

@@ -13,6 +13,7 @@ import {
   type ToolDefinition,
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
+import { childOperationId } from "@aicoo/sharedos-core";
 import type { ResourceProvider, SharedOSKernel, ToolHandler } from "@aicoo/sharedos-core";
 import { compactObject } from "@aicoo/sharedos-core/internal";
 
@@ -630,16 +631,18 @@ function resourceTool(provider: ResourceProvider, spec: ResourceToolSpec): ToolH
       },
       action: spec.definition.requiredCapability.action,
     }),
-    invoke: async (context, call, signal) => {
+    invoke: async (context, call, signal, identity) => {
       const parsed = parsedFor(call);
+      const operationId =
+        identity === undefined ? call.id : await childOperationId(identity, "resource", "provider");
       const operation: ResourceOperation = {
-        operationId: call.id,
+        operationId,
         context,
         resource: { namespace: provider.namespace, path: parsed.path, owner: context.owner },
         action: spec.definition.requiredCapability.action,
         ...(parsed.input === undefined ? {} : { input: parsed.input }),
       };
-      return toToolResult(call, context, await provider.invoke(operation, signal));
+      return toToolResult(call, context, await provider.invoke(operation, signal), operationId);
     },
   };
 }
@@ -648,9 +651,10 @@ function toToolResult(
   call: ToolCall,
   context: AccessContext,
   candidate: ResourceResult,
+  operationId = call.id,
 ): ToolResult {
   const parsed = ResourceResultSchema.safeParse(candidate);
-  if (!parsed.success || parsed.data.operationId !== call.id) {
+  if (!parsed.success || parsed.data.operationId !== operationId) {
     return {
       callId: call.id,
       tool: call.tool,
