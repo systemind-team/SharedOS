@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import type {
@@ -750,6 +753,98 @@ describe("a harness that asks for a human over MCP", () => {
  * wins. A direct caller gets the platform's answer, not a second shape of
  * `turn_cancelled`.
  */
+describe("the files a host writes for the turn", () => {
+  const host: RuntimeHost = {
+    limits: { maxSteps: 1, maxToolCalls: 1, timeoutMs: 5_000 },
+    invokeTool: () => Promise.reject(new Error("not reached")),
+    annotate: () => undefined,
+    emit: () => undefined,
+  };
+  const visible = (): RuntimeTurnRequest => {
+    const { context, ...request } = executionRequest();
+    return {
+      ...request,
+      context: {
+        actor: context.actor,
+        owner: context.owner,
+        namespaceId: context.namespaceId,
+        purpose: context.purpose,
+        traceId: context.traceId,
+        now: context.now,
+        reach: { status: "computed", reach: [] },
+      },
+    };
+  };
+
+  it("are in the workspace when the CLI starts, named in configPaths, and gone with it", async () => {
+    const seen: { workspace: string; path: string | undefined; contents: string }[] = [];
+    const spec: McpHarnessSpec = {
+      ...fakeHarness([]),
+      launch: (context) => {
+        seen.push({
+          workspace: context.workspace,
+          path: context.configPaths["AGENTS.md"],
+          contents: readFileSync(join(context.workspace, "AGENTS.md"), "utf8"),
+        });
+        return fakeHarness([]).launch(context);
+      },
+    };
+    const runtime = createMcpHarnessRuntime(spec, {
+      turnFiles: (request) => [
+        { filename: "AGENTS.md", contents: `# For ${request.executionId}\n` },
+        { filename: ".claude/settings.json", contents: "{}" },
+      ],
+    });
+    await runtime.run(visible(), host, new AbortController().signal);
+
+    expect(seen).toHaveLength(1);
+    const [turn] = seen;
+    expect(turn?.path).toBe(join(turn?.workspace ?? "", "AGENTS.md"));
+    expect(turn?.contents).toBe(`# For ${executionRequest().executionId}\n`);
+    expect(existsSync(turn?.workspace ?? "")).toBe(false);
+  });
+
+  it("refuses a name that would leave the workspace, before anything is launched", async () => {
+    let launched = 0;
+    const spec: McpHarnessSpec = {
+      ...fakeHarness([]),
+      launch: (context) => {
+        launched += 1;
+        return fakeHarness([]).launch(context);
+      },
+    };
+    for (const filename of ["../AGENTS.md", "/etc/AGENTS.md", "notes/../../x"]) {
+      const runtime = createMcpHarnessRuntime(spec, {
+        turnFiles: () => [{ filename, contents: "" }],
+      });
+      await expect(runtime.run(visible(), host, new AbortController().signal)).rejects.toThrow(
+        /inside the workspace/,
+      );
+    }
+    expect(launched).toBe(0);
+  });
+
+  it("refuses the generated configuration's own name, before anything is launched", async () => {
+    let launched = 0;
+    const spec: McpHarnessSpec = {
+      ...fakeHarness([]),
+      launch: (context) => {
+        launched += 1;
+        return fakeHarness([]).launch(context);
+      },
+    };
+    for (const filename of [".mcp.json", "./.mcp.json", "notes/../.mcp.json"]) {
+      const runtime = createMcpHarnessRuntime(spec, {
+        turnFiles: () => [{ filename, contents: "{}" }],
+      });
+      await expect(runtime.run(visible(), host, new AbortController().signal)).rejects.toThrow(
+        /configuration generated for fake/,
+      );
+    }
+    expect(launched).toBe(0);
+  });
+});
+
 describe("a harness runtime whose signal is aborted", () => {
   it("rejects with the signal's reason instead of returning an outcome", async () => {
     const controller = new AbortController();
@@ -816,6 +911,33 @@ describe("the Codex spec", () => {
       expect(launch.args).toContain(`mcp_servers.sharedos.${key}=${value}`);
       expect(emitted).toContain(`${key} = ${value}`);
     }
+  });
+
+  it("makes the scratch workspace the project root, so no checkout above it is read", () => {
+    const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
+    const { context, ...request } = executionRequest();
+    const launch = CODEX_MCP_HARNESS.launch({
+      prompt: "read both files",
+      connection,
+      workspace: "/tmp/sharedos-test",
+      configPaths: {},
+      request: {
+        ...request,
+        context: {
+          actor: context.actor,
+          owner: context.owner,
+          namespaceId: context.namespaceId,
+          purpose: context.purpose,
+          traceId: context.traceId,
+          now: context.now,
+          reach: { status: "computed", reach: [] },
+        },
+      },
+    });
+    const at = launch.args.indexOf("project_root_markers=[]");
+    expect(at).toBeGreaterThan(0);
+    expect(launch.args[at - 1]).toBe("-c");
+    expect(launch.cwd).toBe("/tmp/sharedos-test");
   });
 
   it("keeps a bearer token off the command line", () => {

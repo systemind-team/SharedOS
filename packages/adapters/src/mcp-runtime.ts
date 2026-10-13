@@ -1,6 +1,6 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 import type {
   JsonObject,
@@ -103,6 +103,21 @@ export interface McpLaunchContext {
   readonly request: RuntimeTurnRequest;
 }
 
+/**
+ * A file the host has written into the turn's scratch workspace before the
+ * harness starts. The workspace is the harness's working directory, so this is
+ * where a project instruction file goes for a CLI whose loader reads one from
+ * where it is run: Codex, Claude Code and Pi each read an `AGENTS.md` there.
+ * The file is rendered per turn from the request and is gone with the
+ * workspace when the turn ends; the host's record of the text, if it keeps
+ * one, is elsewhere.
+ */
+export interface McpTurnFile {
+  /** Relative to the workspace, inside it: no absolute path and no `..`. */
+  readonly filename: string;
+  readonly contents: string;
+}
+
 /** One harness, described by how it is connected and how it is started. */
 export interface McpHarnessSpec {
   readonly id: string;
@@ -147,6 +162,16 @@ export interface McpHarnessRuntimeOptions extends SeatTextOptions {
   readonly env?: Readonly<Record<string, string>>;
   readonly args?: readonly string[];
   /**
+   * Files written into the turn's workspace beside the generated configuration,
+   * before the CLI is launched, rendered from this turn's request. Their paths
+   * join `configPaths` under their filenames. A filename that would leave the
+   * workspace, or that is the generated configuration's own, fails the turn
+   * before anything is launched.
+   */
+  readonly turnFiles?: (
+    request: RuntimeTurnRequest,
+  ) => readonly McpTurnFile[] | Promise<readonly McpTurnFile[]>;
+  /**
    * The model this run intends the harness to use, recorded and not acted on.
    *
    * SharedOS records the string; the configuration above is what actually
@@ -164,6 +189,14 @@ export interface McpHarnessRuntimeOptions extends SeatTextOptions {
    * an instant a test cannot fix is an instant it cannot assert on.
    */
   readonly clock?: () => string;
+}
+
+/** The file's absolute path, or a thrown error when the name would leave the workspace. */
+function insideWorkspace(workspace: string, filename: string): string {
+  const path = resolve(workspace, filename);
+  if (isAbsolute(filename) || !path.startsWith(`${workspace}${sep}`))
+    throw new Error(`A turn file is written inside the workspace; "${filename}" is not.`);
+  return path;
 }
 
 /**
@@ -238,6 +271,19 @@ export function createMcpHarnessRuntime(
         const configPaths: Record<string, string> = {};
         for (const file of spec.configFiles?.(connection) ?? []) {
           const path = join(workspace, file.filename);
+          await writeFile(path, file.contents, "utf8");
+          configPaths[file.filename] = path;
+        }
+        for (const file of (await options.turnFiles?.(request)) ?? []) {
+          const path = insideWorkspace(workspace, file.filename);
+          // The generated configuration is how the CLI reaches the bridge. A
+          // turn file under its name would silently point the CLI elsewhere,
+          // and the turn would read as a harness that declined every tool.
+          if (Object.values(configPaths).includes(path))
+            throw new Error(
+              `"${file.filename}" is the configuration generated for ${spec.id} and cannot be a turn file; choose another name.`,
+            );
+          await mkdir(dirname(path), { recursive: true });
           await writeFile(path, file.contents, "utf8");
           configPaths[file.filename] = path;
         }
@@ -641,6 +687,13 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
       "exec",
       "--json",
       "--skip-git-repo-check",
+      // The workspace is a scratch directory, not a repository. Codex finds its
+      // project root by walking up to the nearest `.git` and reads the AGENTS.md
+      // files from there down, so a checkout anywhere above the scratch
+      // directory would have its instructions read as this turn's. With no
+      // markers the working directory is the root, and the only directory read.
+      "-c",
+      "project_root_markers=[]",
       // One source with `codexMcpConfig`: the same settings, as overrides, so a
       // launch and an emitted `config.toml` cannot disagree. Why each setting is
       // there -- `required`, and the approval mode that keeps a run with no
