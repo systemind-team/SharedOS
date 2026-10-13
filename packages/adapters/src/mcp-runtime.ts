@@ -165,7 +165,8 @@ export interface McpHarnessRuntimeOptions extends SeatTextOptions {
    * Files written into the turn's workspace beside the generated configuration,
    * before the CLI is launched, rendered from this turn's request. Their paths
    * join `configPaths` under their filenames. A filename that would leave the
-   * workspace fails the turn before anything is launched.
+   * workspace, or that is the generated configuration's own, fails the turn
+   * before anything is launched.
    */
   readonly turnFiles?: (
     request: RuntimeTurnRequest,
@@ -275,6 +276,13 @@ export function createMcpHarnessRuntime(
         }
         for (const file of (await options.turnFiles?.(request)) ?? []) {
           const path = insideWorkspace(workspace, file.filename);
+          // The generated configuration is how the CLI reaches the bridge. A
+          // turn file under its name would silently point the CLI elsewhere,
+          // and the turn would read as a harness that declined every tool.
+          if (Object.values(configPaths).includes(path))
+            throw new Error(
+              `"${file.filename}" is the configuration generated for ${spec.id} and cannot be a turn file; choose another name.`,
+            );
           await mkdir(dirname(path), { recursive: true });
           await writeFile(path, file.contents, "utf8");
           configPaths[file.filename] = path;

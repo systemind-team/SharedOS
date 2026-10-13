@@ -298,8 +298,10 @@ writes a file there with `turnFiles`, a function of the turn request returning
 `AGENTS.md` from the directory they are run in, so a brief rendered into that
 file reaches the model the way a project's instructions do, and the prompt
 carries only the turn. The files are written before the CLI starts and are
-named in `configPaths`; a filename that would leave the workspace fails the turn
-before launch. Codex is launched with `project_root_markers=[]`, so the
+named in `configPaths`; a filename that would leave the workspace, or that is
+the name of the configuration the adapter generated for the CLI, fails the turn
+before launch, since a file under that name would point the CLI away from the
+bridge. Codex is launched with `project_root_markers=[]`, so the
 workspace is its project root and no checkout above it is read.
 
 Each spec hands its CLI the connection in the one form that CLI takes, and

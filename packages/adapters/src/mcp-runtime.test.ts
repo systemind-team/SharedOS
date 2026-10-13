@@ -823,6 +823,26 @@ describe("the files a host writes for the turn", () => {
     }
     expect(launched).toBe(0);
   });
+
+  it("refuses the generated configuration's own name, before anything is launched", async () => {
+    let launched = 0;
+    const spec: McpHarnessSpec = {
+      ...fakeHarness([]),
+      launch: (context) => {
+        launched += 1;
+        return fakeHarness([]).launch(context);
+      },
+    };
+    for (const filename of [".mcp.json", "./.mcp.json", "notes/../.mcp.json"]) {
+      const runtime = createMcpHarnessRuntime(spec, {
+        turnFiles: () => [{ filename, contents: "{}" }],
+      });
+      await expect(runtime.run(visible(), host, new AbortController().signal)).rejects.toThrow(
+        /configuration generated for fake/,
+      );
+    }
+    expect(launched).toBe(0);
+  });
 });
 
 describe("a harness runtime whose signal is aborted", () => {
