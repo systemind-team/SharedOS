@@ -51,6 +51,26 @@ each entry calls out what a host has to update.
   under `/v1`, and existing records stay readable. ADR 0019 is revised and the
   `ProtocolVersionSchema` row in `docs/open-items.md` is closed.
 
+### Changed — breaking
+
+- **Tool policy now describes declared mediation scope.** `ToolPolicy` requires
+  `version: "2"` and replaces `strict`/`hybrid` with `broker-only`, `mixed`, and
+  `unknown`. Every local tool, including shell, patches, reads, and planning
+  tools, makes the declaration mixed; independent MCP endpoints do too.
+  Broker-only requires an explicit complete inventory, empty outside lists,
+  and supporting evidence references. Omitted or uncertain capabilities remain
+  unknown. MCP runtimes annotate the declaration before launch; execution
+  records preserve it and reject conflicts. The policy describes a tool
+  configuration and never proves process isolation or mediation of all effects.
+
+  **Migration.** Re-declare legacy policies from the effective inventory;
+  do not rename `strict` to `broker-only`. Preserve host-owned inventory and
+  configuration evidence, regenerate policy hashes and conformance artifacts,
+  and release the affected packages together in the next synchronized prerelease
+  (with the package versions and `SHAREDOS_VERSION` advanced together). The
+  authorization protocol and execution-record envelope remain version `"1"`;
+  the nested policy is independently versioned. See ADR 0027.
+
 ### Fixed
 
 - **A turn Codex answers in prose now has that prose as its output.** The

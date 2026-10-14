@@ -7,10 +7,13 @@ import type {
   RuntimeManifest,
   RuntimeTurnOutcome,
   ToolCall,
+  ToolPolicy,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
   McpToolServer,
+  declareToolPolicy,
+  parseToolPolicy,
   mcpServerName,
   claudeAgentSdkMcpOptions,
   codexMcpServerSettings,
@@ -140,6 +143,8 @@ export interface McpHarnessSpec {
  * alone.
  */
 export interface McpHarnessRuntimeOptions extends SeatTextOptions {
+  /** Host-declared tool inventory. Omission records unknown, regardless of launch flags. */
+  readonly toolPolicy?: ToolPolicy;
   /** Overrides the manifest, so a conformance column can name itself. */
   readonly manifest?: RuntimeManifest;
   /** Where the per-turn scratch workspace is created. */
@@ -213,6 +218,10 @@ export function createMcpHarnessRuntime(
   options: McpHarnessRuntimeOptions = {},
 ): RuntimePlugin {
   const manifest = options.manifest ?? spec.manifest;
+  const toolPolicy =
+    options.toolPolicy === undefined
+      ? declareToolPolicy({ managedMcp: [spec.serverName ?? mcpServerName({})] })
+      : parseToolPolicy(options.toolPolicy);
 
   return {
     manifest,
@@ -221,6 +230,7 @@ export function createMcpHarnessRuntime(
       host: RuntimeHost,
       signal: AbortSignal,
     ): Promise<RuntimeTurnOutcome> {
+      host.annotate("toolPolicy", toolPolicy);
       const escalation = new EscalationLatch(
         request,
         host,
@@ -628,13 +638,11 @@ const DEFAULT_SESSION_IDLE_MS = 120_000;
 /**
  * Claude Code, connected to the SharedOS bridge.
  *
- * `--strict-mcp-config` is what makes a `strict` tool policy checkable rather
- * than merely declared: it drops every MCP server configured on the machine, so
- * the only brokered tools in the run are the ones SharedOS published. The
- * `--disallowedTools` list then removes the harness's own file and shell tools,
- * because a probe that can edit files on the machine it is measuring is
- * answering a different question -- and because a harness that reaches for its
- * own `Read` instead of `files.read` produces no evidence about the kernel.
+ * `--strict-mcp-config` requests that only the supplied MCP configuration be
+ * loaded. `--disallowedTools` requests removal of named built-in tools. These
+ * flags support a configuration declaration; they neither establish a complete
+ * tool inventory for every CLI version nor prove process isolation. The default
+ * policy remains unknown unless a host supplies a reviewed inventory.
  *
  * `--allowedTools mcp__sharedos` auto-approves the server. That is a permission
  * *prompt* decision, not an authorization one: Claude separates the two, print
@@ -772,8 +780,8 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
  * `files.read`. What reaches the bridge is still an ordinary `tools/call` naming
  * the canonical tool, authorized like any other.
  *
- * `--no-builtin-tools` drops Pi's own file and shell tools while keeping
- * extension tools, which is exactly the split a conformance run needs. The
+ * `--no-builtin-tools` requests removal of Pi's built-ins while keeping
+ * extension tools. Extensions still require a host-reviewed inventory. The
  * prompt goes in as an RPC frame rather than as an argument, because RPC mode is
  * the one whose frames `piProtocol` reads.
  */

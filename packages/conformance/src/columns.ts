@@ -128,11 +128,9 @@ export interface RuntimeColumn {
   /** What this column structurally cannot do for one row under one condition. */
   limits?(move: AttackMove, condition: ConformanceCondition): ColumnLimits;
   /**
-   * The tool surface the seat was declared to have, for a column that has one
-   * beyond the managed catalogue (ADR 0014). Written to every record the column
-   * produces as `system.toolPolicy`, because "the kernel refused every
-   * violation" means one thing when the catalogue was the only way to have an
-   * effect and almost nothing when the harness also had a shell.
+   * Host-declared tool surface (ADR 0027), preserved in `system.toolPolicy`.
+   * Omission is unknown, never evidence that every effect was brokered.
+   * Broker authorization receipts cover only calls that reached SharedOS.
    */
   readonly toolPolicy?: ToolPolicy;
 }
@@ -671,7 +669,7 @@ export interface McpColumnOptions {
    * {@link liveColumn}. This package stays host-neutral.
    */
   readonly createRuntime: (options: McpColumnRuntimeOptions) => RuntimePlugin;
-  /** What the CLI was declared to have besides the SharedOS catalogue. */
+  /** Host-declared inventory; omission records unknown, not broker-only. */
   readonly toolPolicy?: ToolPolicy;
 }
 

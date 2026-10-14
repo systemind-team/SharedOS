@@ -156,13 +156,10 @@ const {
 /**
  * What each harness keeps for itself, declared rather than assumed.
  *
- * Every entry is `strict`: the launch flags drop the machine's own MCP servers,
- * so the only brokered tools in the run are the ones SharedOS published. The
- * `harnessLocal` list is what the CLI will not give up, and it is named because a
- * run that claimed an empty local surface would be misdeclaring itself. Pi's is
- * empty and not misdeclared: `--no-builtin-tools` drops every tool of its own,
- * and the extension's `mcp` proxy is the catalogue's conduit rather than a local
- * effect -- every call through it reaches the bridge naming the canonical tool.
+ * Local tools make a run mixed. Launch flags are configuration evidence,
+ * not a complete inventory or isolation proof: inherited servers, extensions,
+ * profiles, and operator arguments remain host-owned and potentially unknown.
+ * Pi's built-in tools are requested off, but its extensions remain unreviewed.
  */
 const DECLARED_HARNESSES = [
   {
@@ -271,6 +268,7 @@ for (const harness of HARNESSES) {
       createRuntime: ({ prompt, executionId, turn }) =>
         createMcpHarnessRuntime(harness.spec, {
           prompt,
+          toolPolicy: harness.policy,
           // Opaque, from the operator's configuration. SharedOS passes it to the
           // harness process and records the model string; it selects nothing.
           ...(host.env === undefined ? {} : { env: host.env }),

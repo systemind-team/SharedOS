@@ -459,25 +459,20 @@ What the bridge needs of the turn's sanitised context: identity, not authority.
 
 ### DeclareToolPolicyOptions
 
-Defined in: [mcp/src/policy.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L17)
+Defined in: [mcp/src/policy.ts:8](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L8)
 
-What a run's tool surface actually was.
-
-A conformance result reads very differently depending on the answer. "The
-kernel refused every violation" means one thing when the managed catalogue was
-the only way to have an effect, and almost nothing when the harness also had a
-shell. The policy is declared per run so a reader never has to infer which of
-those they are looking at, and [parseToolPolicy](#parsetoolpolicy) refuses the combination
-that would let a run claim the first while being the second.
+A host declaration of the tool surface, never proof of process isolation.
 
 #### Properties
 
-| Property                                               | Modifier   | Type                     | Description                                                      | Defined in                                                                                                  |
-| ------------------------------------------------------ | ---------- | ------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| <a id="property-externaldirect"></a> `externalDirect?` | `readonly` | readonly `string`[]      | MCP servers the harness was configured with independently.       | [mcp/src/policy.ts:24](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L24) |
-| <a id="property-harnesslocal"></a> `harnessLocal?`     | `readonly` | readonly `string`[]      | The harness's own tools, which SharedOS never sees.              | [mcp/src/policy.ts:22](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L22) |
-| <a id="property-managedmcp"></a> `managedMcp?`         | `readonly` | readonly `string`[]      | SharedOS MCP endpoints. Defaults to the one this package serves. | [mcp/src/policy.ts:20](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L20) |
-| <a id="property-mode"></a> `mode?`                     | `readonly` | `"strict"` \| `"hybrid"` | -                                                                | [mcp/src/policy.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L18) |
+| Property                                               | Modifier   | Type                                        | Description                                                                    | Defined in                                                                                                  |
+| ------------------------------------------------------ | ---------- | ------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| <a id="property-evidence"></a> `evidence?`             | `readonly` | readonly `string`[]                         | References supporting this declaration; these are not isolation attestations.  | [mcp/src/policy.ts:19](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L19) |
+| <a id="property-externaldirect"></a> `externalDirect?` | `readonly` | readonly `string`[]                         | MCP servers the harness was configured with independently.                     | [mcp/src/policy.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L17) |
+| <a id="property-harnesslocal"></a> `harnessLocal?`     | `readonly` | readonly `string`[]                         | All local tools outside the broker, including shell, writes, and reads.        | [mcp/src/policy.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L15) |
+| <a id="property-inventory"></a> `inventory?`           | `readonly` | `"unknown"` \| `"complete"`                 | Unknown unless the host explicitly attests a complete inventory with evidence. | [mcp/src/policy.ts:11](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L11) |
+| <a id="property-managedmcp"></a> `managedMcp?`         | `readonly` | readonly `string`[]                         | SharedOS MCP endpoints. Defaults to the one this package serves.               | [mcp/src/policy.ts:13](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L13) |
+| <a id="property-mode"></a> `mode?`                     | `readonly` | `"unknown"` \| `"broker-only"` \| `"mixed"` | -                                                                              | [mcp/src/policy.ts:9](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L9)   |
 
 ---
 
@@ -1095,7 +1090,7 @@ readonly readonly \[`string`, `string`\][]
 
 > **declareToolPolicy**(`options?`): `object`
 
-Defined in: [mcp/src/policy.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L27)
+Defined in: [mcp/src/policy.ts:22](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L22)
 
 #### Parameters
 
@@ -1107,6 +1102,10 @@ Defined in: [mcp/src/policy.ts:27](https://github.com/systemind-team/SharedOS/bl
 
 `object`
 
+##### evidence
+
+> **evidence**: `string`[]
+
 ##### externalDirect
 
 > **externalDirect**: `string`[]
@@ -1115,13 +1114,21 @@ Defined in: [mcp/src/policy.ts:27](https://github.com/systemind-team/SharedOS/bl
 
 > **harnessLocal**: `string`[]
 
+##### inventory
+
+> **inventory**: `"unknown"` \| `"complete"`
+
 ##### managedMcp
 
 > **managedMcp**: `string`[]
 
 ##### mode
 
-> **mode**: `"strict"` \| `"hybrid"`
+> **mode**: `"unknown"` \| `"broker-only"` \| `"mixed"`
+
+##### version
+
+> **version**: `"2"`
 
 ---
 
@@ -1387,7 +1394,7 @@ Open a turn-scoped bridge over the execution envelope.
 
 > **parseToolPolicy**(`value`): `object`
 
-Defined in: [mcp/src/policy.ts:37](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L37)
+Defined in: [mcp/src/policy.ts:51](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L51)
 
 #### Parameters
 
@@ -1399,6 +1406,10 @@ Defined in: [mcp/src/policy.ts:37](https://github.com/systemind-team/SharedOS/bl
 
 `object`
 
+##### evidence
+
+> **evidence**: `string`[]
+
 ##### externalDirect
 
 > **externalDirect**: `string`[]
@@ -1407,13 +1418,21 @@ Defined in: [mcp/src/policy.ts:37](https://github.com/systemind-team/SharedOS/bl
 
 > **harnessLocal**: `string`[]
 
+##### inventory
+
+> **inventory**: `"unknown"` \| `"complete"`
+
 ##### managedMcp
 
 > **managedMcp**: `string`[]
 
 ##### mode
 
-> **mode**: `"strict"` \| `"hybrid"`
+> **mode**: `"unknown"` \| `"broker-only"` \| `"mixed"`
+
+##### version
+
+> **version**: `"2"`
 
 ---
 
@@ -1571,19 +1590,22 @@ One published tool in MCP's own shape.
 
 > **toolPolicyHash**(`policy`): `Promise`\<`string`>\>
 
-Defined in: [mcp/src/policy.ts:53](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L53)
+Defined in: [mcp/src/policy.ts:68](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/policy.ts#L68)
 
-A content identifier for the declared policy, for the run's `policyHash`.
+A content identifier for the declared policy, including its evidence references.
 
 #### Parameters
 
-| Parameter               | Type                                                                                                                        |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `policy`                | \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \} |
-| `policy.externalDirect` | `string`[]                                                                                                                  |
-| `policy.harnessLocal`   | `string`[]                                                                                                                  |
-| `policy.managedMcp`     | `string`[]                                                                                                                  |
-| `policy.mode`           | `"strict"` \| `"hybrid"`                                                                                                    |
+| Parameter               | Type                                                                                                                                                                                                                               |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `policy`                | \{ `evidence`: `string`[]; `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `inventory`: `"unknown"` \| `"complete"`; `managedMcp`: `string`[]; `mode`: `"unknown"` \| `"broker-only"` \| `"mixed"`; `version`: `"2"`; \} |
+| `policy.evidence`       | `string`[]                                                                                                                                                                                                                         |
+| `policy.externalDirect` | `string`[]                                                                                                                                                                                                                         |
+| `policy.harnessLocal`   | `string`[]                                                                                                                                                                                                                         |
+| `policy.inventory`      | `"unknown"` \| `"complete"`                                                                                                                                                                                                        |
+| `policy.managedMcp`     | `string`[]                                                                                                                                                                                                                         |
+| `policy.mode`           | `"unknown"` \| `"broker-only"` \| `"mixed"`                                                                                                                                                                                        |
+| `policy.version`        | `"2"`                                                                                                                                                                                                                              |
 
 #### Returns
 

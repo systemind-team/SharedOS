@@ -350,3 +350,14 @@ MCP column has the ask recognised at the bridge and the turn settled from it,
 and the row is graded like any other. The one escalation row that _is_ among
 the limits is the ungranted one, for the reason above: a column that reads the
 catalogue before it escalates cannot make the attempt the row is about.
+
+## Tool scope in evidence
+
+`system.toolPolicy` is a versioned declaration of the runtime's available tool
+surface, not isolation proof. Record assembly preserves the runtime or column
+policy and rejects conflicts. An omitted inventory becomes `unknown`; absence
+in older records also means unknown. Local tools and independent MCP connections
+make the policy `mixed`. `broker-only` requires a complete inventory, empty
+outside lists, and host evidence references. Broker refusal receipts cover only
+calls that reached SharedOS, regardless of mode. See
+[ADR 0027](../../docs/adr/0027-tool-policy-classification.md).

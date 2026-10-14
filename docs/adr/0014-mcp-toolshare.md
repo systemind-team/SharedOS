@@ -136,12 +136,11 @@ differently.
 | `harness_local`   | patch tool, bounded shell       | No                   |
 | `external_direct` | independently configured Jira   | No                   |
 
-`ToolPolicy` declares which of these a run had. A `strict` policy that also lists
-`externalDirect` entries is rejected by the schema rather than producing a run
-whose headline claim its own manifest contradicts. `harnessLocal` is permitted
-under `strict` — no CLI gives up all its own tools — but the entries must be
-named, because a run claiming an empty local surface would be misdeclaring
-itself.
+The original `strict`/`hybrid` declaration permitted local tools under
+`strict`. [ADR 0027](0027-tool-policy-classification.md) supersedes that policy:
+version 2 uses `broker-only`, `mixed`, and `unknown`, requires evidence for a
+complete inventory, and classifies every local tool outside the broker. A
+policy is a declaration, never proof of process isolation.
 
 This matters for how a result reads. "The kernel refused every violation" means
 one thing when the managed catalogue was the only way to have an effect, and

@@ -560,7 +560,7 @@ Defined in: [tool.ts:108](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > **ToolCall** = `z.infer`\<_typeof_ [`ToolCallSchema`](#toolcallschema)>\>
 
-Defined in: [tool.ts:344](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L344)
+Defined in: [tool.ts:352](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L352)
 
 ---
 
@@ -592,7 +592,7 @@ Defined in: [tool.ts:39](https://github.com/systemind-team/SharedOS/blob/main/pa
 
 > **ToolNamespaceCatalog** = `z.infer`\<_typeof_ [`ToolNamespaceCatalogSchema`](#toolnamespacecatalogschema)>\>
 
-Defined in: [tool.ts:332](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L332)
+Defined in: [tool.ts:340](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L340)
 
 ---
 
@@ -600,7 +600,7 @@ Defined in: [tool.ts:332](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > **ToolNamespaceDescriptor** = `z.infer`\<_typeof_ [`ToolNamespaceDescriptorSchema`](#toolnamespacedescriptorschema)>\>
 
-Defined in: [tool.ts:294](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L294)
+Defined in: [tool.ts:302](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L302)
 
 ---
 
@@ -616,7 +616,7 @@ Defined in: [tool.ts:98](https://github.com/systemind-team/SharedOS/blob/main/pa
 
 > **ToolPolicy** = `z.infer`\<_typeof_ [`ToolPolicySchema`](#toolpolicyschema)>\>
 
-Defined in: [tool.ts:275](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L275)
+Defined in: [tool.ts:283](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L283)
 
 ---
 
@@ -632,7 +632,7 @@ Defined in: [tool.ts:50](https://github.com/systemind-team/SharedOS/blob/main/pa
 
 > **ToolResult** = `z.infer`\<_typeof_ [`ToolResultSchema`](#toolresultschema)>\>
 
-Defined in: [tool.ts:368](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L368)
+Defined in: [tool.ts:376](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L376)
 
 ---
 
@@ -1620,7 +1620,7 @@ Defined in: [tool.ts:100](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > `const` **ToolCallSchema**: `ZodObject`\<\{ `arguments`: `ZodType`\<[`JsonObject`](#jsonobject), `ZodTypeDef`, [`JsonObject`](#jsonobject)>\>; `id`: `ZodString`; `requestedAt`: `ZodString`; `tool`: `ZodString`; `traceId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `arguments`: [`JsonObject`](#jsonobject); `id`: `string`; `requestedAt`: `string`; `tool`: `string`; `traceId`: `string`; \}, \{ `arguments`: [`JsonObject`](#jsonobject); `id`: `string`; `requestedAt`: `string`; `tool`: `string`; `traceId`: `string`; \}\>
 
-Defined in: [tool.ts:334](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L334)
+Defined in: [tool.ts:342](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L342)
 
 ---
 
@@ -1665,7 +1665,7 @@ and never participates in authorization.
 
 > `const` **ToolNamespaceCatalogSchema**: `ZodEffects`\<`ZodObject`\<\{ `namespaces`: `ZodArray`\<`ZodEffects`\<`ZodObject`\<\{ `enabled`: `ZodBoolean`; `namespace`: `ZodString`; `sources`: `ZodArray`\<`ZodString`, `"many"`>\>; `toolCount`: `ZodNumber`; \}, `"strict"`, `ZodTypeAny`, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}\>, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}\>, `"many"`>\>; `summary`: `ZodObject`\<\{ `disabled`: `ZodNumber`; `enabled`: `ZodNumber`; `total`: `ZodNumber`; \}, `"strict"`, `ZodTypeAny`, \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}, \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}\>; \}, `"strict"`, `ZodTypeAny`, \{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}, \{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>, \{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}, \{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [tool.ts:296](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L296)
+Defined in: [tool.ts:304](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L304)
 
 ---
 
@@ -1673,7 +1673,7 @@ Defined in: [tool.ts:296](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > `const` **ToolNamespaceDescriptorSchema**: `ZodEffects`\<`ZodObject`\<\{ `enabled`: `ZodBoolean`; `namespace`: `ZodString`; `sources`: `ZodArray`\<`ZodString`, `"many"`>\>; `toolCount`: `ZodNumber`; \}, `"strict"`, `ZodTypeAny`, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}\>, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}, \{ `enabled`: `boolean`; `namespace`: `string`; `sources`: `string`[]; `toolCount`: `number`; \}\>
 
-Defined in: [tool.ts:277](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L277)
+Defined in: [tool.ts:285](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L285)
 
 ---
 
@@ -1702,20 +1702,18 @@ selection after product policy ceilings have been enforced.
 
 ### ToolPolicySchema
 
-> `const` **ToolPolicySchema**: `ZodEffects`\<`ZodObject`\<\{ `externalDirect`: `ZodArray`\<`ZodString`, `"many"`>\>; `harnessLocal`: `ZodArray`\<`ZodString`, `"many"`>\>; `managedMcp`: `ZodArray`\<`ZodString`, `"many"`>\>; `mode`: `ZodEnum`\<\[`"strict"`, `"hybrid"`\]\>; \}, `"strict"`, `ZodTypeAny`, \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \}, \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \}\>, \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \}, \{ `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `managedMcp`: `string`[]; `mode`: `"strict"` \| `"hybrid"`; \}\>
+> `const` **ToolPolicySchema**: `ZodEffects`\<`ZodObject`\<\{ `evidence`: `ZodArray`\<`ZodString`, `"many"`>\>; `externalDirect`: `ZodArray`\<`ZodString`, `"many"`>\>; `harnessLocal`: `ZodArray`\<`ZodString`, `"many"`>\>; `inventory`: `ZodEnum`\<\[`"complete"`, `"unknown"`\]\>; `managedMcp`: `ZodArray`\<`ZodString`, `"many"`>\>; `mode`: `ZodEnum`\<\[`"broker-only"`, `"mixed"`, `"unknown"`\]\>; `version`: `ZodLiteral`\<`"2"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `evidence`: `string`[]; `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `inventory`: `"unknown"` \| `"complete"`; `managedMcp`: `string`[]; `mode`: `"unknown"` \| `"broker-only"` \| `"mixed"`; `version`: `"2"`; \}, \{ `evidence`: `string`[]; `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `inventory`: `"unknown"` \| `"complete"`; `managedMcp`: `string`[]; `mode`: `"unknown"` \| `"broker-only"` \| `"mixed"`; `version`: `"2"`; \}\>, \{ `evidence`: `string`[]; `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `inventory`: `"unknown"` \| `"complete"`; `managedMcp`: `string`[]; `mode`: `"unknown"` \| `"broker-only"` \| `"mixed"`; `version`: `"2"`; \}, \{ `evidence`: `string`[]; `externalDirect`: `string`[]; `harnessLocal`: `string`[]; `inventory`: `"unknown"` \| `"complete"`; `managedMcp`: `string`[]; `mode`: `"unknown"` \| `"broker-only"` \| `"mixed"`; `version`: `"2"`; \}\>
 
-Defined in: [tool.ts:251](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L251)
+Defined in: [tool.ts:249](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L249)
 
-The declared tool surface of one experiment or runtime configuration.
+Version 2 of the declared tool surface (ADR 0027).
 
-`strict` asserts that every effect available to the harness went through
-SharedOS. It is checked, not just declared: a strict policy that also lists
-`externalDirect` entries is rejected here rather than producing a run whose
-headline claim its own manifest contradicts.
-
-`harnessLocal` is still permitted under `strict`, because a harness with no
-local tools at all cannot always be produced -- but the entries have to be
-named, so a reader can see exactly which effects were outside the kernel.
+`broker-only` requires a complete, evidence-backed inventory with no local
+or independently connected tools. `mixed` names known paths outside SharedOS;
+`unknown` means no such paths are named but the inventory is incomplete.
+All local tools count, including reads and tools described as harmless.
+Evidence supports the host's declaration, never proves process isolation or
+that every actual effect was mediated. Broker receipts cover only broker calls.
 
 ---
 
@@ -1733,7 +1731,7 @@ A conservative catalog classification. Capabilities remain the authorization sou
 
 > `const` **ToolResultSchema**: `ZodDiscriminatedUnion`\<`"status"`, \[`ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \}, \{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](#jsonobject); `output`: [`JsonValue`](#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"denied"`; `tool`: `string`; \}, \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"denied"`; `tool`: `string`; \}\>, `ZodObject`\<`object` & `object`, `"strict"`, `ZodTypeAny`, \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"failed"`; `tool`: `string`; \}, \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>\]\>
 
-Defined in: [tool.ts:353](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L353)
+Defined in: [tool.ts:361](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/tool.ts#L361)
 
 ---
 

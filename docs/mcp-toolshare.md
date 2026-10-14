@@ -179,52 +179,74 @@ and a cell that moved between them is not the model choosing differently. The
 conformance manifest folds each column's per-turn hashes into a prompt-set hash
 so that check is one field per column rather than one per record.
 
-## Tool classes
+## Tool classes and evidence
 
-| Class           | `ToolPolicy` field | Example                         | SharedOS authorized? | Recommendation                                   |
-| --------------- | ------------------ | ------------------------------- | -------------------- | ------------------------------------------------ |
-| Managed         | `managedMcp`       | `files.search`, brokered GitHub | Yes                  | The normal SharedOS path                         |
-| Harness-local   | `harnessLocal`     | patch tool, bounded shell       | No                   | Allow only if the sandbox cannot bypass SharedOS |
-| External direct | `externalDirect`   | independently configured Jira   | No                   | Explicit opt-in hybrid mode                      |
+`ToolPolicy` version `"2"` describes a host-declared tool surface. It does not
+prove process isolation or certify that every actual effect was mediated.
 
-`ToolPolicy` declares which a run had:
+| Class           | Field            | Examples                                                   | SharedOS authorized?                       |
+| --------------- | ---------------- | ---------------------------------------------------------- | ------------------------------------------ |
+| Managed         | `managedMcp`     | SharedOS endpoints serving `files.read` or brokered GitHub | Calls through the broker are re-authorized |
+| Harness-local   | `harnessLocal`   | `shell`, `apply_patch`, local reads, planning tools        | No                                         |
+| External direct | `externalDirect` | Independently connected GitHub or browser MCP servers      | No                                         |
 
-```json
-{
-  "mode": "strict",
-  "managedMcp": ["sharedos"],
-  "harnessLocal": ["apply_patch"],
-  "externalDirect": []
-}
+| Mode          | Required declaration                                                           | What a reader may conclude                                                          |
+| ------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| `broker-only` | `inventory: "complete"`, empty local and external lists, supporting `evidence` | The host declares that every available tool effect uses the broker                  |
+| `mixed`       | At least one local or external entry                                           | Named paths exist outside SharedOS mediation; the inventory may still be incomplete |
+| `unknown`     | No named outside path and `inventory: "unknown"`                               | Available harness capabilities have not been established                            |
+
+There is no harmless-local exemption in this version. Local reads can expose
+resources outside the capability scope; a planner or calculator also remains
+outside SharedOS's observation. All are conservatively classified as `mixed`.
+A proxy whose only operation forwards calls to this turn's SharedOS endpoint
+may be treated as part of the managed connection, provided the host's inventory
+review covers that forwarding implementation and its effective configuration.
+Extensions that can call other servers or execute local operations are outside
+paths. A tool name, read-only hint, allowlist, or prompt cannot establish this
+property.
+
+A declared broker-only configuration looks like:
+
+```ts
+const policy = declareToolPolicy({
+  inventory: "complete",
+  harnessLocal: [],
+  externalDirect: [],
+  evidence: ["host-review://run-42/effective-config-and-tool-inventory"],
+});
 ```
 
-versus
+The completeness declaration requires both lists explicitly, even when empty.
+`evidence` contains references to host-owned artifacts, such as the exact CLI
+version and arguments, effective inherited configuration, extension inventory,
+and reviewed tool implementations. The schema checks references are present;
+it does not fetch or verify them. Hosts must retain those artifacts and review
+all applicable paths before claiming a complete inventory. Neither the
+references nor `toolPolicyHash` prove OS or process isolation.
 
-```json
-{
-  "mode": "hybrid",
-  "managedMcp": ["sharedos"],
-  "harnessLocal": ["shell", "apply_patch"],
-  "externalDirect": ["github", "browser"]
-}
-```
+`declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] })` produces
+`mixed`, with an unknown inventory. Independently connected MCP tools also
+produce `mixed`. Omitting the declaration, or supplying empty lists without an
+explicit complete inventory and evidence, produces `unknown`. Disabling named
+built-ins does not establish that extensions, profiles, inherited servers, or
+operator-supplied arguments introduced no other paths.
 
-A `strict` policy that also lists `externalDirect` entries is rejected by the
-schema, rather than producing a run whose headline claim its own manifest
-contradicts. `harnessLocal` stays permitted under `strict` — most CLIs keep some
-tool of their own — but the entries must be named, and a launch that leaves the
-harness none of its own, as Pi's does with `--no-builtin-tools`, declares `[]`:
-the extension's `mcp` proxy is the catalogue's conduit, not a local tool.
+`createMcpHarnessRuntime` accepts `toolPolicy`, validates and snapshots it, and
+annotates the turn before launching the process, so the declaration also
+survives cancellation. Its default is unknown. `mcpColumn` accepts a column
+declaration, and execution-record assembly writes the runtime or column policy
+to `system.toolPolicy`. Conflicting declarations and invalid runtime policies
+are rejected. When neither exists, assembly writes an unknown policy; absence
+in older records also means unknown.
 
-A conformance column that declares a policy has it written to every execution
-record it produces, as `system.toolPolicy`, beside `catalogHash`. `mcpColumn`
-takes it as `toolPolicy`, and `scripts/mcp-conformance.mjs` passes each CLI's.
-A column that declares none, the scripted ones among them, leaves the field
-absent: the managed catalogue was all it had.
-
-This is what makes a result readable. "The kernel refused every violation" means
-one thing when the managed catalogue was the only way to have an effect, and
-almost nothing when the harness also had a shell.
+Authorization and audit receipts substantiate only operations that reached
+SharedOS. A denied broker call does not show whether a shell, local write, or
+independent server caused a similar effect. The current conformance suite does
+not observe those paths; it must not turn broker refusal evidence into a claim
+about all process effects. This change adds classification and evidence, not a
+sandbox or bypass detector. See [ADR 0027](adr/0027-tool-policy-classification.md)
+for protocol migration and release coordination.
 
 ## Using it
 
@@ -327,15 +349,15 @@ dsh plugin --profile headless add @deepseek-ai/dsh-mcp-client
 
 ### What each launch turns off
 
-Every spec launches its CLI with the flags that keep a measurement honest. Each
-is a permission-_prompt_ or tool-set decision rather than an authorization one:
-what secures the run is that every call is re-authorized by the kernel.
+These flags configure tool availability and permission prompts. SharedOS
+re-authorizes calls through its broker; local tools and independent connections
+remain outside that mediation.
 
-- **Claude Code.** `--strict-mcp-config` drops the machine's own MCP servers,
-  so a `strict` policy is checkable rather than merely declared, and the
-  disallowed-tools list removes the harness's own file and shell tools — a
-  probe that can edit files on the machine it is measuring is answering a
-  different question. `--allowedTools mcp__sharedos` auto-approves the server:
+- **Claude Code.** `--strict-mcp-config` requests use of only the supplied MCP
+  configuration; the disallowed-tools list requests removal of named built-ins.
+  These flags support configuration review but do not prove process isolation
+  or completeness across CLI versions. Named remaining local tools make the
+  conformance declaration mixed. `--allowedTools mcp__sharedos` auto-approves the server:
   Claude separates prompting from authorization, and print mode has no human to
   prompt.
 - **Codex.** `mcp_servers.sharedos.required=true` stops a run whose bridge
@@ -348,9 +370,9 @@ what secures the run is that every call is re-authorized by the kernel.
 - **DeepSeek Harness.** The plugin overlay sets `failOnStartupError: true` for
   the reason Codex's server is `required`: a run that quietly continued with
   only the harness's own tools would be a different finding.
-- **Pi.** `--mode rpc --no-session --no-builtin-tools`: a session-less RPC run
-  with Pi's own tools off, so what the model reaches is the extension's proxy
-  tool and nothing else.
+- **Pi.** `--mode rpc --no-session --no-builtin-tools` requests a session-less
+  RPC run with built-in tools disabled. Extensions remain enabled and require
+  review; the conformance declaration remains unknown.
 
 ### Pi needs an extension, and which one is your choice
 

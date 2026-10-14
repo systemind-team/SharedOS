@@ -35,7 +35,7 @@ import {
   type RuntimeHost,
   type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
-import { codexMcpConfig, codexMcpServerSettings } from "@aicoo/sharedos-mcp";
+import { codexMcpConfig, codexMcpServerSettings, declareToolPolicy } from "@aicoo/sharedos-mcp";
 import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
 import {
@@ -408,6 +408,29 @@ describe("a harness connected over MCP toolshare", () => {
       "denied",
     ]);
   }, 30_000);
+
+  it("records an unknown tool policy when the host supplies no inventory", async () => {
+    const turn = await runTurn([]);
+    expect(turn.metadata["toolPolicy"]).toEqual(declareToolPolicy());
+  }, 30_000);
+
+  it.each([
+    declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] }),
+    declareToolPolicy({ externalDirect: ["github"] }),
+    declareToolPolicy({
+      inventory: "complete",
+      harnessLocal: [],
+      externalDirect: [],
+      evidence: ["fixture://fake-harness/source-inventory"],
+    }),
+  ])(
+    "preserves a host-declared $mode policy in runtime metadata",
+    async (toolPolicy) => {
+      const turn = await runTurn([], { toolPolicy });
+      expect(turn.metadata["toolPolicy"]).toEqual(toolPolicy);
+    },
+    30_000,
+  );
 
   it("records the catalogue it served and the harness it served it to", async () => {
     const turn = await runTurn([]);
@@ -1046,6 +1069,7 @@ describe("what the harness is told at initialize", () => {
     // even bound, and the envelope writes it on a cancelled result too.
     expect(turn.metadata["harness"]).toBeUndefined();
     expect(turn.metadata["promptHash"]).toMatch(/^[0-9a-f]{64}$/u);
+    expect(turn.metadata["toolPolicy"]).toEqual(declareToolPolicy());
   }, 30_000);
 
   it("says exactly what a host's function says, reach included only if it says so", async () => {
