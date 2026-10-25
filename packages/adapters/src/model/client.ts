@@ -154,6 +154,10 @@ const ChatCompletionSchema = z.object({
     .nullish(),
 });
 
+/** The efforts OpenAI's `reasoning_effort` field names, least to most. */
+export const REASONING_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh"] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
 export interface OpenAiCompatibleModelClientOptions {
   readonly apiKey: string;
   readonly model: string;
@@ -179,6 +183,15 @@ export interface OpenAiCompatibleModelClientOptions {
    * so the turn's record says which mode the model ran in.
    */
   readonly thinking?: "enabled" | "disabled";
+  /**
+   * How hard the model reasons before it answers, sent as OpenAI's
+   * `reasoning_effort` request field. Opt-in like `thinking`: nothing is sent
+   * until a host asks, since a provider that does not know the field rejects
+   * the request. A host asks for `"none"` where a vendor refuses function
+   * tools on a chat completion that reasons by default. When set it is
+   * reported through {@link ModelClient.settings} beside `thinking`.
+   */
+  readonly reasoningEffort?: ReasoningEffort;
   /** Injected for tests, which must never reach a network. */
   readonly fetch?: typeof globalThis.fetch;
 }
@@ -216,6 +229,7 @@ export class OpenAiCompatibleModelClient implements ModelClient {
   readonly settings?: JsonObject;
   readonly #apiKey: string;
   readonly #thinking?: "enabled" | "disabled";
+  readonly #reasoningEffort?: ReasoningEffort;
   readonly #baseUrl: string;
   readonly #maxOutputTokens: number;
   readonly #temperature: number;
@@ -234,10 +248,16 @@ export class OpenAiCompatibleModelClient implements ModelClient {
     this.#temperature = options.temperature ?? 0;
     this.#requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
     this.#fetch = options.fetch ?? globalThis.fetch.bind(globalThis);
+    const settings: JsonObject = {};
     if (options.thinking !== undefined) {
       this.#thinking = options.thinking;
-      this.settings = { thinking: options.thinking };
+      settings["thinking"] = options.thinking;
     }
+    if (options.reasoningEffort !== undefined) {
+      this.#reasoningEffort = options.reasoningEffort;
+      settings["reasoning_effort"] = options.reasoningEffort;
+    }
+    if (Object.keys(settings).length > 0) this.settings = settings;
   }
 
   async complete(request: ModelCompletionRequest, signal: AbortSignal): Promise<ModelReply> {
@@ -260,6 +280,7 @@ export class OpenAiCompatibleModelClient implements ModelClient {
       max_tokens: this.#maxOutputTokens,
       temperature: this.#temperature,
       ...(this.#thinking === undefined ? {} : { thinking: { type: this.#thinking } }),
+      ...(this.#reasoningEffort === undefined ? {} : { reasoning_effort: this.#reasoningEffort }),
     });
 
     let lastError: ModelRequestError | undefined;

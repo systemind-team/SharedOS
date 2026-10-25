@@ -165,6 +165,26 @@ describe("the chat-completions client", () => {
     expect(configured.settings).toEqual({ thinking: "disabled" });
   });
 
+  it("sends reasoning_effort only when asked, and reports it as a setting", async () => {
+    const silent = vi.fn<Fetch>(async () => respond(COMPLETION));
+    const untouched = client(silent);
+    await untouched.complete(REQUEST, signal());
+    expect(JSON.parse(requestInit(silent).body as string)).not.toHaveProperty("reasoning_effort");
+    expect(untouched.settings).toBeUndefined();
+
+    // A vendor that reasons by default may refuse function tools on a chat
+    // completion unless the effort is "none"; the host says so, and the
+    // turn's record says the model ran that way.
+    const fetch = vi.fn<Fetch>(async () => respond(COMPLETION));
+    const configured = client(fetch, { reasoningEffort: "none", thinking: "disabled" });
+    await configured.complete(REQUEST, signal());
+    expect(JSON.parse(requestInit(fetch).body as string)).toMatchObject({
+      reasoning_effort: "none",
+      thinking: { type: "disabled" },
+    });
+    expect(configured.settings).toEqual({ thinking: "disabled", reasoning_effort: "none" });
+  });
+
   it("reads the reply, the served model, the finish reason, and the usage", async () => {
     const fetch = vi.fn<Fetch>(async () => respond(COMPLETION));
     const reply = await client(fetch).complete(REQUEST, signal());
