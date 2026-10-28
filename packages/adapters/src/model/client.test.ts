@@ -126,7 +126,7 @@ describe("the chat-completions client", () => {
         },
       ],
       tool_choice: "auto",
-      max_tokens: 4_096,
+      max_completion_tokens: 4_096,
       temperature: 0,
     });
   });
@@ -143,7 +143,7 @@ describe("the chat-completions client", () => {
     const body = JSON.parse(requestInit(fetch).body as string) as Record<string, unknown>;
     expect(body).not.toHaveProperty("tools");
     expect(body).not.toHaveProperty("tool_choice");
-    expect(body).toMatchObject({ max_tokens: 256, temperature: 0.5 });
+    expect(body).toMatchObject({ max_completion_tokens: 256, temperature: 0.5 });
   });
 
   it("sends the thinking field only when asked, and reports it as a setting", async () => {

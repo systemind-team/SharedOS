@@ -2066,7 +2066,7 @@ The efforts OpenAI's `reasoning_effort` field names, least to most.
 
 > **decodeChatCompletion**(`payload`): [`ModelReply`](#modelreply) \| `undefined`
 
-Defined in: [packages/adapters/src/model/client.ts:352](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L352)
+Defined in: [packages/adapters/src/model/client.ts:357](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L357)
 
 One chat-completions response body, read into what the driver needs of it.
 
@@ -2116,7 +2116,7 @@ Every harness here can also authenticate from a session it stored itself
 
 > **encodeModelMessage**(`message`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/model/client.ts:384](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L384)
+Defined in: [packages/adapters/src/model/client.ts:389](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L389)
 
 One message in the shape the provider's wire carries it.
 

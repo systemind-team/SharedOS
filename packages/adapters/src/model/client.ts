@@ -277,7 +277,12 @@ export class OpenAiCompatibleModelClient implements ModelClient {
             })),
             tool_choice: "auto",
           }),
-      max_tokens: this.#maxOutputTokens,
+      // The current OpenAI field for the ceiling; `max_tokens` is its legacy
+      // name. The two mean the same to OpenAI, OpenRouter and the gateways met
+      // so far, but a gateway may treat the legacy one as a visible-output ask
+      // and scale it up for a reasoning model before the vendor's own limit,
+      // so a ceiling sent as `max_tokens` is not the ceiling the model gets.
+      max_completion_tokens: this.#maxOutputTokens,
       temperature: this.#temperature,
       ...(this.#thinking === undefined ? {} : { thinking: { type: this.#thinking } }),
       ...(this.#reasoningEffort === undefined ? {} : { reasoning_effort: this.#reasoningEffort }),
