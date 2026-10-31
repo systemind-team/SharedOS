@@ -338,7 +338,10 @@ export function toCallToolResult(
         ? { structuredContent: result.output }
         : {};
     return {
-      content: [{ type: "text", text: renderText(result.output) }],
+      content: [
+        { type: "text", text: renderText(result.output) },
+        ...imageContent(result.metadata?.["sharedos/content"]),
+      ],
       ...structured,
       isError: false,
     };
@@ -355,6 +358,33 @@ export function toCallToolResult(
     isError: true,
     _meta: { "sharedos/status": result.status, "sharedos/code": result.error.code },
   };
+}
+
+/** Optional, host-neutral presentation hints. Output remains the structured
+ * result. Only bounded inline images are recognized: no URLs are fetched and
+ * arbitrary metadata cannot introduce executable or remote resources.
+ */
+function imageContent(value: unknown): JsonObject[] {
+  if (!Array.isArray(value) || value.length > 4) return [];
+  const images: JsonObject[] = [];
+  let bytes = 0;
+  for (const raw of value) {
+    if (!raw || typeof raw !== "object") continue;
+    const { type, data, mimeType } = raw as Record<string, unknown>;
+    if (
+      type !== "image" ||
+      typeof data !== "string" ||
+      !["image/png", "image/jpeg", "image/webp"].includes(String(mimeType)) ||
+      data.length === 0 ||
+      data.length % 4 !== 0 ||
+      !/^[A-Za-z0-9+/]*={0,2}$/.test(data)
+    )
+      continue;
+    bytes += data.length;
+    if (bytes > 4 * 1024 * 1024) return [];
+    images.push({ type: "image", data, mimeType: String(mimeType) });
+  }
+  return images;
 }
 
 function renderText(output: JsonValue): string {
