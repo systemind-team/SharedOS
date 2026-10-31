@@ -95,3 +95,12 @@ Full design: [MCP toolshare](https://github.com/systemind-team/SharedOS/blob/mai
 and [ADR 0014](https://github.com/systemind-team/SharedOS/blob/main/docs/adr/0014-mcp-toolshare.md).
 
 SharedOS is currently a `1.0.0` preview.
+
+## Image results
+
+A successful tool may include `metadata["sharedos/content"]` with inline MCP
+image blocks (`type: "image"`, `mimeType`, base64 `data`). The MCP adapter retains
+the ordinary JSON/text summary and appends valid JPEG, PNG or WebP images, bounded
+to four images and 4 MiB of encoded data per result. Other metadata, remote URLs,
+and images on failed or denied results are not forwarded as content. This is a
+presentation hint; it grants no authority and does not change tool discovery.
