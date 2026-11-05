@@ -362,6 +362,54 @@ describe("the Claude Code protocol", () => {
     ).toMatchObject({ type: "failed" });
   });
 
+  it("names why Claude stopped when it wrote no text for the failure", () => {
+    expect(
+      claudeCodeProtocol.interpret({
+        type: "result",
+        subtype: "error_max_turns",
+        is_error: true,
+        num_turns: 24,
+      }),
+    ).toEqual([
+      {
+        type: "failed",
+        error: {
+          code: "error_max_turns",
+          message: "Claude Code stopped at its turn limit after 24 model turns (error_max_turns).",
+          retryable: true,
+        },
+      },
+    ]);
+    expect(
+      claudeCodeProtocol.interpret({
+        type: "result",
+        subtype: "error_max_turns",
+        is_error: true,
+        num_turns: "many",
+      })[0],
+    ).toMatchObject({
+      type: "failed",
+      error: { message: "Claude Code stopped at its turn limit (error_max_turns)." },
+    });
+    expect(
+      claudeCodeProtocol.interpret({
+        type: "result",
+        subtype: "error_during_execution",
+        is_error: true,
+      })[0],
+    ).toMatchObject({
+      type: "failed",
+      error: {
+        code: "error_during_execution",
+        message: "The Claude Code harness reported a failure (error_during_execution).",
+      },
+    });
+    expect(claudeCodeProtocol.interpret({ type: "result", is_error: true })[0]).toMatchObject({
+      type: "failed",
+      error: { code: "harness_failed", message: "The Claude Code harness reported a failure." },
+    });
+  });
+
   it("marks a refused call so the harness knows it was refused", () => {
     const frame = claudeCodeProtocol.encodeToolResult({
       callId: "t1",

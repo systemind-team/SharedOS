@@ -42,6 +42,28 @@ const ResultSchema = z
   })
   .passthrough();
 
+/**
+ * What a failed result says when Claude wrote no text for it.
+ *
+ * Claude ends a run it stopped itself, at `--max-turns` for one, with a
+ * subtype and no `result`. The subtype is then the only reason there is, so
+ * it is named rather than dropped for a generic line. `num_turns` is read
+ * loosely: a count in a shape this does not expect leaves the count out, and
+ * never the frame.
+ */
+function failureMessage(subtype: string | undefined, turns: unknown): string {
+  if (subtype === "error_max_turns") {
+    const after =
+      typeof turns === "number" && Number.isInteger(turns) && turns > 0
+        ? ` after ${String(turns)} model turns`
+        : "";
+    return `Claude Code stopped at its turn limit${after} (error_max_turns).`;
+  }
+  return subtype === undefined
+    ? "The Claude Code harness reported a failure."
+    : `The Claude Code harness reported a failure (${subtype}).`;
+}
+
 function toolUseStep(block: unknown): HarnessStep | undefined {
   const toolUse = ToolUseBlockSchema.safeParse(block);
   return toolUse.success
@@ -79,7 +101,8 @@ export const claudeCodeProtocol: HarnessProtocol = {
             type: "failed",
             error: {
               code: result.data.subtype ?? "harness_failed",
-              message: result.data.result ?? "The Claude Code harness reported a failure.",
+              message:
+                result.data.result ?? failureMessage(result.data.subtype, result.data["num_turns"]),
               retryable: true,
             },
           },
