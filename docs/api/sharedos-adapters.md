@@ -1798,7 +1798,7 @@ Frames in the Anthropic content-block shape Claude Code speaks.
 
 > `const` **claudeCodeProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/claude-code/protocol.ts:57](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L57)
+Defined in: [packages/adapters/src/claude-code/protocol.ts:79](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L79)
 
 ---
 
