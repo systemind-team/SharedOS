@@ -39,6 +39,7 @@ import { codexMcpConfig, codexMcpServerSettings } from "@aicoo/sharedos-mcp";
 import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
 import {
+  CLAUDE_CODE_MCP_HARNESS,
   CODEX_MCP_HARNESS,
   createMcpHarnessRuntime,
   type McpHarnessRuntimeOptions,
@@ -966,6 +967,32 @@ describe("the Codex spec", () => {
     expect(codexMcpConfig(connection)).toContain('bearer_token = "secret-bridge-token"');
     expect(launch.args.some((arg) => arg.includes("secret-bridge-token"))).toBe(false);
     expect(launch.args.some((arg) => arg.includes("bearer_token"))).toBe(false);
+  });
+});
+
+describe("the Claude Code spec", () => {
+  it("sets no turn cap of its own, so the host's limits are the only ones", () => {
+    const { context, ...request } = executionRequest();
+    const launch = CLAUDE_CODE_MCP_HARNESS.launch({
+      prompt: "read both files",
+      connection: { url: "http://127.0.0.1:41234/mcp", name: "sharedos" },
+      workspace: "/tmp/sharedos-test",
+      configPaths: {},
+      request: {
+        ...request,
+        context: {
+          actor: context.actor,
+          owner: context.owner,
+          namespaceId: context.namespaceId,
+          purpose: context.purpose,
+          traceId: context.traceId,
+          now: context.now,
+          reach: { status: "computed", reach: [] },
+        },
+      },
+    });
+
+    expect(launch.args).not.toContain("--max-turns");
   });
 });
 
