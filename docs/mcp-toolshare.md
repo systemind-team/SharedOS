@@ -337,7 +337,9 @@ what secures the run is that every call is re-authorized by the kernel.
   probe that can edit files on the machine it is measuring is answering a
   different question. `--allowedTools mcp__sharedos` auto-approves the server:
   Claude separates prompting from authorization, and print mode has no human to
-  prompt.
+  prompt. No `--max-turns` is set: like every other spec's, a Claude turn ends
+  at the host's step and time limits, and a host that wants Claude's own cap
+  passes it through `args`.
 - **Codex.** `mcp_servers.sharedos.required=true` stops a run whose bridge
   failed to start rather than continuing with Codex's own tools, which would
   look like a harness that declined the catalogue.
