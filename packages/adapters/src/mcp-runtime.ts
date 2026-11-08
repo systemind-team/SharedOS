@@ -714,15 +714,19 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
   launch: ({ prompt, workspace, configPaths, connection }) => ({
     command: "claude",
     // `-p` with no prompt argument reads the prompt from stdin to EOF.
+    // `--allowedTools` and `--mcp-config` each take every value up to the
+    // next flag, so they come first and the list ends on `--verbose`, which
+    // takes none: a bare token a host appends through `args` is then never
+    // read as a tool name or a config file.
     args: [
       "-p",
+      "--allowedTools",
+      `mcp__${mcpServerName(connection)}`,
+      "--mcp-config",
+      configPaths[".mcp.json"] ?? join(workspace, ".mcp.json"),
       "--output-format",
       "stream-json",
       "--verbose",
-      "--mcp-config",
-      configPaths[".mcp.json"] ?? join(workspace, ".mcp.json"),
-      "--allowedTools",
-      `mcp__${mcpServerName(connection)}`,
     ],
     cwd: workspace,
     stdin: prompt,
@@ -834,11 +838,13 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
     command: process.env["DSH_COMMAND"] ?? "dsh",
     // Launcher flags first, then the profile's own arguments: the first token
     // dsh does not recognise starts the app's arguments, so `--json` goes
-    // after `--patch` and never before it. `-` as the only task
-    // argument has the headless profile read the job from stdin, which it
-    // does from dsh 0.1.6. It is passed rather than left out: with no task,
-    // dsh reads stdin only when stdin is not a terminal, and a launch should
-    // not depend on how it was started.
+    // after `--patch` and never before it. `-` as the only task argument has
+    // the headless profile read the job from stdin, which it does from dsh
+    // 0.1.6. It is passed rather than left out: with no task, dsh reads stdin
+    // only when stdin is not a terminal, and a launch should not depend on how
+    // it was started. A host's `args` land after `-`, so they are the headless
+    // app's too: its own options, such as `--permission-mode`, work there, and
+    // a launcher flag such as `--patch` or a second task argument is refused.
     args: [
       "--profile",
       process.env["DSH_PROFILE"] ?? "headless",

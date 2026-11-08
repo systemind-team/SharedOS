@@ -997,6 +997,20 @@ describe("what a spec leaves the harness", () => {
     expect(claude.args[allowed + 1]).toBe("mcp__sharedos");
     expect(claude.args).toContain("--verbose");
   });
+
+  it("ends Claude's command line on a flag that takes no value", () => {
+    // `--allowedTools` and `--mcp-config` take every value up to the next
+    // flag. Left last, a bare token a host appended would be read as one more
+    // allowed tool or config file.
+    const claude = launchOf(CLAUDE_CODE_MCP_HARNESS, connection);
+    expect(claude.args.at(-1)).toBe("--verbose");
+    expect(claude.args.indexOf("--allowedTools")).toBeLessThan(
+      claude.args.indexOf("--output-format"),
+    );
+    expect(claude.args.indexOf("--mcp-config")).toBeLessThan(
+      claude.args.indexOf("--output-format"),
+    );
+  });
 });
 
 describe("the Claude Code spec", () => {
@@ -1042,7 +1056,11 @@ describe("a launch's prompt", () => {
     // dsh's headless `-` read it when named.
     const claude = launchOf(CLAUDE_CODE_MCP_HARNESS, connection, PROMPT);
     expect(claude.args[0]).toBe("-p");
-    expect(claude.args[1]).toBe("--output-format");
+    expect(claude.args.filter((arg) => !arg.startsWith("-"))).toEqual([
+      "mcp__sharedos",
+      "/tmp/sharedos-test/.mcp.json",
+      "stream-json",
+    ]);
 
     const codex = launchOf(CODEX_MCP_HARNESS, connection, PROMPT);
     expect(codex.args.at(-1)).toBe("-");

@@ -79,7 +79,11 @@ each entry calls out what a host has to update.
   launch now writes the prompt to stdin and closes it: `claude -p` with no
   prompt argument, `codex exec ... -` and `dsh --profile headless ... -`.
   A host that appends `args` keeps doing so; Codex applies `-c` overrides
-  placed after `-`. Pi already took its prompt on stdin.
+  placed after `-`. Claude's line now ends on `--verbose`, after
+  `--allowedTools` and `--mcp-config`, which take every value up to the next
+  flag, so an appended token is never read as a tool name. dsh's ends on
+  `-`, so a host's `args` there must be headless app options. Pi already
+  took its prompt on stdin.
 
 - **Breaking: SharedOS sets no limits of its own.** Every turn and harness
   limit is now unset unless the host sets it, and an unset limit is no limit.

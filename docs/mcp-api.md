@@ -279,14 +279,21 @@ CLI there, and reads its stdout for the turn's outcome:
 
 | Harness     | Command line                                                                                       | Prompt                 |
 | ----------- | -------------------------------------------------------------------------------------------------- | ---------------------- |
-| Claude Code | `claude -p --output-format stream-json --verbose --mcp-config <file> --allowedTools mcp__sharedos` | stdin                  |
+| Claude Code | `claude -p --allowedTools mcp__sharedos --mcp-config <file> --output-format stream-json --verbose` | stdin                  |
 | Codex       | `codex exec --json --skip-git-repo-check -c ... -`                                                 | stdin                  |
 | DeepSeek    | `dsh --profile headless --patch <file> --json -`                                                   | stdin                  |
 | Pi          | `pi --mode rpc --no-session --no-builtin-tools`                                                    | stdin, as an RPC frame |
 
 The prompt always goes on stdin, so its length is not bounded by the 128 KiB
 one argument may hold and a prompt that starts with `-` is not read as an
-option. A host's `args` are appended after the spec's.
+option. A host's `args` are appended after the spec's. Claude's line ends on
+`--verbose`, which takes no value, so an appended token is never read as one
+more `--allowedTools` entry. dsh's ends on `-`, its task, so whatever a host
+appends there is read by the headless app: its own options, such as
+`--permission-mode <preset>`, `--approval-policy <policy>` or
+`--add-dir <path>`, work, and a launcher flag such as `--patch` or a second
+task argument fails the run. Codex applies `-c` overrides placed after its
+`-`.
 
 Apart from Pi's `--no-builtin-tools`, none of these restricts the harness's own
 tools or the other MCP servers it loads: SharedOS decides the calls that reach
