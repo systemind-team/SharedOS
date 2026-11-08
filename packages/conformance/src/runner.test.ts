@@ -141,7 +141,7 @@ const reworded = (kase: ConformanceCase): ConformanceCase => ({
 describe("a column's declared tool policy", () => {
   const policy = declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] });
 
-  it("is on every record the column produces, and on none from a column that declared nothing", async () => {
+  it("is on every record, with unknown for a column that declared nothing", async () => {
     const { evidence } = await runConformanceSuite({
       cases: [caseOf(BROKEN_CONTROL)],
       columns: [ADVERSARY_COLUMN, { ...ADVERSARY_COLUMN, id: "with-a-shell", toolPolicy: policy }],
@@ -151,7 +151,35 @@ describe("a column's declared tool policy", () => {
 
     expect(systemOf("with-a-shell")?.toolPolicy).toEqual(policy);
     expect(systemOf(ADVERSARY_COLUMN.id)).toBeDefined();
-    expect(systemOf(ADVERSARY_COLUMN.id)?.toolPolicy).toBeUndefined();
+    expect(systemOf(ADVERSARY_COLUMN.id)?.toolPolicy?.mode).toBe("unknown");
+    expect(systemOf("with-a-shell")?.toolPolicy?.mode).toBe("mixed");
+  });
+
+  it("propagates broker-only and external MCP declarations into execution records", async () => {
+    const policies = [
+      declareToolPolicy({
+        inventory: "complete",
+        harnessLocal: [],
+        externalDirect: [],
+        evidence: ["fixture://broker-only-launch"],
+      }),
+      declareToolPolicy({ externalDirect: ["github"] }),
+    ];
+    const { evidence } = await runConformanceSuite({
+      cases: [caseOf(BROKEN_CONTROL)],
+      columns: policies.map((toolPolicy, index) => ({
+        ...ADVERSARY_COLUMN,
+        id: `policy-${index}`,
+        toolPolicy,
+      })),
+    });
+    for (const [index, policy] of policies.entries()) {
+      const records = evidence
+        .filter((entry) => entry.columnId === `policy-${index}`)
+        .flatMap((entry) => entry.records);
+      expect(records.length).toBeGreaterThan(0);
+      for (const record of records) expect(record.system.toolPolicy).toEqual(policy);
+    }
   });
 
   it("is carried by the MCP column, which is the one that has a surface to declare", () => {

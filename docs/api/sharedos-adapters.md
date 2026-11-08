@@ -264,6 +264,16 @@ availability probes, and the MCP harness runtime are published from
 `@aicoo/sharedos-adapters/node`, because spawning a CLI, reading `PATH`, and
 opening a loopback server are host concerns rather than protocol ones.
 
+## Declared tool scope
+
+`createMcpHarnessRuntime(spec, { toolPolicy })` records a version 2 host
+inventory before launching the harness. The default is `unknown`; launch flags
+alone do not establish inventory completeness or process isolation. Local tools
+and independently connected MCP endpoints classify a run as `mixed`.
+`broker-only` requires a complete inventory with no outside tools and retained
+host evidence. Runtime metadata carries this declaration into execution-record
+assembly. See [ADR 0027](_media/0027-tool-policy-classification.md).
+
 ## Classes
 
 ### EvalHarnessDriver

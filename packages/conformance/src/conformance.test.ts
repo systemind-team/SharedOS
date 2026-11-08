@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ExecutionRequest, ExecutionResult, JsonObject } from "@aicoo/sharedos-contracts";
+import { declareToolPolicy } from "@aicoo/sharedos-mcp";
 import type { AuditEvent } from "@aicoo/sharedos-core";
 
 import { assembleExecutionRecord } from "./assemble.js";
@@ -157,6 +158,57 @@ const system: Omit<SystemIdentity, "runtime"> = {
 };
 
 describe("execution record assembly", () => {
+  it("records declared tool policy from runtime metadata, including a cancelled turn", () => {
+    const policies = [
+      declareToolPolicy(),
+      declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] }),
+      declareToolPolicy({ externalDirect: ["github"] }),
+      declareToolPolicy({
+        inventory: "complete",
+        harnessLocal: [],
+        externalDirect: [],
+        evidence: ["fixture://complete-inventory"],
+      }),
+    ];
+    const cancelled = { status: "cancelled", output: undefined } as const;
+    for (const toolPolicy of policies) {
+      const record = assembleExecutionRecord({
+        request: request(),
+        experiment,
+        system,
+        result: result({
+          ...cancelled,
+          metadata: { ...result().metadata, toolPolicy },
+        }),
+      });
+      expect(record.system.toolPolicy).toEqual(toolPolicy);
+    }
+    expect(
+      assembleExecutionRecord({ request: request(), result: result(), experiment, system }).system
+        .toolPolicy?.mode,
+    ).toBe("unknown");
+  });
+
+  it("rejects an invalid runtime declaration or a conflicting column claim", () => {
+    const reported = declareToolPolicy({ harnessLocal: ["shell"] });
+    const brokerOnly = declareToolPolicy({
+      inventory: "complete",
+      harnessLocal: [],
+      externalDirect: [],
+      evidence: ["fixture://config"],
+    });
+    const assemble = (toolPolicy: JsonObject, supplied = reported) =>
+      assembleExecutionRecord({
+        request: request(),
+        result: result({ metadata: { ...result().metadata, toolPolicy } }),
+        experiment,
+        system: { ...system, toolPolicy: supplied },
+      });
+    expect(() => assemble({ mode: "strict" })).toThrow("invalid tool policy");
+    expect(() => assemble(reported, brokerOnly)).toThrow("declarations disagree");
+    expect(assemble(reported).system.toolPolicy).toEqual(reported);
+  });
+
   it("carries what the runtime told the seat, and only when the runtime said so", () => {
     const hash = "ab".repeat(32);
     const assemble = (metadata: JsonObject) =>

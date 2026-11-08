@@ -440,6 +440,7 @@ async function runCell(
         sharedOsVersion: SHAREDOS_VERSION,
         adapterId: column.id,
         policyHash: hashes.policyHash,
+        // Assembly reconciles this declaration with the runtime; neither proves isolation.
         ...(column.toolPolicy === undefined ? {} : { toolPolicy: column.toolPolicy }),
       },
     });

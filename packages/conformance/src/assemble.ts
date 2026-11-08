@@ -4,8 +4,10 @@ import type {
   ExecutionResult,
   JsonObject,
   RuntimeManifest,
+  ToolPolicy,
 } from "@aicoo/sharedos-contracts";
-import { RuntimeManifestSchema, isJsonObject } from "@aicoo/sharedos-contracts";
+import { RuntimeManifestSchema, ToolPolicySchema, isJsonObject } from "@aicoo/sharedos-contracts";
+import { declareToolPolicy, parseToolPolicy } from "@aicoo/sharedos-mcp";
 import { type AuditEvent, isInfrastructureDenial } from "@aicoo/sharedos-core";
 import {
   ESCALATION_ASKED_ANNOTATION,
@@ -83,6 +85,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
       ...declaredModel(result),
       ...input.system,
       runtime: input.system.runtime ?? runtimeManifestOf(result),
+      toolPolicy: declaredToolPolicy(result, input.system.toolPolicy),
     },
     authority: {
       principal: request.context.authority,
@@ -473,4 +476,22 @@ function stringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string")
     : [];
+}
+
+/** Preserve runtime declarations; a column cannot silently relabel their scope. */
+function declaredToolPolicy(result: ExecutionResult, supplied?: ToolPolicy): ToolPolicy {
+  const raw = result.metadata?.["toolPolicy"];
+  const reported = ToolPolicySchema.safeParse(raw);
+  const policy = supplied === undefined ? undefined : parseToolPolicy(supplied);
+  if (raw !== undefined && !reported.success) {
+    throw new TypeError("runtime reported an invalid tool policy");
+  }
+  if (
+    reported.success &&
+    policy !== undefined &&
+    JSON.stringify(parseToolPolicy(reported.data)) !== JSON.stringify(policy)
+  ) {
+    throw new TypeError("column and runtime tool policy declarations disagree");
+  }
+  return policy ?? (reported.success ? reported.data : declareToolPolicy());
 }

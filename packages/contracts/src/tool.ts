@@ -237,38 +237,46 @@ export const SharedOSToolCatalogSchema = z
 export type SharedOSToolCatalog = z.infer<typeof SharedOSToolCatalogSchema>;
 
 /**
- * The declared tool surface of one experiment or runtime configuration.
+ * Version 2 of the declared tool surface (ADR 0027).
  *
- * `strict` asserts that every effect available to the harness went through
- * SharedOS. It is checked, not just declared: a strict policy that also lists
- * `externalDirect` entries is rejected here rather than producing a run whose
- * headline claim its own manifest contradicts.
- *
- * `harnessLocal` is still permitted under `strict`, because a harness with no
- * local tools at all cannot always be produced -- but the entries have to be
- * named, so a reader can see exactly which effects were outside the kernel.
+ * `broker-only` requires a complete, evidence-backed inventory with no local
+ * or independently connected tools. `mixed` names known paths outside SharedOS;
+ * `unknown` means no such paths are named but the inventory is incomplete.
+ * All local tools count, including reads and tools described as harmless.
+ * Evidence supports the host's declaration, never proves process isolation or
+ * that every actual effect was mediated. Broker receipts cover only broker calls.
  */
 export const ToolPolicySchema = z
   .object({
-    mode: z.enum(["strict", "hybrid"]),
-    managedMcp: z.array(IdentifierSchema).max(64),
+    version: z.literal("2"),
+    mode: z.enum(["broker-only", "mixed", "unknown"]),
+    inventory: z.enum(["complete", "unknown"]),
+    managedMcp: z.array(IdentifierSchema).min(1).max(64),
     harnessLocal: z.array(ToolNameSchema).max(256),
     externalDirect: z.array(IdentifierSchema).max(64),
+    /** References to launch configuration, tool inventories, or host review artifacts. */
+    evidence: z.array(z.string().trim().min(1).max(8_192)).max(64),
   })
   .strict()
   .superRefine((policy, context) => {
-    if (policy.mode === "strict" && policy.externalDirect.length > 0) {
+    const outsideBroker = policy.harnessLocal.length > 0 || policy.externalDirect.length > 0;
+    const expected = outsideBroker
+      ? "mixed"
+      : policy.inventory === "complete"
+        ? "broker-only"
+        : "unknown";
+    if (policy.mode !== expected) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "a strict tool policy cannot declare externally connected tools",
-        path: ["externalDirect"],
+        message: `tool policy mode must be ${expected} for the declared inventory`,
+        path: ["mode"],
       });
     }
-    if (policy.managedMcp.length === 0) {
+    if (policy.inventory === "complete" && policy.evidence.length === 0) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "a tool policy must name at least one managed SharedOS endpoint",
-        path: ["managedMcp"],
+        message: "a complete tool inventory must cite supporting evidence",
+        path: ["evidence"],
       });
     }
   });

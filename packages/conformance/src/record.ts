@@ -83,11 +83,10 @@ export const SystemIdentitySchema = z
      */
     promptHash: ContentHashSchema.optional(),
     /**
-     * The declared tool surface, so a result can be read for what it is.
-     *
-     * "The kernel refused every violation" means one thing when the managed
-     * catalogue was the only way to have an effect and almost nothing when the
-     * harness also had a shell.
+     * Versioned host declaration of the tool surface, never isolation proof.
+     * Assembly records unknown when neither the runtime nor the column declares
+     * an inventory. Absence in older records also means unknown. Broker receipts
+     * establish mediation only for the calls that reached SharedOS.
      */
     toolPolicy: ToolPolicySchema.optional(),
     metadata: JsonObjectSchema.optional(),

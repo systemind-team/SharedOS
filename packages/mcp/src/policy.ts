@@ -4,33 +4,47 @@ import { hashJson } from "@aicoo/sharedos-core";
 
 import { SHAREDOS_MCP_SERVER_NAME } from "./server.js";
 
-/**
- * What a run's tool surface actually was.
- *
- * A conformance result reads very differently depending on the answer. "The
- * kernel refused every violation" means one thing when the managed catalogue was
- * the only way to have an effect, and almost nothing when the harness also had a
- * shell. The policy is declared per run so a reader never has to infer which of
- * those they are looking at, and {@link parseToolPolicy} refuses the combination
- * that would let a run claim the first while being the second.
- */
+/** A host declaration of the tool surface, never proof of process isolation. */
 export interface DeclareToolPolicyOptions {
   readonly mode?: ToolPolicy["mode"];
+  /** Unknown unless the host explicitly attests a complete inventory with evidence. */
+  readonly inventory?: ToolPolicy["inventory"];
   /** SharedOS MCP endpoints. Defaults to the one this package serves. */
   readonly managedMcp?: readonly string[];
-  /** The harness's own tools, which SharedOS never sees. */
+  /** All local tools outside the broker, including shell, writes, and reads. */
   readonly harnessLocal?: readonly string[];
   /** MCP servers the harness was configured with independently. */
   readonly externalDirect?: readonly string[];
+  /** References supporting this declaration; these are not isolation attestations. */
+  readonly evidence?: readonly string[];
 }
 
 export function declareToolPolicy(options: DeclareToolPolicyOptions = {}): ToolPolicy {
+  const harnessLocal = [...(options.harnessLocal ?? [])];
   const externalDirect = [...(options.externalDirect ?? [])];
+  const inventory = options.inventory ?? "unknown";
+  if (
+    inventory === "complete" &&
+    (options.harnessLocal === undefined || options.externalDirect === undefined)
+  ) {
+    throw new TypeError(
+      "a complete tool inventory must explicitly list harnessLocal and externalDirect",
+    );
+  }
   return parseToolPolicy({
-    mode: options.mode ?? (externalDirect.length === 0 ? "strict" : "hybrid"),
+    version: "2",
+    mode:
+      options.mode ??
+      (harnessLocal.length > 0 || externalDirect.length > 0
+        ? "mixed"
+        : inventory === "complete"
+          ? "broker-only"
+          : "unknown"),
+    inventory,
     managedMcp: [...(options.managedMcp ?? [SHAREDOS_MCP_SERVER_NAME])],
-    harnessLocal: [...(options.harnessLocal ?? [])],
+    harnessLocal,
     externalDirect,
+    evidence: [...(options.evidence ?? [])],
   });
 }
 
@@ -42,14 +56,15 @@ export function parseToolPolicy(value: unknown): ToolPolicy {
     );
   }
   return Object.freeze({
-    mode: parsed.data.mode,
+    ...parsed.data,
     managedMcp: Object.freeze([...parsed.data.managedMcp]),
     harnessLocal: Object.freeze([...parsed.data.harnessLocal]),
     externalDirect: Object.freeze([...parsed.data.externalDirect]),
+    evidence: Object.freeze([...parsed.data.evidence]),
   }) as ToolPolicy;
 }
 
-/** A content identifier for the declared policy, for the run's `policyHash`. */
+/** A content identifier for the declared policy, including its evidence references. */
 export function toolPolicyHash(policy: ToolPolicy): Promise<string> {
   return hashJson(parseToolPolicy(policy));
 }

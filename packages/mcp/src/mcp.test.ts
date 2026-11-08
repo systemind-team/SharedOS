@@ -15,6 +15,7 @@ import {
   SharedOSToolCatalogSchema,
   ToolDefinitionSchema,
   ToolNameSchema,
+  ToolPolicySchema,
 } from "@aicoo/sharedos-contracts";
 import {
   SharedOSKernel,
@@ -45,6 +46,7 @@ import {
   resolveCanonicalName,
   toCallToolResult,
   verifyExecutionToken,
+  toolPolicyHash,
   type ExecutionTokenClaims,
   canonicalActor,
 } from "./index.js";
@@ -546,25 +548,83 @@ describe("the execution token", () => {
 });
 
 describe("the declared tool policy", () => {
-  it("refuses to call a run strict when an external server was also reachable", () => {
-    expect(() =>
-      parseToolPolicy({
-        mode: "strict",
-        managedMcp: ["sharedos"],
-        harnessLocal: [],
-        externalDirect: ["github"],
-      }),
-    ).toThrow("strict tool policy cannot declare externally connected tools");
+  const brokerOnly = () =>
+    declareToolPolicy({
+      inventory: "complete",
+      harnessLocal: [],
+      externalDirect: [],
+      evidence: ["host-review://fixture/broker-only-config"],
+    });
+
+  it.each(["shell", "apply_patch", "Write", "Read", "TodoWrite"])(
+    "classifies local %s outside the broker",
+    (tool) => {
+      expect(declareToolPolicy({ harnessLocal: [tool] })).toMatchObject({
+        version: "2",
+        mode: "mixed",
+        inventory: "unknown",
+        harnessLocal: [tool],
+      });
+      expect(ToolPolicySchema.safeParse({ ...brokerOnly(), harnessLocal: [tool] }).success).toBe(
+        false,
+      );
+    },
+  );
+
+  it("classifies independently connected MCP servers outside the broker", () => {
+    expect(declareToolPolicy({ externalDirect: ["github", "browser"] }).mode).toBe("mixed");
+    expect(() => parseToolPolicy({ ...brokerOnly(), externalDirect: ["github"] })).toThrow(
+      "must be mixed",
+    );
   });
 
-  it("names harness-local tools under strict rather than pretending there are none", () => {
-    const policy = declareToolPolicy({ harnessLocal: ["apply_patch"] });
+  it("does not label an omitted or partial inventory broker-only", () => {
+    expect(declareToolPolicy().mode).toBe("unknown");
+    expect(declareToolPolicy({ harnessLocal: [] }).mode).toBe("unknown");
+    expect(declareToolPolicy({ harnessLocal: [], externalDirect: [] }).mode).toBe("unknown");
+    expect(() => declareToolPolicy({ mode: "broker-only" })).toThrow("must be unknown");
+    expect(() => declareToolPolicy({ inventory: "complete" })).toThrow("explicitly list");
+    expect(() =>
+      declareToolPolicy({ inventory: "complete", harnessLocal: [], externalDirect: [] }),
+    ).toThrow("supporting evidence");
+  });
+
+  it("accepts a declared complete broker-only configuration and preserves its evidence", () => {
+    const policy = brokerOnly();
     expect(policy).toEqual({
-      mode: "strict",
+      version: "2",
+      mode: "broker-only",
+      inventory: "complete",
       managedMcp: ["sharedos"],
-      harnessLocal: ["apply_patch"],
+      harnessLocal: [],
       externalDirect: [],
+      evidence: ["host-review://fixture/broker-only-config"],
     });
+    expect(parseToolPolicy(JSON.parse(JSON.stringify(policy)))).toEqual(policy);
+    expect(Object.isFrozen(policy.evidence)).toBe(true);
+    expect(() => parseToolPolicy({ ...policy, evidence: [] })).toThrow("supporting evidence");
+    expect(() => parseToolPolicy({ ...policy, managedMcp: [] })).toThrow();
+  });
+
+  it("rejects legacy strict/hybrid declarations rather than upgrading their claims", () => {
+    for (const mode of ["strict", "hybrid"]) {
+      expect(
+        ToolPolicySchema.safeParse({
+          mode,
+          managedMcp: ["sharedos"],
+          harnessLocal: ["shell"],
+          externalDirect: [],
+        }).success,
+      ).toBe(false);
+    }
+  });
+
+  it("hashes the classification, inventory, and evidence as part of the declaration", async () => {
+    const policy = brokerOnly();
+    expect(await toolPolicyHash(policy)).not.toBe(await toolPolicyHash(declareToolPolicy()));
+    expect(await toolPolicyHash(policy)).not.toBe(
+      await toolPolicyHash({ ...policy, evidence: ["host-review://fixture/other"] }),
+    );
   });
 });
 
