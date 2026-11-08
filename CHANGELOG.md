@@ -139,6 +139,18 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **A Codex turn that reconnected and then completed is no longer failed.**
+  `codex exec --json` prints a top-level `{"type":"error","message":
+"Reconnecting... 2/5 ..."}` for each stream error it recovers from, and the
+  turn carries on. The protocol read it as a failure and the MCP runtime
+  keeps the first outcome it reads, so the turn was reported failed. The
+  CLI's `error` event now yields nothing; the turn ends on `turn.failed`,
+  which carries the error that ended it, on `turn.completed`, or on the
+  exit code. A Responses `response.failed` is now read where the protocol
+  puts its error, on `response.error`, as well as at the top level, and the
+  Responses stream's own `error` event, which carries `code`, still fails
+  the turn.
+
 - **A Claude Code run that stopped is read as failed on every version.**
   Before Claude Code 2.1.89 the `result` frame for `error_max_turns` and
   `error_during_execution` carried `is_error: false`, so the turn was read

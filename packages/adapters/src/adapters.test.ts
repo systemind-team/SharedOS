@@ -298,27 +298,74 @@ describe("the Codex protocol", () => {
     });
   });
 
-  it("keeps the failure text whichever shape Codex reports it in", () => {
-    // The Responses protocol nests the message under `error`; the CLI's JSON
-    // mode puts it at the top level. Reading only the nested form reported every
-    // live CLI failure as a generic one, which loses the only useful detail.
-    const nested = codexProtocol.interpret({
+  it("keeps the failure text whichever shape a Responses failure arrives in", () => {
+    // The Responses protocol puts the error on the failed response; the
+    // top-level form is read as well, as it was before.
+    const onResponse = codexProtocol.interpret({
+      type: "response.failed",
+      response: {
+        id: "resp_1",
+        status: "failed",
+        error: { code: "server_error", message: "The server had an error." },
+      },
+    });
+    const topLevel = codexProtocol.interpret({
       type: "response.failed",
       error: { code: "rate_limit", message: "slow down" },
     });
-    const flat = codexProtocol.interpret({
+    const streamError = codexProtocol.interpret({
       type: "error",
+      code: null,
       message: "unexpected status 401 Unauthorized",
+      param: null,
+      sequence_number: 3,
     });
 
-    expect(nested[0]).toMatchObject({
+    expect(onResponse).toEqual([
+      {
+        type: "failed",
+        error: { code: "server_error", message: "The server had an error.", retryable: true },
+      },
+    ]);
+    expect(topLevel[0]).toMatchObject({
       type: "failed",
       error: { code: "rate_limit", message: "slow down" },
     });
-    expect(flat[0]).toMatchObject({
+    expect(streamError[0]).toMatchObject({
       type: "failed",
-      error: { message: "unexpected status 401 Unauthorized" },
+      error: { code: "harness_failed", message: "unexpected status 401 Unauthorized" },
     });
+  });
+
+  it("reads the CLI's error event as a report, and the turn's end from what follows it", () => {
+    // `codex exec --json` prints an `error` event for each stream error it
+    // recovers from, and the turn goes on. Read as a failure, a turn that
+    // reconnected once and then completed was reported failed.
+    const reconnect: HarnessFrame = {
+      type: "error",
+      message:
+        "Reconnecting... 2/5 (stream disconnected before completion: error sending request for url (https://api.openai.com/v1/responses))",
+    };
+    expect(codexProtocol.interpret(reconnect)).toEqual([]);
+
+    const recovered = [cliTurn[0], cliTurn[1], reconnect, ...cliTurn.slice(2)] as HarnessFrame[];
+    expect(recovered.flatMap((frame) => codexProtocol.interpret(frame))).toEqual([
+      { type: "message", text: "Hi! What can I help you with?" },
+      { type: "complete" },
+    ]);
+
+    // The error that ended the turn is the one `turn.failed` carries.
+    const refused = "unexpected status 401 Unauthorized: Missing bearer or basic authentication";
+    const failedTurn: HarnessFrame[] = [
+      { type: "thread.started", thread_id: "t" },
+      { type: "turn.started" },
+      { type: "error", message: `Reconnecting... 1/5 (${refused})` },
+      { type: "error", message: refused },
+      { type: "turn.failed", error: { message: refused } },
+    ];
+    expect(failedTurn.flatMap((frame) => codexProtocol.interpret(frame))).toEqual([
+      { type: "failed", error: { code: "harness_failed", message: refused, retryable: true } },
+    ]);
   });
 });
 
