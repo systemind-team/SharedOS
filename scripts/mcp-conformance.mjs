@@ -260,6 +260,18 @@ if (only !== undefined) {
     process.exit(1);
   }
 }
+// A version names a build of an extension. Given without the extension's name it
+// would be dropped and the column stamped native, a record saying the opposite
+// of what the operator declared, so the run stops before anything is probed.
+for (const [id, entry] of Object.entries(hostConfig.harnesses ?? {})) {
+  if (entry?.mcpExtensionVersion !== undefined && entry?.mcpExtension === undefined) {
+    console.error(
+      `harnesses.${id} declares mcpExtensionVersion without mcpExtension. ` +
+        "Name the extension the column loads, or remove the version.",
+    );
+    process.exit(1);
+  }
+}
 const HARNESSES = DECLARED_HARNESSES.filter(
   (harness) => only === undefined || harness.spec.id === only,
 );
