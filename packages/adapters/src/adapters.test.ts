@@ -376,7 +376,7 @@ describe("the Claude Code protocol", () => {
         error: {
           code: "error_max_turns",
           message: "Claude Code stopped at its turn limit after 24 model turns (error_max_turns).",
-          retryable: true,
+          retryable: false,
         },
       },
     ]);
@@ -408,6 +408,122 @@ describe("the Claude Code protocol", () => {
       type: "failed",
       error: { code: "harness_failed", message: "The Claude Code harness reported a failure." },
     });
+  });
+
+  /** The fields every result frame carries, as `claude -p --output-format stream-json` prints them. */
+  const resultFrame = (fields: JsonObject): HarnessFrame => ({
+    type: "result",
+    duration_ms: 18_204,
+    duration_api_ms: 17_655,
+    num_turns: 3,
+    session_id: "7f1c2a9e-0000-4000-8000-000000000000",
+    total_cost_usd: 0.0412,
+    usage: { input_tokens: 2_310, output_tokens: 412 },
+    permission_denials: [],
+    uuid: "c0ffee00-0000-4000-8000-000000000000",
+    ...fields,
+  });
+
+  it("fails a run Claude stopped, even when the frame says is_error false", () => {
+    // Before Claude Code 2.1.89 the turn limit and an error during execution
+    // were reported with `is_error: false`, and no `result`: read on
+    // `is_error`, the failed turn completed with empty output.
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({ subtype: "error_max_turns", is_error: false, num_turns: 6 }),
+      ),
+    ).toEqual([
+      {
+        type: "failed",
+        error: {
+          code: "error_max_turns",
+          message: "Claude Code stopped at its turn limit after 6 model turns (error_max_turns).",
+          retryable: false,
+        },
+      },
+    ]);
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({ subtype: "error_during_execution", is_error: false }),
+      )[0],
+    ).toMatchObject({ type: "failed", error: { code: "error_during_execution" } });
+    // Whatever subtype a later version adds, only `success` completes.
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({ subtype: "error_max_budget_usd", is_error: true }),
+      )[0],
+    ).toMatchObject({ type: "failed", error: { code: "error_max_budget_usd", retryable: false } });
+  });
+
+  it("names what the frame's errors list says", () => {
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({
+          subtype: "error_during_execution",
+          is_error: true,
+          errors: ['MCP server "sharedos" disconnected', 42, "  "],
+        }),
+      ),
+    ).toEqual([
+      {
+        type: "failed",
+        error: {
+          code: "error_during_execution",
+          message:
+            'The Claude Code harness reported a failure (error_during_execution): MCP server "sharedos" disconnected',
+          retryable: false,
+        },
+      },
+    ]);
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({
+          subtype: "error_max_turns",
+          is_error: true,
+          num_turns: 24,
+          errors: ["Reached maximum number of turns (24)"],
+        }),
+      )[0],
+    ).toMatchObject({
+      error: {
+        message:
+          "Claude Code stopped at its turn limit after 24 model turns (error_max_turns): Reached maximum number of turns (24)",
+      },
+    });
+  });
+
+  it("fails an API error with its terminal reason as the code, retryable only when it passes", () => {
+    const apiError = (result: string) =>
+      claudeCodeProtocol.interpret(
+        resultFrame({ subtype: "success", is_error: true, result, terminal_reason: "api_error" }),
+      )[0];
+    const refused =
+      'API Error: 401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}';
+    const overloaded =
+      'API Error: 529 {"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}';
+
+    // The code was the subtype, so an API error was reported as a failure
+    // whose code is "success".
+    expect(apiError(refused)).toEqual({
+      type: "failed",
+      error: { code: "api_error", message: refused, retryable: false },
+    });
+    expect(apiError(overloaded)).toMatchObject({
+      error: { code: "api_error", message: overloaded, retryable: true },
+    });
+    expect(apiError("API Error: 429 rate limited")).toMatchObject({ error: { retryable: true } });
+    expect(apiError("API Error: Request timed out.")).toMatchObject({ error: { retryable: true } });
+    expect(apiError("API Error: Connection error.")).toMatchObject({ error: { retryable: true } });
+    expect(apiError("Credit balance is too low")).toMatchObject({ error: { retryable: false } });
+    expect(apiError("API Error: 400 prompt is too long")).toMatchObject({
+      error: { retryable: false },
+    });
+    // No terminal reason, no subtype: the generic code, never "success".
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({ subtype: "success", is_error: true, result: "API Error: 500 boom" }),
+      )[0],
+    ).toMatchObject({ error: { code: "harness_failed", retryable: true } });
   });
 
   it("marks a refused call so the harness knows it was refused", () => {
