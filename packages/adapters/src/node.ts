@@ -161,11 +161,17 @@ class ChildProcessChannel implements HarnessChannel {
  * The conformance suite calls this before opening a column, so a missing CLI is
  * reported as a column that was not exercised rather than as a failing one. An
  * absent harness is not evidence about SharedOS.
+ *
+ * `signal` is the caller's way to stop waiting. SharedOS sets no time limit on
+ * the version probe, so a caller that wants one aborts it: the probe's child is
+ * ended and this rejects with the signal's reason.
  */
 export async function probeHarness(
   requirements: HarnessRequirements,
   environment: Readonly<Record<string, string | undefined>> = process.env,
+  signal?: AbortSignal,
 ): Promise<HarnessAvailability> {
+  signal?.throwIfAborted();
   const executable = await findExecutable(requirements.executable, environment["PATH"]);
   if (executable === undefined) {
     return {
@@ -187,7 +193,7 @@ export async function probeHarness(
     };
   }
 
-  const reported = await reportedVersion(executable, requirements, environment);
+  const reported = await reportedVersion(executable, requirements, environment, signal);
 
   return {
     harness: requirements.harness,
@@ -214,7 +220,9 @@ export async function probeHarness(
  * something unrecognisable, or exits non-zero leaves the field absent and the
  * harness available: not knowing which build ran is worse evidence, never a
  * reason to refuse to run. SharedOS sets no time limit on the answer, so a CLI
- * that never answers holds the probe until it does. Both halves are kept: the
+ * that never answers holds the probe until it does, or until the caller's
+ * signal ends it. An abort is not a CLI failing to answer: the child is ended
+ * and the probe rejects with the signal's reason. Both halves are kept: the
  * parsed token because a table wants one, the line it came from because a token
  * nobody can check against the output is the same unverifiable claim in a new
  * place.
@@ -225,12 +233,14 @@ async function reportedVersion(
   executable: string,
   requirements: HarnessRequirements,
   environment: Readonly<Record<string, string | undefined>>,
+  signal: AbortSignal | undefined,
 ): Promise<{ readonly version?: string; readonly output?: string }> {
-  const streams = await new Promise<VersionProbeOutput | undefined>((resolve) => {
+  const streams = await new Promise<VersionProbeOutput | undefined>((resolve, reject) => {
     const child = spawnVersionProbe(
       executable,
       [...(requirements.versionArguments ?? ["--version"])],
       environment,
+      signal,
     );
     if (child === undefined) {
       resolve(undefined);
@@ -247,9 +257,18 @@ async function reportedVersion(
       stderr += chunk.toString("utf8");
     });
     child.on("error", () => {
+      // Node ends the child on abort and reports it here, as an error.
+      if (signal?.aborted === true) {
+        reject(signal.reason);
+        return;
+      }
       resolve(undefined);
     });
     child.on("close", (code) => {
+      if (signal?.aborted === true) {
+        reject(signal.reason);
+        return;
+      }
       resolve(code === 0 ? { stdout, stderr } : undefined);
     });
   });
@@ -305,11 +324,13 @@ function spawnVersionProbe(
   command: string,
   args: readonly string[],
   environment: Readonly<Record<string, string | undefined>>,
+  signal: AbortSignal | undefined,
 ) {
   try {
     return spawn(command, [...args], {
       env: { ...environment },
       stdio: ["ignore", "pipe", "pipe"],
+      ...(signal === undefined ? {} : { signal }),
     });
   } catch {
     // A missing or non-executable file arrives as an `error` event rather than a
@@ -321,26 +342,30 @@ function spawnVersionProbe(
 
 export function probeCodex(
   environment?: Readonly<Record<string, string | undefined>>,
+  signal?: AbortSignal,
 ): Promise<HarnessAvailability> {
-  return probeHarness(CODEX_REQUIREMENTS, environment);
+  return probeHarness(CODEX_REQUIREMENTS, environment, signal);
 }
 
 export function probeClaudeCode(
   environment?: Readonly<Record<string, string | undefined>>,
+  signal?: AbortSignal,
 ): Promise<HarnessAvailability> {
-  return probeHarness(CLAUDE_CODE_REQUIREMENTS, environment);
+  return probeHarness(CLAUDE_CODE_REQUIREMENTS, environment, signal);
 }
 
 export function probeDeepseek(
   environment?: Readonly<Record<string, string | undefined>>,
+  signal?: AbortSignal,
 ): Promise<HarnessAvailability> {
-  return probeHarness(DEEPSEEK_REQUIREMENTS, environment);
+  return probeHarness(DEEPSEEK_REQUIREMENTS, environment, signal);
 }
 
 export function probePi(
   environment?: Readonly<Record<string, string | undefined>>,
+  signal?: AbortSignal,
 ): Promise<HarnessAvailability> {
-  return probeHarness(PI_REQUIREMENTS, environment);
+  return probeHarness(PI_REQUIREMENTS, environment, signal);
 }
 
 async function findExecutable(name: string, path: string | undefined): Promise<string | undefined> {

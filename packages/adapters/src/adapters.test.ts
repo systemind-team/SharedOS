@@ -806,6 +806,38 @@ describe("harness availability", () => {
     expect(availability.detail).toMatchObject({ credential: "ANTHROPIC_API_KEY" });
   });
 
+  it("stops waiting for a version when the caller aborts", async () => {
+    // A CLI that never answers holds the probe for as long as it is silent:
+    // SharedOS sets no limit, so the caller's signal is how one is set.
+    const controller = new AbortController();
+    const reason = new Error("probe abandoned");
+    const startedAt = Date.now();
+    const probing = probeHarness(
+      {
+        ...CODEX_REQUIREMENTS,
+        executable: "node",
+        versionArguments: ["-e", "setTimeout(() => console.log('0.1.0'), 20000)"],
+      },
+      { PATH: process.env["PATH"] ?? "" },
+      controller.signal,
+    );
+    setTimeout(() => controller.abort(reason), 200);
+
+    await expect(probing).rejects.toBe(reason);
+    expect(Date.now() - startedAt).toBeLessThan(10_000);
+  });
+
+  it("does not start a probe whose signal is already aborted", async () => {
+    const reason = new Error("not wanted");
+    await expect(
+      probeHarness(
+        { ...CODEX_REQUIREMENTS, executable: "node" },
+        { PATH: process.env["PATH"] ?? "" },
+        AbortSignal.abort(reason),
+      ),
+    ).rejects.toBe(reason);
+  });
+
   it("requires a credential only when the harness cannot use a stored session", async () => {
     const strict = await probeHarness(
       { ...CODEX_REQUIREMENTS, executable: "node", credentialsOptional: false },

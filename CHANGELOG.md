@@ -10,6 +10,12 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **`probeHarness` takes an `AbortSignal`.** An optional third argument,
+  also on `probeCodex`, `probeClaudeCode`, `probeDeepseek` and `probePi`.
+  The version probe sets no time limit of its own, so a caller that wants
+  one aborts: the probe's child is ended and the call rejects with the
+  signal's reason. Without a signal nothing changes.
+
 - **`OpenAiCompatibleModelClient` takes a `reasoningEffort`.** Sent as
   OpenAI's `reasoning_effort` field, only when set, and recorded on each turn
   through `settings` beside `thinking`. A vendor may refuse function tools on
