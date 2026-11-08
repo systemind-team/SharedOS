@@ -382,6 +382,29 @@ re-authorized by the kernel.
   with Pi's own tools off, so what the model reaches is the extension's proxy
   tool and nothing else.
 
+### Versions
+
+SharedOS enforces no version floor on any CLI. It launches whatever is
+installed and records the version the CLI reports: `probeHarness` returns it
+with the line it was read from, and the conformance scripts write it beside
+each column. The floors below are what probes of each CLI found, recorded as
+information about where a launch starts to work as described, not as a check
+anything runs:
+
+| CLI            | From    | What                                                                  |
+| -------------- | ------- | --------------------------------------------------------------------- |
+| Codex          | 0.44    | The `codex exec --json` event shape the protocol reads                |
+| Codex          | 0.46    | `bearer_token_env_var`; an inline `bearer_token` is refused from here |
+| Codex          | 0.99    | `required` on an MCP server                                           |
+| Claude Code    | 2.1.221 | MCP servers connected before the first turn in `-p` mode              |
+| DeepSeek (dsh) | 0.1.6   | `-` reads the headless task from stdin, and `--json`                  |
+
+Where a CLI changed a shape the adapters read, both are read: a Claude Code
+`result` is a failure by its `subtype` on every version, though before 2.1.89
+`is_error` was `false` on a run Claude stopped, and dsh's headless `final`
+carries the run's last turn reason from 0.2.2, with the exit code deciding
+before it.
+
 ### Pi needs an extension, and which one is your choice
 
 Pi is the one harness here that ships **no MCP client**. Some extension is

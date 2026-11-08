@@ -270,6 +270,31 @@ and a token named by variable is on no command line and in no file.
 `CODEX_MCP_HARNESS` passes the same settings as `-c` overrides and sets the
 variable in the CLI's environment.
 
+### Launching the installed CLIs
+
+`createMcpHarnessRuntime` with `CLAUDE_CODE_MCP_HARNESS`, `CODEX_MCP_HARNESS`,
+`DEEPSEEK_MCP_HARNESS` or `PI_MCP_HARNESS` writes the file above into a scratch
+workspace (Codex takes the same settings as `-c` overrides instead), starts the
+CLI there, and reads its stdout for the turn's outcome:
+
+| Harness     | Command line                                                                                       | Prompt                 |
+| ----------- | -------------------------------------------------------------------------------------------------- | ---------------------- |
+| Claude Code | `claude -p --output-format stream-json --verbose --mcp-config <file> --allowedTools mcp__sharedos` | stdin                  |
+| Codex       | `codex exec --json --skip-git-repo-check -c ... -`                                                 | stdin                  |
+| DeepSeek    | `dsh --profile headless --patch <file> --json -`                                                   | stdin                  |
+| Pi          | `pi --mode rpc --no-session --no-builtin-tools`                                                    | stdin, as an RPC frame |
+
+The prompt always goes on stdin, so its length is not bounded by the 128 KiB
+one argument may hold and a prompt that starts with `-` is not read as an
+option. A host's `args` are appended after the spec's.
+
+Apart from Pi's `--no-builtin-tools`, none of these restricts the harness's own
+tools or the other MCP servers it loads: SharedOS decides the calls that reach
+it here, and nothing else. A host that wants a restriction appends it through
+`args`. A CLI's version is not checked;
+[MCP toolshare](mcp-toolshare.md#versions) records the versions each launch was
+found to need.
+
 ## Escalation over MCP
 
 A turn driven over MCP can end by asking a human to decide, the same as one
