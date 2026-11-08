@@ -266,10 +266,11 @@ The harness keeps its own loop and declares no step, so the envelope's
 `maxToolCalls` and `timeoutMs` are the limits when the host sets them; neither
 has a default. A call past the budget comes back `denied` /
 `tool_call_limit_exceeded` as a result the harness reads, and its message names
-the budget and says no later call this turn will run, except asking for a human
-where the turn offers `sharedos.escalate`. The budget counts calls to this
-server's tools and nothing else: the harness's own tools, which never reach
-SharedOS, are neither counted nor refused. `createMcpHarnessRuntime` tells the
+the budget and says no further call to these tools will run this turn, except
+asking for a human where the turn offers `sharedos.escalate`. The budget counts
+calls to this server's tools and nothing else: the harness's own tools, which
+never reach SharedOS, are neither counted nor refused, and the message speaks of
+"these tools" so it stays true for a harness that has them. `createMcpHarnessRuntime` tells the
 harness those two limits up front, in its initialize instructions, naming the
 budget as calls to the server's tools, and does not tell it a step budget,
 since none binds it.

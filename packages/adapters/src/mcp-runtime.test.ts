@@ -1176,7 +1176,7 @@ describe("what the harness is told at initialize", () => {
       status: "denied",
       code: "tool_call_limit_exceeded",
       message:
-        "This turn's budget of 1 tool call is used up. No further tool call will run this turn; finish with what you have.",
+        "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn; finish with what you have.",
     });
   }, 30_000);
 
@@ -1413,7 +1413,7 @@ describe("a harness connected over MCP toolshare, on a turn that drains", () => 
     expect((late?.["_meta"] as Record<string, unknown>)["sharedos/status"]).toBe("denied");
     expect(JSON.stringify(late)).toContain("turn_draining");
     expect(JSON.stringify(late)).toContain(
-      "The turn is ending at its deadline and takes no new tool calls; finish with what you have.",
+      "The turn is ending at its deadline and takes no new calls to these tools; finish with what you have.",
     );
     expect(transfers(trail)).toMatchObject([
       { outcome: "succeeded" },

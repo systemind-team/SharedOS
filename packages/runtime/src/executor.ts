@@ -518,8 +518,8 @@ export class SharedOSExecutor implements TurnExecutionPort {
             this.#clock(),
             TURN_DRAINING,
             auditOutage === undefined
-              ? `The turn is ending at its deadline and takes no new tool calls${stillOpen}; finish with what you have.`
-              : "The turn is ending and takes no new tool calls; finish with what you have.",
+              ? `The turn is ending at its deadline and takes no new calls to these tools${stillOpen}; finish with what you have.`
+              : "The turn is ending and takes no new calls to these tools; finish with what you have.",
           );
           emit("tool.completed", completedToolEventData(result, step));
           await this.#recordRefusedCall(executionContext, result);
@@ -558,7 +558,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
             "denied",
             this.#clock(),
             "tool_call_limit_exceeded",
-            `This turn's budget of ${counted(limits.maxToolCalls, "tool call")} is used up. No further tool call will run this turn${stillOpen}; finish with what you have.`,
+            `This turn's budget of ${counted(limits.maxToolCalls, "tool call")} is used up. No further call to these tools will run this turn${stillOpen}; finish with what you have.`,
           );
           emit("tool.completed", completedToolEventData(result, step));
           await this.#recordRefusedCall(executionContext, result);

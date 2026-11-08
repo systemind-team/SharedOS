@@ -488,7 +488,7 @@ describe("a turn that drains before its deadline", () => {
       error: {
         code: "turn_draining",
         message:
-          "The turn is ending at its deadline and takes no new tool calls; finish with what you have.",
+          "The turn is ending at its deadline and takes no new calls to these tools; finish with what you have.",
       },
     });
     await expect(result).resolves.toMatchObject({ status: "succeeded" });
@@ -519,7 +519,8 @@ describe("a turn that drains before its deadline", () => {
       status: "denied",
       error: {
         code: "turn_draining",
-        message: "The turn is ending and takes no new tool calls; finish with what you have.",
+        message:
+          "The turn is ending and takes no new calls to these tools; finish with what you have.",
       },
     });
     await expect(result).resolves.toMatchObject({

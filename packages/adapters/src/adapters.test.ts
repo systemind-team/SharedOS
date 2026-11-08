@@ -1596,7 +1596,7 @@ describe("the DeepSeek and Pi harnesses driven as SharedOS turns", () => {
       error: {
         code: "tool_call_limit_exceeded",
         message:
-          "This turn's budget of 1 tool call is used up. No further tool call will run this turn; finish with what you have.",
+          "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn; finish with what you have.",
       },
     });
   });

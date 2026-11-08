@@ -300,19 +300,25 @@ A refusal's `message` is what the model reads, so the three a limit causes say
 what follows as well as what happened. `N` is the limit, in the singular for
 one ("1 tool call", "1 step"), and `S` is the step the call named:
 
-| Code                       | Message                                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `tool_call_limit_exceeded` | This turn's budget of N tool calls is used up. No further tool call will run this turn; finish with what you have.             |
-| `step_limit_exceeded`      | This call named step S, past this turn's budget of N steps, and did not run; no call past that budget will run this turn.      |
-| `turn_draining`            | The turn is ending at its deadline and takes no new tool calls; finish with what you have.                                     |
-| `turn_draining`            | The turn is ending and takes no new tool calls; finish with what you have. This one is for a turn an audit outage is draining. |
+| Code                       | Message                                                                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `tool_call_limit_exceeded` | This turn's budget of N tool calls is used up. No further call to these tools will run this turn; finish with what you have.             |
+| `step_limit_exceeded`      | This call named step S, past this turn's budget of N steps, and did not run; no call past that budget will run this turn.                |
+| `turn_draining`            | The turn is ending at its deadline and takes no new calls to these tools; finish with what you have.                                     |
+| `turn_draining`            | The turn is ending and takes no new calls to these tools; finish with what you have. This one is for a turn an audit outage is draining. |
 
 Where the turn's catalogue offers `sharedos.escalate`, the call-budget refusal
-and the deadline one say "No further tool call will run this turn, except asking
-for a human with sharedos.escalate" and "takes no new tool calls, except asking
-for a human with sharedos.escalate". Asking for a human ends the turn without
-passing through the envelope's budgets, so it still works then. It is not named
-on an audit outage, where the ask could not be recorded.
+and the deadline one say "No further call to these tools will run this turn,
+except asking for a human with sharedos.escalate" and "takes no new calls to
+these tools, except asking for a human with sharedos.escalate". Asking for a
+human ends the turn without passing through the envelope's budgets, so it still
+works then. It is not named on an audit outage, where the ask could not be
+recorded.
+
+The messages speak of "these tools", the ones the turn was given, rather than
+of every tool call. A vendor CLI over MCP has tools of its own that never reach
+SharedOS, and those are neither counted nor refused; in the standard loop every
+tool the model has is one of these.
 
 Steps are numbered from 0, so step `S` is past a budget of `N` steps whenever
 `S` is `N` or more. Only a call that names a step past the budget is refused,

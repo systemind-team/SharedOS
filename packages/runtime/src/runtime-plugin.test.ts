@@ -383,7 +383,7 @@ describe("RuntimePlugin security envelope", () => {
         // The model reads this. It names the budget and says the next call
         // fares no better, so it has no reason to keep asking.
         secondMessage:
-          "This turn's budget of 1 tool call is used up. No further tool call will run this turn; finish with what you have.",
+          "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn; finish with what you have.",
         thirdCode: "tool_call_limit_exceeded",
       });
     }
@@ -469,14 +469,14 @@ describe("RuntimePlugin security envelope", () => {
       status: "succeeded",
       output: {
         message:
-          "This turn's budget of 1 tool call is used up. No further tool call will run this turn, except asking for a human with sharedos.escalate; finish with what you have.",
+          "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn, except asking for a human with sharedos.escalate; finish with what you have.",
       },
     });
     await expect(run(false)).resolves.toMatchObject({
       status: "succeeded",
       output: {
         message:
-          "This turn's budget of 1 tool call is used up. No further tool call will run this turn; finish with what you have.",
+          "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn; finish with what you have.",
       },
     });
   });
@@ -513,7 +513,7 @@ describe("RuntimePlugin security envelope", () => {
       output: {
         code: "turn_draining",
         message:
-          "The turn is ending at its deadline and takes no new tool calls, except asking for a human with sharedos.escalate; finish with what you have.",
+          "The turn is ending at its deadline and takes no new calls to these tools, except asking for a human with sharedos.escalate; finish with what you have.",
       },
     });
   });
