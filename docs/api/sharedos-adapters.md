@@ -35,6 +35,11 @@ const runtime = createStandardRuntime({
 const turns = new SharedOSExecutor(kernel, runtime);
 ```
 
+On Node the client waits as long as the provider takes. Node's built-in fetch
+gives up after 300 s without data, so the client calls through undici with
+those waits switched off, and only `requestTimeoutMs` or the turn's deadline
+ends a call. A `fetch` passed to the client is used as given.
+
 `createStandardRuntime` is the SharedOS loop; `StandardTurnDriver` is the
 SharedOS driver for it. The driver renders the catalogue into the model's
 tool-call shape, reads each reply back into a decision, and recognises the
@@ -360,7 +365,7 @@ session to close.
 
 ### ModelRequestError
 
-Defined in: [packages/adapters/src/model/client.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L107)
+Defined in: [packages/adapters/src/model/client.ts:109](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L109)
 
 A model call that did not produce an answer. Carries no response body.
 
@@ -374,7 +379,7 @@ A model call that did not produce an answer. Carries no response body.
 
 > **new ModelRequestError**(`message`, `status?`): [`ModelRequestError`](#modelrequesterror)
 
-Defined in: [packages/adapters/src/model/client.ts:110](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L110)
+Defined in: [packages/adapters/src/model/client.ts:112](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L112)
 
 ###### Parameters
 
@@ -399,7 +404,7 @@ Defined in: [packages/adapters/src/model/client.ts:110](https://github.com/syste
 | <a id="property-message"></a> `message`                 | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.message`         | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1077                                                          |
 | <a id="property-name"></a> `name`                       | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.name`            | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1076                                                          |
 | <a id="property-stack"></a> `stack?`                    | `public`   | `string`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Error.stack`           | node\_modules/.pnpm/typescript@5.9.3/node\_modules/typescript/lib/lib.es5.d.ts:1078                                                          |
-| <a id="property-status"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/adapters/src/model/client.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L108) |
+| <a id="property-status"></a> `status?`                  | `readonly` | `number`  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                 | -                       | [packages/adapters/src/model/client.ts:110](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L110) |
 | <a id="property-stacktracelimit"></a> `stackTraceLimit` | `static`   | `number`  | The `Error.stackTraceLimit` property specifies the number of stack frames collected by a stack trace (whether generated by `new Error().stack` or `Error.captureStackTrace(obj)`). The default value is `10` but may be set to any valid JavaScript number. Changes will affect any stack trace captured _after_ the value has been changed. If set to a non-number value, or set to a negative number, stack traces will not capture any frames. | `Error.stackTraceLimit` | node\_modules/.pnpm/@types+node@22.20.1/node\_modules/@types/node/globals.d.ts:68                                                            |
 
 #### Methods
@@ -498,7 +503,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### OpenAiCompatibleModelClient
 
-Defined in: [packages/adapters/src/model/client.ts:225](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L225)
+Defined in: [packages/adapters/src/model/client.ts:231](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L231)
 
 A chat-completions client for any provider speaking the OpenAI wire shape.
 
@@ -517,7 +522,7 @@ than a second client.
 
 > **new OpenAiCompatibleModelClient**(`options`): [`OpenAiCompatibleModelClient`](#openaicompatiblemodelclient)
 
-Defined in: [packages/adapters/src/model/client.ts:238](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L238)
+Defined in: [packages/adapters/src/model/client.ts:244](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L244)
 
 ###### Parameters
 
@@ -533,9 +538,9 @@ Defined in: [packages/adapters/src/model/client.ts:238](https://github.com/syste
 
 | Property                                   | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                                   |
 | ------------------------------------------ | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model"></a> `model`        | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:226](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L226) |
-| <a id="property-provider"></a> `provider`  | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:227](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L227) |
-| <a id="property-settings"></a> `settings?` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Settings this client sends that change what the model does, beyond naming it -- a reasoning mode, say. Recorded on every turn beside the model so two runs under one model name are not read as the same configuration when they were not. Absent when the client sends nothing the provider would not default to. | [packages/adapters/src/model/client.ts:228](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L228) |
+| <a id="property-model"></a> `model`        | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:232](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L232) |
+| <a id="property-provider"></a> `provider`  | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:233](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L233) |
+| <a id="property-settings"></a> `settings?` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Settings this client sends that change what the model does, beyond naming it -- a reasoning mode, say. Recorded on every turn beside the model so two runs under one model name are not read as the same configuration when they were not. Absent when the client sends nothing the provider would not default to. | [packages/adapters/src/model/client.ts:234](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L234) |
 
 #### Methods
 
@@ -543,7 +548,7 @@ Defined in: [packages/adapters/src/model/client.ts:238](https://github.com/syste
 
 > **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
 
-Defined in: [packages/adapters/src/model/client.ts:262](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L262)
+Defined in: [packages/adapters/src/model/client.ts:268](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L268)
 
 ###### Parameters
 
@@ -1245,7 +1250,7 @@ Defined in: [packages/adapters/src/vendors.ts:28](https://github.com/systemind-t
 
 ### ModelClient
 
-Defined in: [packages/adapters/src/model/client.ts:90](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L90)
+Defined in: [packages/adapters/src/model/client.ts:92](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L92)
 
 A model API in the SharedOS driver seat.
 
@@ -1259,9 +1264,9 @@ interface and no new enforcement path.
 
 | Property                                     | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                                   |
 | -------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-model-2"></a> `model`        | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:92](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L92)   |
-| <a id="property-provider-2"></a> `provider`  | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:94](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L94)   |
-| <a id="property-settings-1"></a> `settings?` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Settings this client sends that change what the model does, beyond naming it -- a reasoning mode, say. Recorded on every turn beside the model so two runs under one model name are not read as the same configuration when they were not. Absent when the client sends nothing the provider would not default to. | [packages/adapters/src/model/client.ts:102](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L102) |
+| <a id="property-model-2"></a> `model`        | `readonly` | `string`                                         | The model this client was configured to ask for.                                                                                                                                                                                                                                                                   | [packages/adapters/src/model/client.ts:94](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L94)   |
+| <a id="property-provider-2"></a> `provider`  | `readonly` | `string`                                         | The provider that serves it, recorded alongside the model on every turn.                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:96](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L96)   |
+| <a id="property-settings-1"></a> `settings?` | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Settings this client sends that change what the model does, beyond naming it -- a reasoning mode, say. Recorded on every turn beside the model so two runs under one model name are not read as the same configuration when they were not. Absent when the client sends nothing the provider would not default to. | [packages/adapters/src/model/client.ts:104](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L104) |
 
 #### Methods
 
@@ -1269,7 +1274,7 @@ interface and no new enforcement path.
 
 > **complete**(`request`, `signal`): `Promise`\<[`ModelReply`](#modelreply)>\>
 
-Defined in: [packages/adapters/src/model/client.ts:103](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L103)
+Defined in: [packages/adapters/src/model/client.ts:105](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L105)
 
 ###### Parameters
 
@@ -1286,20 +1291,20 @@ Defined in: [packages/adapters/src/model/client.ts:103](https://github.com/syste
 
 ### ModelCompletionRequest
 
-Defined in: [packages/adapters/src/model/client.ts:43](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L43)
+Defined in: [packages/adapters/src/model/client.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L45)
 
 #### Properties
 
 | Property                                  | Modifier   | Type                                       | Defined in                                                                                                                                 |
 | ----------------------------------------- | ---------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-messages"></a> `messages` | `readonly` | readonly [`ModelMessage`](#modelmessage)[] | [packages/adapters/src/model/client.ts:44](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L44) |
-| <a id="property-tools-1"></a> `tools`     | `readonly` | readonly [`ModelTool`](#modeltool)[]       | [packages/adapters/src/model/client.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L45) |
+| <a id="property-messages"></a> `messages` | `readonly` | readonly [`ModelMessage`](#modelmessage)[] | [packages/adapters/src/model/client.ts:46](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L46) |
+| <a id="property-tools-1"></a> `tools`     | `readonly` | readonly [`ModelTool`](#modeltool)[]       | [packages/adapters/src/model/client.ts:47](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L47) |
 
 ---
 
 ### ModelReply
 
-Defined in: [packages/adapters/src/model/client.ts:55](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L55)
+Defined in: [packages/adapters/src/model/client.ts:57](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L57)
 
 What the model answered with.
 
@@ -1307,17 +1312,17 @@ What the model answered with.
 
 | Property                                           | Modifier   | Type                                         | Description                                                                                                                                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                                 |
 | -------------------------------------------------- | ---------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-finishreason"></a> `finishReason?` | `readonly` | `string`                                     | Why generation stopped, in the provider's own vocabulary. `stop` and `tool_calls` are the model ending its reply; `length` is the provider ending it at the output-token ceiling. Carried because the two are different facts about the same reply: a completion that was cut off mid-way looks, without this, exactly like a completion the model chose to end, and a record whose purpose is honest attribution has to tell them apart. | [packages/adapters/src/model/client.ts:67](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L67) |
-| <a id="property-model-3"></a> `model?`             | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one.                                                                                        | [packages/adapters/src/model/client.ts:78](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L78) |
-| <a id="property-text"></a> `text`                  | `readonly` | `string`                                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:56](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L56) |
-| <a id="property-toolcalls"></a> `toolCalls`        | `readonly` | readonly [`ModelToolCall`](#modeltoolcall)[] | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:57](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L57) |
-| <a id="property-usage"></a> `usage?`               | `readonly` | [`ModelUsage`](#modelusage)                  | Absent when the provider reported no usage; never estimated.                                                                                                                                                                                                                                                                                                                                                                              | [packages/adapters/src/model/client.ts:69](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L69) |
+| <a id="property-finishreason"></a> `finishReason?` | `readonly` | `string`                                     | Why generation stopped, in the provider's own vocabulary. `stop` and `tool_calls` are the model ending its reply; `length` is the provider ending it at the output-token ceiling. Carried because the two are different facts about the same reply: a completion that was cut off mid-way looks, without this, exactly like a completion the model chose to end, and a record whose purpose is honest attribution has to tell them apart. | [packages/adapters/src/model/client.ts:69](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L69) |
+| <a id="property-model-3"></a> `model?`             | `readonly` | `string`                                     | The model the provider says actually answered. Recorded separately from the one that was asked for because they differ: DeepSeek maps an unrecognised name onto a default rather than rejecting it, so a run configured for one model can be served by another. The record should say what answered, which is the weaker claim and the honest one.                                                                                        | [packages/adapters/src/model/client.ts:80](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L80) |
+| <a id="property-text"></a> `text`                  | `readonly` | `string`                                     | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:58](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L58) |
+| <a id="property-toolcalls"></a> `toolCalls`        | `readonly` | readonly [`ModelToolCall`](#modeltoolcall)[] | -                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/model/client.ts:59](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L59) |
+| <a id="property-usage"></a> `usage?`               | `readonly` | [`ModelUsage`](#modelusage)                  | Absent when the provider reported no usage; never estimated.                                                                                                                                                                                                                                                                                                                                                                              | [packages/adapters/src/model/client.ts:71](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L71) |
 
 ---
 
 ### ModelTool
 
-Defined in: [packages/adapters/src/model/client.ts:20](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L20)
+Defined in: [packages/adapters/src/model/client.ts:22](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L22)
 
 A tool offered to the model, already rendered into the provider's alphabet.
 
@@ -1325,15 +1330,15 @@ A tool offered to the model, already rendered into the provider's alphabet.
 
 | Property                                        | Modifier   | Type                                             | Defined in                                                                                                                                 |
 | ----------------------------------------------- | ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-description"></a> `description` | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:22](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L22) |
-| <a id="property-name-1"></a> `name`             | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:21](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L21) |
-| <a id="property-parameters"></a> `parameters`   | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/adapters/src/model/client.ts:23](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L23) |
+| <a id="property-description"></a> `description` | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:24](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L24) |
+| <a id="property-name-1"></a> `name`             | `readonly` | `string`                                         | [packages/adapters/src/model/client.ts:23](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L23) |
+| <a id="property-parameters"></a> `parameters`   | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/adapters/src/model/client.ts:25](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L25) |
 
 ---
 
 ### ModelToolCall
 
-Defined in: [packages/adapters/src/model/client.ts:13](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L13)
+Defined in: [packages/adapters/src/model/client.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L15)
 
 One tool call a model asked for, exactly as it came off the wire.
 
@@ -1346,9 +1351,9 @@ an unrecognised name means is a policy question that belongs to the driver.
 
 | Property                                    | Modifier   | Type     | Defined in                                                                                                                                 |
 | ------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-arguments"></a> `arguments` | `readonly` | `string` | [packages/adapters/src/model/client.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L16) |
-| <a id="property-id-3"></a> `id`             | `readonly` | `string` | [packages/adapters/src/model/client.ts:14](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L14) |
-| <a id="property-name-2"></a> `name`         | `readonly` | `string` | [packages/adapters/src/model/client.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L15) |
+| <a id="property-arguments"></a> `arguments` | `readonly` | `string` | [packages/adapters/src/model/client.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L18) |
+| <a id="property-id-3"></a> `id`             | `readonly` | `string` | [packages/adapters/src/model/client.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L16) |
+| <a id="property-name-2"></a> `name`         | `readonly` | `string` | [packages/adapters/src/model/client.ts:17](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L17) |
 
 ---
 
@@ -1373,7 +1378,7 @@ provider, so a transcript exercises the same code path a live model does.
 
 ### ModelUsage
 
-Defined in: [packages/adapters/src/model/client.ts:49](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L49)
+Defined in: [packages/adapters/src/model/client.ts:51](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L51)
 
 What a provider billed for one reply, when it said.
 
@@ -1381,29 +1386,29 @@ What a provider billed for one reply, when it said.
 
 | Property                                           | Modifier   | Type     | Defined in                                                                                                                                 |
 | -------------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-inputtokens"></a> `inputTokens?`   | `readonly` | `number` | [packages/adapters/src/model/client.ts:50](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L50) |
-| <a id="property-outputtokens"></a> `outputTokens?` | `readonly` | `number` | [packages/adapters/src/model/client.ts:51](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L51) |
+| <a id="property-inputtokens"></a> `inputTokens?`   | `readonly` | `number` | [packages/adapters/src/model/client.ts:52](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L52) |
+| <a id="property-outputtokens"></a> `outputTokens?` | `readonly` | `number` | [packages/adapters/src/model/client.ts:53](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L53) |
 
 ---
 
 ### OpenAiCompatibleModelClientOptions
 
-Defined in: [packages/adapters/src/model/client.ts:161](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L161)
+Defined in: [packages/adapters/src/model/client.ts:163](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L163)
 
 #### Properties
 
 | Property                                                   | Modifier   | Type                                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                                                   |
 | ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-apikey"></a> `apiKey`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:162](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L162) |
-| <a id="property-baseurl"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The chat-completions root, without a trailing slash.                                                                                                                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:167](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L167) |
-| <a id="property-fetch"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | Injected for tests, which must never reach a network.                                                                                                                                                                                                                                                                                                                                                                                       | [packages/adapters/src/model/client.ts:203](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L203) |
-| <a id="property-maxoutputtokens"></a> `maxOutputTokens?`   | `readonly` | `number`                                                                                       | The ceiling on one reply, sent as `max_completion_tokens`. Unset unless the host sets it; unset sends no ceiling, and the provider's own applies.                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:172](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L172) |
-| <a id="property-model-4"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:163](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L163) |
-| <a id="property-provider-3"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/client.ts:165](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L165) |
-| <a id="property-reasoningeffort"></a> `reasoningEffort?`   | `readonly` | `"none"` \| `"minimal"` \| `"low"` \| `"medium"` \| `"high"` \| `"xhigh"`                      | How hard the model reasons before it answers, sent as OpenAI's `reasoning_effort` request field. Opt-in like `thinking`: nothing is sent until a host asks, since a provider that does not know the field rejects the request. A host asks for `"none"` where a vendor refuses function tools on a chat completion that reasons by default. When set it is reported through [ModelClient.settings](#property-settings-1) beside `thinking`. | [packages/adapters/src/model/client.ts:201](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L201) |
-| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget. Unset unless the host sets it, and unset is no limit.                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/client.ts:184](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L184) |
-| <a id="property-temperature"></a> `temperature?`           | `readonly` | `number`                                                                                       | Left at zero by default, which reduces variation between runs but does not remove it. This column is not deterministic and must not be described as if it were: a temperature of zero is not a seed, and the same prompt can still produce a different call sequence on a different day.                                                                                                                                                    | [packages/adapters/src/model/client.ts:179](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L179) |
-| <a id="property-thinking"></a> `thinking?`                 | `readonly` | `"enabled"` \| `"disabled"`                                                                    | Whether the model reasons before it answers, sent as DeepSeek's `thinking` request field. Opt-in: the field is not part of the OpenAI wire shape, and a provider that does not know it rejects the request, so nothing is sent until a host asks. When set it is reported through [ModelClient.settings](#property-settings-1) so the turn's record says which mode the model ran in.                                                       | [packages/adapters/src/model/client.ts:192](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L192) |
+| <a id="property-apikey"></a> `apiKey`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:164](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L164) |
+| <a id="property-baseurl"></a> `baseUrl`                    | `readonly` | `string`                                                                                       | The chat-completions root, without a trailing slash.                                                                                                                                                                                                                                                                                                                                                                                        | [packages/adapters/src/model/client.ts:169](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L169) |
+| <a id="property-fetch"></a> `fetch?`                       | `readonly` | \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \} | The fetch to call the provider with. Unset, a call on Node has no wait limit of its own (see `modelFetch`); tests inject one so they never reach a network.                                                                                                                                                                                                                                                                                 | [packages/adapters/src/model/client.ts:209](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L209) |
+| <a id="property-maxoutputtokens"></a> `maxOutputTokens?`   | `readonly` | `number`                                                                                       | The ceiling on one reply, sent as `max_completion_tokens`. Unset unless the host sets it; unset sends no ceiling, and the provider's own applies.                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:174](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L174) |
+| <a id="property-model-4"></a> `model`                      | `readonly` | `string`                                                                                       | -                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/model/client.ts:165](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L165) |
+| <a id="property-provider-3"></a> `provider`                | `readonly` | `string`                                                                                       | Names the provider on every record this client's turns produce.                                                                                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/client.ts:167](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L167) |
+| <a id="property-reasoningeffort"></a> `reasoningEffort?`   | `readonly` | `"high"` \| `"low"` \| `"none"` \| `"minimal"` \| `"medium"` \| `"xhigh"`                      | How hard the model reasons before it answers, sent as OpenAI's `reasoning_effort` request field. Opt-in like `thinking`: nothing is sent until a host asks, since a provider that does not know the field rejects the request. A host asks for `"none"` where a vendor refuses function tools on a chat completion that reasons by default. When set it is reported through [ModelClient.settings](#property-settings-1) beside `thinking`. | [packages/adapters/src/model/client.ts:203](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L203) |
+| <a id="property-requesttimeoutms"></a> `requestTimeoutMs?` | `readonly` | `number`                                                                                       | How long one model call may take, independently of the turn's own budget. Unset unless the host sets it, and unset is no limit.                                                                                                                                                                                                                                                                                                             | [packages/adapters/src/model/client.ts:186](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L186) |
+| <a id="property-temperature"></a> `temperature?`           | `readonly` | `number`                                                                                       | Left at zero by default, which reduces variation between runs but does not remove it. This column is not deterministic and must not be described as if it were: a temperature of zero is not a seed, and the same prompt can still produce a different call sequence on a different day.                                                                                                                                                    | [packages/adapters/src/model/client.ts:181](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L181) |
+| <a id="property-thinking"></a> `thinking?`                 | `readonly` | `"enabled"` \| `"disabled"`                                                                    | Whether the model reasons before it answers, sent as DeepSeek's `thinking` request field. Opt-in: the field is not part of the OpenAI wire shape, and a provider that does not know it rejects the request, so nothing is sent until a host asks. When set it is reported through [ModelClient.settings](#property-settings-1) so the turn's record says which mode the model ran in.                                                       | [packages/adapters/src/model/client.ts:194](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L194) |
 
 ---
 
@@ -1526,7 +1531,7 @@ whose terminal frame carries no text still produces a turn output.
 
 > **ModelMessage** = \{ `content`: `string`; `role`: `"system"` \| `"user"`; \} \| \{ `content`: `string`; `role`: `"assistant"`; `toolCalls`: readonly [`ModelToolCall`](#modeltoolcall)[]; \} \| \{ `content`: `string`; `role`: `"tool"`; `toolCallId`: `string`; \}
 
-Defined in: [packages/adapters/src/model/client.ts:34](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L34)
+Defined in: [packages/adapters/src/model/client.ts:36](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L36)
 
 One turn of conversation.
 
@@ -1579,7 +1584,7 @@ The refusal the model is shown for a call made with unreadable arguments.
 
 > **ReasoningEffort** = _typeof_ [`REASONING_EFFORTS`](#reasoning_efforts)\[`number`\]
 
-Defined in: [packages/adapters/src/model/client.ts:159](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L159)
+Defined in: [packages/adapters/src/model/client.ts:161](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L161)
 
 ---
 
@@ -2057,7 +2062,7 @@ Defined in: [packages/adapters/src/pi/protocol.ts:95](https://github.com/systemi
 
 > `const` **REASONING\_EFFORTS**: readonly \[`"none"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`\]
 
-Defined in: [packages/adapters/src/model/client.ts:158](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L158)
+Defined in: [packages/adapters/src/model/client.ts:160](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L160)
 
 The efforts OpenAI's `reasoning_effort` field names, least to most.
 
@@ -2067,7 +2072,7 @@ The efforts OpenAI's `reasoning_effort` field names, least to most.
 
 > **decodeChatCompletion**(`payload`): [`ModelReply`](#modelreply) \| `undefined`
 
-Defined in: [packages/adapters/src/model/client.ts:361](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L361)
+Defined in: [packages/adapters/src/model/client.ts:368](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L368)
 
 One chat-completions response body, read into what the driver needs of it.
 
@@ -2117,7 +2122,7 @@ Every harness here can also authenticate from a session it stored itself
 
 > **encodeModelMessage**(`message`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/model/client.ts:393](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L393)
+Defined in: [packages/adapters/src/model/client.ts:400](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/client.ts#L400)
 
 One message in the shape the provider's wire carries it.
 

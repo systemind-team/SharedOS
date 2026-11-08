@@ -2,6 +2,8 @@ import type { JsonObject } from "@aicoo/sharedos-contracts";
 
 import { z } from "zod";
 
+import { modelFetch } from "./fetch.js";
+
 /**
  * One tool call a model asked for, exactly as it came off the wire.
  *
@@ -199,7 +201,11 @@ export interface OpenAiCompatibleModelClientOptions {
    * reported through {@link ModelClient.settings} beside `thinking`.
    */
   readonly reasoningEffort?: ReasoningEffort;
-  /** Injected for tests, which must never reach a network. */
+  /**
+   * The fetch to call the provider with. Unset, a call on Node has no wait
+   * limit of its own (see `modelFetch`); tests inject one so they never reach
+   * a network.
+   */
   readonly fetch?: typeof globalThis.fetch;
 }
 
@@ -233,7 +239,7 @@ export class OpenAiCompatibleModelClient implements ModelClient {
   readonly #maxOutputTokens: number | undefined;
   readonly #temperature: number;
   readonly #requestTimeoutMs: number | undefined;
-  readonly #fetch: typeof globalThis.fetch;
+  readonly #fetch: typeof globalThis.fetch | undefined;
 
   constructor(options: OpenAiCompatibleModelClientOptions) {
     if (options.apiKey.trim() === "") {
@@ -246,7 +252,7 @@ export class OpenAiCompatibleModelClient implements ModelClient {
     this.#maxOutputTokens = options.maxOutputTokens;
     this.#temperature = options.temperature ?? 0;
     this.#requestTimeoutMs = options.requestTimeoutMs;
-    this.#fetch = options.fetch ?? globalThis.fetch.bind(globalThis);
+    this.#fetch = options.fetch;
     const settings: JsonObject = {};
     if (options.thinking !== undefined) {
       this.#thinking = options.thinking;
@@ -320,7 +326,8 @@ export class OpenAiCompatibleModelClient implements ModelClient {
       this.#requestTimeoutMs === undefined
         ? signal
         : AbortSignal.any([signal, AbortSignal.timeout(this.#requestTimeoutMs)]);
-    const response = await this.#fetch(`${this.#baseUrl}/chat/completions`, {
+    const fetch = this.#fetch ?? (await modelFetch());
+    const response = await fetch(`${this.#baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

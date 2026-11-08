@@ -49,6 +49,11 @@ each entry calls out what a host has to update.
     default and, unset, sends no `max_completion_tokens`, so the provider's own
     ceiling applies. `requestTimeoutMs` (was 120 s) has no default. A failed
     call worth retrying is now retried ten times, 1.5 s apart (was once).
+    On Node, a model that thinks for more than 300 s before or while it
+    answers is no longer cut off: Node's built-in fetch gives up after 300 s
+    without data, so with no `fetch` passed the client now calls through
+    undici with those waits switched off. `@aicoo/sharedos-adapters` now
+    depends on `undici` 8, which uses HTTP/2 where the provider offers it.
   - `StandardTurnDriver`'s `maxMalformedCalls` (was 8), `EvalHarnessDriver`'s
     `maxIgnoredFrames` (was 512) and an MCP harness launch's `idleTimeoutMs`
     (was 120 s) have no default. The harness `--version` probe no longer gives

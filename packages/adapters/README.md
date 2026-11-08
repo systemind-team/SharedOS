@@ -23,6 +23,11 @@ const runtime = createStandardRuntime({
 const turns = new SharedOSExecutor(kernel, runtime);
 ```
 
+On Node the client waits as long as the provider takes. Node's built-in fetch
+gives up after 300 s without data, so the client calls through undici with
+those waits switched off, and only `requestTimeoutMs` or the turn's deadline
+ends a call. A `fetch` passed to the client is used as given.
+
 `createStandardRuntime` is the SharedOS loop; `StandardTurnDriver` is the
 SharedOS driver for it. The driver renders the catalogue into the model's
 tool-call shape, reads each reply back into a decision, and recognises the
