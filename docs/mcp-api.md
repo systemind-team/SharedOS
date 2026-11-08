@@ -265,10 +265,15 @@ bearer_token_env_var = "SHAREDOS_MCP_TOKEN"
 
 Start Codex with `SHAREDOS_MCP_TOKEN` set to the token; the name is exported
 as `SHAREDOS_MCP_TOKEN_VARIABLE`. Codex refuses an inline `bearer_token` from
-0.46 ("bearer_token is not supported for streamable_http") and does not start,
-and a token named by variable is on no command line and in no file.
-`CODEX_MCP_HARNESS` passes the same settings as `-c` overrides and sets the
-variable in the CLI's environment.
+0.46 ("bearer_token is not supported for streamable_http") and does not start.
+A token named by variable is on no command line and in no file, but it is in
+Codex's environment, and Codex's default `shell_environment_policy` passes that
+environment to every shell command the model runs. The token is visible to the
+harness's own commands, as the other harnesses' tokens are in the workspace
+files they read. That is what a token on this path is: it identifies the turn's
+bridge session and carries no authority, and the bridge re-authorizes every
+call. `CODEX_MCP_HARNESS` passes the same settings as `-c` overrides and sets
+the variable in the CLI's environment.
 
 ### Launching the installed CLIs
 

@@ -72,7 +72,10 @@ export const SHAREDOS_MCP_TOKEN_VARIABLE = "SHAREDOS_MCP_TOKEN";
  * carries a token the entry names {@link SHAREDOS_MCP_TOKEN_VARIABLE} as
  * `bearer_token_env_var`, and whoever starts Codex sets that variable to the
  * token. The token itself is in neither form, so it is on no command line and
- * in no file.
+ * in no file. It is in Codex's environment, which Codex passes to the shell
+ * commands its model runs, so the harness's own commands can read it, as
+ * they can the other harnesses' configuration files. It identifies the
+ * bridge session and grants nothing; the bridge re-authorizes every call.
  *
  * `required = true` is deliberate. A Codex run whose SharedOS server failed to
  * start should not quietly continue with only its own tools -- that run would
