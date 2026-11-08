@@ -1288,7 +1288,7 @@ unverified request body.
 
 > **new SharedOSKernel**(`options`): [`SharedOSKernel`](#sharedoskernel)
 
-Defined in: [packages/core/src/kernel.ts:369](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L369)
+Defined in: [packages/core/src/kernel.ts:371](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L371)
 
 ###### Parameters
 
@@ -1306,7 +1306,7 @@ Defined in: [packages/core/src/kernel.ts:369](https://github.com/systemind-team/
 
 > **admitTurn**(`context`, `agent`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:503](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L503)
+Defined in: [packages/core/src/kernel.ts:513](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L513)
 
 Consume permission to invoke exactly one target agent turn.
 
@@ -1335,7 +1335,7 @@ Consume permission to invoke exactly one target agent turn.
 
 > **authorize**(`context`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:487](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L487)
+Defined in: [packages/core/src/kernel.ts:497](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L497)
 
 ###### Parameters
 
@@ -1367,7 +1367,7 @@ Defined in: [packages/core/src/kernel.ts:487](https://github.com/systemind-team/
 
 > **invokeResource**(`context`, `request`, `options?`): `Promise`\<\{ `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"denied"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `operationId`: `string`; `status`: `"failed"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1356](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L1356)
+Defined in: [packages/core/src/kernel.ts:1366](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L1366)
 
 ###### Parameters
 
@@ -1394,7 +1394,7 @@ Defined in: [packages/core/src/kernel.ts:1356](https://github.com/systemind-team
 
 > **invokeTool**(`context`, `call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1031](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L1031)
+Defined in: [packages/core/src/kernel.ts:1041](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L1041)
 
 Re-authorize and dispatch one tool call.
 
@@ -1434,7 +1434,7 @@ SharedOS. Both spans exist or neither does.
 
 > **listPublishedTools**(`context`, `options`): `Promise`\<\{ `catalogHash`: `string`; `executionId`: `string`; `tools`: `object`[]; `version`: `"1"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:943](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L943)
+Defined in: [packages/core/src/kernel.ts:953](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L953)
 
 The effective catalogue as an external harness receives it.
 
@@ -1474,7 +1474,7 @@ harness would have to interpret.
 
 > **listToolNamespaces**(`context`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:951](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L951)
+Defined in: [packages/core/src/kernel.ts:961](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L961)
 
 ###### Parameters
 
@@ -1500,7 +1500,7 @@ Defined in: [packages/core/src/kernel.ts:951](https://github.com/systemind-team/
 
 > **listTools**(`context`, `options?`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/kernel.ts:836](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L836)
+Defined in: [packages/core/src/kernel.ts:846](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L846)
 
 ###### Parameters
 
@@ -1526,7 +1526,7 @@ Defined in: [packages/core/src/kernel.ts:836](https://github.com/systemind-team/
 
 > **openTurnAuthority**(`context`, `options?`): `Promise`\<[`TurnAuthorityScope`](#turnauthorityscope)>\>
 
-Defined in: [packages/core/src/kernel.ts:443](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L443)
+Defined in: [packages/core/src/kernel.ts:445](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L445)
 
 Resolve the authority one turn will be decided against, and hold it.
 
@@ -1541,9 +1541,9 @@ authority stays fail-closed for its whole length instead of retrying the
 store on every call and possibly changing its mind.
 
 A context that carries an `executionId` opens a turn of its own, and a
-second open while that turn is held rejects with an
-`ExecutionInProgressError`. One that carries none joins the lease its other
-fields already hold.
+second open while that turn is held, or still loading its authority,
+rejects with an `ExecutionInProgressError`. One that carries none joins
+the lease its other fields already hold.
 
 Callers must `close` the returned scope on every exit path. Hosts that call
 kernel operations outside any turn need not open one: an operation with no
@@ -1573,7 +1573,7 @@ lease resolves its own authority, which is a turn of one operation.
 
 > **reach**(`context`, `options?`): `Promise`\<\{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:826](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L826)
+Defined in: [packages/core/src/kernel.ts:836](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L836)
 
 Where this actor may operate, with the authority stripped out.
 
@@ -1626,7 +1626,7 @@ recorded by the envelope as the turn's terminal.
 
 > **readAgentCard**(`context`, `subject`, `options?`): `Promise`\<[`AgentCardRead`](#agentcardread)>\>
 
-Defined in: [packages/core/src/kernel.ts:699](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L699)
+Defined in: [packages/core/src/kernel.ts:709](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L709)
 
 The kernel's description of one agent: identity, computed reach, nothing
 else.
@@ -1686,7 +1686,7 @@ field is useful but whether it is authority.
 
 > **recordEscalation**(`context`, `reason`, `options?`): `Promise`\<\{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:539](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L539)
+Defined in: [packages/core/src/kernel.ts:549](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L549)
 
 Record that a turn stopped and asked a human to decide.
 
@@ -1725,7 +1725,7 @@ deliberately no path from here back into the running turn.
 
 > **recordRefusedCall**(`context`, `call`, `options?`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/kernel.ts:648](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L648)
+Defined in: [packages/core/src/kernel.ts:658](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L658)
 
 Record a tool call the envelope refused before the kernel was asked.
 
@@ -1763,7 +1763,7 @@ that stops being inferable the moment this method exists (ADR 0023).
 
 > **recordTurnEnd**(`context`, `turn`, `options?`): `Promise`\<`void`>\>
 
-Defined in: [packages/core/src/kernel.ts:615](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L615)
+Defined in: [packages/core/src/kernel.ts:625](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L625)
 
 Record how a turn ended, from the boundary that ended it.
 
@@ -1811,7 +1811,7 @@ separates a deadline from a defect.
 
 > **registerResourceProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:402](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L402)
+Defined in: [packages/core/src/kernel.ts:404](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L404)
 
 ###### Parameters
 
@@ -1827,7 +1827,7 @@ Defined in: [packages/core/src/kernel.ts:402](https://github.com/systemind-team/
 
 > **registerTool**(`handler`): `void`
 
-Defined in: [packages/core/src/kernel.ts:406](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L406)
+Defined in: [packages/core/src/kernel.ts:408](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L408)
 
 ###### Parameters
 
@@ -1843,7 +1843,7 @@ Defined in: [packages/core/src/kernel.ts:406](https://github.com/systemind-team/
 
 > **registerToolProvider**(`provider`): `void`
 
-Defined in: [packages/core/src/kernel.ts:410](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L410)
+Defined in: [packages/core/src/kernel.ts:412](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L412)
 
 ###### Parameters
 
@@ -1859,7 +1859,7 @@ Defined in: [packages/core/src/kernel.ts:410](https://github.com/systemind-team/
 
 > **sendMessage**(`context`, `envelope`, `options?`): `Promise`\<\{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"accepted"`; `timestamp`: `string`; \} \| \{ `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"delivered"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `timestamp`: `string`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `messageId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `timestamp`: `string`; \}\>
 
-Defined in: [packages/core/src/kernel.ts:1639](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L1639)
+Defined in: [packages/core/src/kernel.ts:1649](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L1649)
 
 ###### Parameters
 
@@ -1899,7 +1899,7 @@ Defined in: [packages/core/src/kernel.ts:1639](https://github.com/systemind-team
 
 > **updateToolNamespaces**(`context`, `update`, `options?`): `Promise`\<\{ `namespaces`: `object`[]; `summary`: \{ `disabled`: `number`; `enabled`: `number`; `total`: `number`; \}; \}\>
 
-Defined in: [packages/core/src/kernel.ts:974](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L974)
+Defined in: [packages/core/src/kernel.ts:984](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/kernel.ts#L984)
 
 ###### Parameters
 
