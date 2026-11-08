@@ -1536,19 +1536,25 @@ describe("the Codex CLI's own events, on the MCP toolshare path", () => {
  * the real CLI puts on stdout with `--json`.
  */
 const DSH_CLI = `
+process.stderr.write(JSON.parse(process.argv[4]));
 for (const event of JSON.parse(process.argv[2])) {
   process.stdout.write(JSON.stringify(event) + "\\n");
 }
 process.exitCode = Number(process.argv[3]);
 `;
 
-function dshCli(events: readonly JsonObject[], exitCode: number): McpHarnessSpec {
+function dshCli(events: readonly JsonObject[], exitCode: number, stderr = ""): McpHarnessSpec {
   return {
     ...DEEPSEEK_MCP_HARNESS,
     configFiles: () => [{ harness: "deepseek", filename: "dsh.mjs", contents: DSH_CLI }],
     launch: ({ configPaths }) => ({
       command: process.execPath,
-      args: [configPaths["dsh.mjs"] as string, JSON.stringify(events), String(exitCode)],
+      args: [
+        configPaths["dsh.mjs"] as string,
+        JSON.stringify(events),
+        String(exitCode),
+        JSON.stringify(stderr),
+      ],
     }),
   };
 }
@@ -1633,5 +1639,53 @@ describe("DeepSeek Harness's headless run, on the MCP toolshare path", () => {
       status: "failed",
       error: { code: "MISSING_CREDENTIAL", message: "no API key", retryable: false },
     });
+  }, 30_000);
+
+  /** What dsh 0.2.2-rc.1 printed on stderr when the overlay's server could not be reached. */
+  const notActivated = (entry: string, server: string): string =>
+    [
+      "dsh: warning: 1 entry did not activate",
+      `${entry} (@deepseek-ai/dsh-mcp-client): Error: mcp-client(${server}): initial connection or tool synchronization failed`,
+      "    at Object.apply [as callback] (file:///opt/dsh/node_modules/@deepseek-ai/dsh-mcp-client/lib/index.js:833:67)",
+      "SdkError: Version negotiation probe failed: fetch failed",
+      "Error: connect ECONNREFUSED 127.0.0.1:47123",
+      "",
+    ].join("\n");
+  const completed = run({
+    type: "final",
+    sessionId: "session-1",
+    reason: { kind: "completed" },
+    text: "I used the shell instead.",
+  });
+
+  it("fails a run whose SharedOS client did not activate, though dsh went on and completed", async () => {
+    // `failOnStartupError: true` stops nothing from dsh 0.1.6: the run goes on
+    // with dsh's own tools and completes, and stderr is the only witness.
+    const diagnostics: string[] = [];
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(dshCli(completed, 0, notActivated("mcp-sharedos", "sharedos")), {
+        onDiagnostic: (_harness, line) => diagnostics.push(line),
+      }),
+    ).execute(executionRequest());
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "harness_not_connected", retryable: false },
+    });
+    expect(result.status === "failed" ? result.error.message : "").toContain(
+      "mcp-client(sharedos): initial connection or tool synchronization failed",
+    );
+    // Still kept for diagnosis, as every line beside the frames is.
+    expect(diagnostics).toContain("dsh: warning: 1 entry did not activate");
+  }, 30_000);
+
+  it("leaves a failing MCP server of the owner's own to the owner", async () => {
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(dshCli(completed, 0, notActivated("mcp-github", "github"))),
+    ).execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
   }, 30_000);
 });

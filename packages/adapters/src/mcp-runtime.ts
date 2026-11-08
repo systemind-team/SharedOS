@@ -15,6 +15,7 @@ import {
   mcpServerName,
   claudeAgentSdkMcpOptions,
   codexMcpServerSettings,
+  deepseekMcpEntryId,
   harnessMcpConfigFile,
   openToolBridge,
   SHAREDOS_MCP_TOKEN_VARIABLE,
@@ -34,7 +35,7 @@ import {
 } from "@aicoo/sharedos-runtime";
 
 import { deepseekHeadlessProtocol } from "./deepseek/headless.js";
-import type { HarnessProtocol } from "./harness.js";
+import type { HarnessProtocol, HarnessStep } from "./harness.js";
 import { failed } from "./internal.js";
 import { HarnessProcess } from "./process.js";
 import { CLAUDE_CODE_VENDOR, CODEX_VENDOR, DEEPSEEK_VENDOR, PI_VENDOR } from "./vendors.js";
@@ -139,6 +140,25 @@ export interface McpHarnessSpec {
   readonly serverName?: string;
   readonly configFiles?: (connection: HarnessMcpConnection) => readonly HarnessMcpConfigFile[];
   readonly launch: (context: McpLaunchContext) => McpHarnessLaunch;
+  /**
+   * Reads what the CLI says beside its frames, for a condition its frames
+   * never carry.
+   *
+   * Called with each line of stderr and each stdout line that is not a frame.
+   * A step it returns is taken as a frame's would be: a `failed` one is the
+   * turn's outcome unless the turn already has one. Absent, what the CLI says
+   * there is kept for diagnosis only, as it always was.
+   *
+   * It exists for a harness that reports a broken connection to SharedOS in
+   * prose and then carries on without it: a turn that went on with only the
+   * harness's own tools would otherwise read as a harness that looked at the
+   * catalogue and declined it.
+   */
+  readonly readDiagnostic?: (
+    text: string,
+    stream: "stdout" | "stderr",
+    connection: HarnessMcpConnection,
+  ) => HarnessStep | undefined;
 }
 
 /**
@@ -305,7 +325,7 @@ export function createMcpHarnessRuntime(
           args: [...declared.args, ...(options.args ?? [])],
           env: { ...declared.env, ...options.env },
         };
-        const outcome = await runHarness(spec, launch, signal, options);
+        const outcome = await runHarness(spec, launch, connection, signal, options);
         const catalogHash = await bridgeCatalogHash(bridge, signal);
         return escalation.settle(outcome, {
           ...outcome.metadata,
@@ -523,6 +543,7 @@ function harnessMetadata(
 async function runHarness(
   spec: McpHarnessSpec,
   launch: McpHarnessLaunch,
+  connection: HarnessMcpConnection,
   signal: AbortSignal,
   options: McpHarnessRuntimeOptions,
 ): Promise<RuntimeTurnOutcome> {
@@ -556,40 +577,50 @@ async function runHarness(
     );
   };
 
+  // What one frame, or one line the spec read beside the frames, means for
+  // the turn. The first outcome is the turn's.
+  const take = (steps: readonly HarnessStep[]): void => {
+    for (const step of steps) {
+      if (step.type === "message") {
+        messages.push(step.text);
+        continue;
+      }
+      if (step.type === "failed") {
+        terminal ??= { type: "fail", error: step.error };
+        continue;
+      }
+      if (step.type === "complete") {
+        terminal ??= {
+          type: "complete",
+          output: step.output ?? { text: messages.join("\n") },
+        };
+      }
+      // A `tool_call` step cannot occur here: tool calls left over MCP, not
+      // over this channel. If a harness emits one anyway it is transcript
+      // noise, and acting on it would be a second, unauthorized call path.
+    }
+    if (terminal !== undefined) {
+      // The turn is over. For a session harness this is what makes it exit;
+      // for a one-shot one stdin is already closed and this does nothing.
+      closeStdin();
+    }
+  };
+
   // The turn's hard signal ends the process. A draining turn does not: the
   // harness reads `turn_draining` on its next call and winds down itself.
   const harness = new HarnessProcess(
     launch,
     {
       onFrame: (frame) => {
-        for (const step of spec.protocol.interpret(frame)) {
-          if (step.type === "message") {
-            messages.push(step.text);
-            continue;
-          }
-          if (step.type === "failed") {
-            terminal ??= { type: "fail", error: step.error };
-            continue;
-          }
-          if (step.type === "complete") {
-            terminal ??= {
-              type: "complete",
-              output: step.output ?? { text: messages.join("\n") },
-            };
-          }
-          // A `tool_call` step cannot occur here: tool calls left over MCP, not
-          // over this channel. If a harness emits one anyway it is transcript
-          // noise, and acting on it would be a second, unauthorized call path.
-        }
-        if (terminal !== undefined) {
-          // The turn is over. For a session harness this is what makes it exit;
-          // for a one-shot one stdin is already closed and this does nothing.
-          closeStdin();
-        }
+        take(spec.protocol.interpret(frame));
         touch();
       },
       onDiagnostic: (text, stream) => {
         options.onDiagnostic?.(spec.id, text);
+        const step = spec.readDiagnostic?.(text, stream, connection);
+        if (step !== undefined) {
+          take([step]);
+        }
         // A banner on stdout is not the harness working; stderr is.
         if (stream === "stderr") {
           touch();
@@ -753,6 +784,12 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
  *
  * `--json` has the headless profile print its run as events rather than only
  * the final answer, which is what `deepseekHeadlessProtocol` reads.
+ *
+ * The overlay's `failOnStartupError: true` no longer stops a run whose client
+ * could not reach the bridge: from dsh 0.1.6 the run goes on with only dsh's
+ * own tools, and the one sign of it is a line on stderr. `readDiagnostic`
+ * reads that line and fails the turn `harness_not_connected`, so the turn is
+ * not read as a harness that declined the catalogue.
  */
 export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: DEEPSEEK_VENDOR.id,
@@ -761,6 +798,24 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
   // vendor's driven codec reads: that is what this launch prints.
   protocol: deepseekHeadlessProtocol,
   configFiles: (connection) => [harnessMcpConfigFile("deepseek", connection)],
+  readDiagnostic: (text, stream, connection) => {
+    // dsh reports an entry that did not activate as `<id> (<package>): <error>`
+    // on stderr, and since 0.1.6 goes on without it whatever
+    // `failOnStartupError` says. The SharedOS entry is matched by its id, so
+    // a failing MCP server of the owner's own is left to the owner.
+    const prefix = `${deepseekMcpEntryId(connection)} (@deepseek-ai/dsh-mcp-client): `;
+    if (stream !== "stderr" || !text.startsWith(prefix)) {
+      return undefined;
+    }
+    return {
+      type: "failed",
+      error: {
+        code: "harness_not_connected",
+        message: `DeepSeek Harness did not connect to the SharedOS MCP server and went on without it: ${text.slice(prefix.length)}`,
+        retryable: false,
+      },
+    };
+  },
   launch: ({ prompt, workspace, configPaths }) => ({
     command: process.env["DSH_COMMAND"] ?? "dsh",
     // Launcher flags first, then the profile's own arguments: the first token

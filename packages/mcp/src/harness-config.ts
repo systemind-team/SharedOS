@@ -175,12 +175,14 @@ export function claudeAgentSdkMcpOptions(connection: HarnessMcpConnection): Json
  * `failOnStartupError` is set for the same reason Codex's server is `required`:
  * a run that quietly continued with only the harness's own tools would look like
  * a harness that declined to use the catalogue, which is a different finding.
+ * From dsh 0.1.6 it no longer stops the run: dsh reports the entry that did not
+ * activate on stderr, under {@link deepseekMcpEntryId}, and goes on without it.
  */
 export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
   const name = mcpServerName(connection);
   const lines = [
     "- insert:",
-    `    - id: mcp-${name}`,
+    `    - id: ${deepseekMcpEntryId(connection)}`,
     "      name: '@deepseek-ai/dsh-mcp-client'",
     "      config:",
     `        serverName: ${name}`,
@@ -198,6 +200,15 @@ export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
     );
   }
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * The id of the plugin entry {@link deepseekMcpConfig} inserts. dsh names an
+ * entry by its id when it reports that the entry did not activate, so this is
+ * how a launch recognises its own client's failure among the owner's.
+ */
+export function deepseekMcpEntryId(connection: Pick<HarnessMcpConnection, "name">): string {
+  return `mcp-${mcpServerName(connection)}`;
 }
 
 /**
