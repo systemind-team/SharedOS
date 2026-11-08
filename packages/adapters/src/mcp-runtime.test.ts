@@ -1412,6 +1412,29 @@ describe("the Codex CLI's own events, on the MCP toolshare path", () => {
     expect(result.status === "succeeded" ? result.output : undefined).toEqual({ text: prose });
   }, 30_000);
 
+  it("completes a turn that reconnected on the way, with its prose", async () => {
+    // Codex reports a recovered stream error as a top-level `error` event and
+    // carries on. The runtime keeps the first outcome it reads, so a protocol
+    // that failed on that event ended this turn failed.
+    const reconnected: JsonObject[] = [
+      ...answered.slice(0, 2),
+      {
+        type: "error",
+        message:
+          "Reconnecting... 1/5 (stream disconnected before completion: error sending request for url (https://api.openai.com/v1/responses))",
+      },
+      ...answered.slice(2),
+    ];
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(codexCli(reconnected, 0)),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    expect(result.status === "succeeded" ? result.output : undefined).toEqual({ text: prose });
+  }, 30_000);
+
   it("fails a turn the CLI failed, with the CLI's reason rather than its exit code", async () => {
     const failed: JsonObject[] = [
       { type: "thread.started", thread_id: "t" },

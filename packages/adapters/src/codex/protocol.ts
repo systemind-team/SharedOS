@@ -51,25 +51,57 @@ const CompletedSchema = z
   })
   .passthrough();
 
+/** An error as the Responses protocol carries one: a code, null when there is none, and a message. */
+const ErrorBodySchema = z
+  .object({ code: z.string().nullish(), message: z.string().optional() })
+  .passthrough();
+
 /**
- * A failure, in either of the two shapes Codex reports one in.
+ * A failed response, in the Responses shape.
  *
- * The Responses protocol nests it under `error`. The CLI's JSON mode puts the
- * text at the top level instead, and an adapter that only read the nested form
- * would report every live CLI failure under a generic message -- turning "401
- * Unauthorized" into "the harness reported a failure", which is the one detail
- * an operator needs.
+ * The protocol puts the error on the response that failed, as
+ * `response.error`. The error is also read at the top level, where this
+ * module once expected it, so a transcript recorded in that shape reads as
+ * it did.
  */
-const ErrorSchema = z
+const ResponseFailedSchema = z
   .object({
-    type: z.enum(["error", "response.failed"]),
+    type: z.literal("response.failed"),
+    response: z.object({ error: ErrorBodySchema.nullish() }).passthrough().optional(),
+    error: ErrorBodySchema.optional(),
     message: z.string().optional(),
-    error: z
-      .object({ code: z.string().optional(), message: z.string().optional() })
-      .passthrough()
-      .optional(),
   })
   .passthrough();
+
+/**
+ * The Responses stream's own `error` event, which ends the stream.
+ *
+ * It carries `code`, null when there is none, beside its `message`, or the
+ * error nested under `error`. The CLI's `error` event carries neither, and
+ * is read by `CliErrorSchema` instead: the two share a `type` and mean
+ * different things.
+ */
+const ResponsesErrorSchema = z
+  .object({ type: z.literal("error"), code: z.string().nullable(), message: z.string().optional() })
+  .passthrough();
+
+const NestedErrorSchema = z
+  .object({ type: z.literal("error"), error: ErrorBodySchema })
+  .passthrough();
+
+/**
+ * What `codex exec --json` prints as `{type:"error", message}`: a report, and
+ * not the turn's end.
+ *
+ * The CLI prints one for every stream error it recovers from
+ * ("Reconnecting... 2/5 ...") as well as for the one it does not, and the
+ * turn carries on either way. It ends on `turn.failed`, which carries the
+ * error that ended it, on `turn.completed`, or, when the CLI printed
+ * neither, on the process's exit. The runtime keeps the first outcome it is
+ * given, so reading this event as a failure reported a turn that reconnected
+ * once and then completed as failed.
+ */
+const CliErrorSchema = z.object({ type: z.literal("error"), message: z.string() }).passthrough();
 
 /**
  * The CLI's events, as `codex exec --json` prints them. An `item.completed`
@@ -126,21 +158,23 @@ export const codexProtocol: HarnessProtocol = {
       ];
     }
 
-    const failure = ErrorSchema.safeParse(frame);
-    if (failure.success) {
-      return [
-        {
-          type: "failed",
-          error: {
-            code: failure.data.error?.code ?? "harness_failed",
-            message:
-              failure.data.error?.message ??
-              failure.data.message ??
-              "The Codex harness reported a failure.",
-            retryable: true,
-          },
-        },
-      ];
+    const responseFailed = ResponseFailedSchema.safeParse(frame);
+    if (responseFailed.success) {
+      const error = responseFailed.data.response?.error ?? responseFailed.data.error;
+      return [failure(error?.code, error?.message ?? responseFailed.data.message)];
+    }
+
+    const streamError = ResponsesErrorSchema.safeParse(frame);
+    if (streamError.success) {
+      return [failure(streamError.data.code, streamError.data.message)];
+    }
+    const nestedError = NestedErrorSchema.safeParse(frame);
+    if (nestedError.success) {
+      return [failure(nestedError.data.error.code, nestedError.data.error.message)];
+    }
+
+    if (CliErrorSchema.safeParse(frame).success) {
+      return [];
     }
 
     const completed = CompletedSchema.safeParse(frame);
@@ -201,3 +235,22 @@ export const codexProtocol: HarnessProtocol = {
     };
   },
 };
+
+/**
+ * A Responses failure as a failed step. The vendor's code is kept when the
+ * frame names one, and its text always: "401 Unauthorized" is the one detail
+ * an operator needs, and a generic line in its place would lose it.
+ */
+function failure(code: string | null | undefined, message: string | undefined): HarnessStep {
+  return {
+    type: "failed",
+    error: {
+      code: code ?? "harness_failed",
+      message:
+        message === undefined || message.trim() === ""
+          ? "The Codex harness reported a failure."
+          : message,
+      retryable: true,
+    },
+  };
+}
