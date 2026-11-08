@@ -76,7 +76,9 @@ each entry calls out what a host has to update.
     parent ids, the MCP execution token's claims, and the file tools' query,
     pattern, label, snapshot id and version token. The JSON schemas published
     for `sharedos.message.request` and the file tools drop their matching
-    `maxLength`. Shape checks are unchanged.
+    `maxLength`. Shape checks are unchanged. The conformance execution
+    record drops the same caps, so a record of a long turn no longer fails to
+    assemble and a long escalation reason is no longer read as no ask.
 
 - **Breaking: Node.js 22.19 or newer is required (was 20.11).** Node 20 has
   been end of life since April 2026, and newer dependencies such as `undici`

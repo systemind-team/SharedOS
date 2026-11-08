@@ -215,6 +215,10 @@ describe("execution record assembly", () => {
     // The grading rules read a record, and a record carries none of the
     // result's metadata, so the ask reaches them only by being lifted.
     expect(assemble({ escalationAsked: asked }).execution.escalationAsked).toEqual(asked);
+    // The runtime keeps a reason whole, so the record does too. A cap here
+    // would read a long ask as no ask at all.
+    const long = { ...asked, reason: "r".repeat(100_000) };
+    expect(assemble({ escalationAsked: long }).execution.escalationAsked).toEqual(long);
     expect(assemble({}).execution.escalationAsked).toBeUndefined();
     // The delegate's own statement, so validated rather than trusted on shape.
     expect(assemble({ escalationAsked: "yes" }).execution.escalationAsked).toBeUndefined();
