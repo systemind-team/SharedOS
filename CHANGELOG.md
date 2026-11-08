@@ -37,6 +37,15 @@ each entry calls out what a host has to update.
 
 ### Changed
 
+- **The prompt reaches Claude Code, Codex and DeepSeek Harness on stdin.**
+  `CLAUDE_CODE_MCP_HARNESS`, `CODEX_MCP_HARNESS` and `DEEPSEEK_MCP_HARNESS`
+  passed the prompt as one argument, so a prompt over 128 KiB failed the
+  launch with `E2BIG` and one starting with `-` was read as an option. Each
+  launch now writes the prompt to stdin and closes it: `claude -p` with no
+  prompt argument, `codex exec ... -` and `dsh --profile headless ... -`.
+  A host that appends `args` keeps doing so; Codex applies `-c` overrides
+  placed after `-`. Pi already took its prompt on stdin.
+
 - **Breaking: SharedOS sets no limits of its own.** Every turn and harness
   limit is now unset unless the host sets it, and an unset limit is no limit.
   What a host has to update:

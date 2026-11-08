@@ -65,7 +65,15 @@ export interface McpHarnessLaunch {
   readonly args: readonly string[];
   readonly cwd?: string;
   readonly env?: Readonly<Record<string, string>>;
-  /** Written to the child's stdin, for a CLI that takes its prompt that way. */
+  /**
+   * Written to the child's stdin, for a CLI that takes its prompt that way.
+   *
+   * Every spec here does. A prompt passed as one argument fails the spawn
+   * with `E2BIG` once it is past the 128 KiB the kernel allows a single
+   * argument, and one that starts with `-` is read as an option. On stdin
+   * neither can happen, and how much a CLI will read there is the CLI's own
+   * limit.
+   */
   readonly stdin?: string;
   /**
    * Whether the CLI treats stdin as an open command channel rather than as one
@@ -659,9 +667,9 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
   configFiles: (connection) => [harnessMcpConfigFile("claude-code", connection)],
   launch: ({ prompt, workspace, configPaths, connection }) => ({
     command: "claude",
+    // `-p` with no prompt argument reads the prompt from stdin to EOF.
     args: [
       "-p",
-      prompt,
       "--output-format",
       "stream-json",
       "--verbose",
@@ -674,6 +682,7 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
       "Bash,Edit,Write,Read,Glob,Grep,NotebookEdit,WebFetch,WebSearch,TodoWrite",
     ],
     cwd: workspace,
+    stdin: prompt,
   }),
 });
 
@@ -718,9 +727,12 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
         "-c",
         `mcp_servers.${mcpServerName(connection)}.${key}=${value}`,
       ]),
-      prompt,
+      // The prompt is read from stdin. Overrides a host appends after this
+      // are still applied.
+      "-",
     ],
     cwd: workspace,
+    stdin: prompt,
     ...(connection.token === undefined
       ? {}
       : { env: { [SHAREDOS_MCP_TOKEN_VARIABLE]: connection.token } }),
@@ -748,16 +760,20 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
   launch: ({ prompt, workspace, configPaths }) => ({
     command: process.env["DSH_COMMAND"] ?? "dsh",
     // Launcher flags first, then the profile's own arguments: the first token
-    // dsh does not recognise starts the app's arguments, and the headless
-    // profile's first argument is the job.
+    // dsh does not recognise starts the app's arguments. `-` as the only task
+    // argument has the headless profile read the job from stdin, which it
+    // does from dsh 0.1.6. It is passed rather than left out: with no task,
+    // dsh reads stdin only when stdin is not a terminal, and a launch should
+    // not depend on how it was started.
     args: [
       "--profile",
       process.env["DSH_PROFILE"] ?? "headless",
       "--patch",
       configPaths["cordis.patch.yml"] ?? join(workspace, "cordis.patch.yml"),
-      prompt,
+      "-",
     ],
     cwd: workspace,
+    stdin: prompt,
   }),
 });
 
