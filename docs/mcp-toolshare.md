@@ -211,10 +211,13 @@ versus
 
 A `strict` policy that also lists `externalDirect` entries is rejected by the
 schema, rather than producing a run whose headline claim its own manifest
-contradicts. `harnessLocal` stays permitted under `strict` — most CLIs keep some
-tool of their own — but the entries must be named, and a launch that leaves the
+contradicts. `harnessLocal` stays permitted under `strict`, since most CLIs keep
+tools of their own, but the entries must be named, and a launch that leaves the
 harness none of its own, as Pi's does with `--no-builtin-tools`, declares `[]`:
-the extension's `mcp` proxy is the catalogue's conduit, not a local tool.
+the extension's `mcp` proxy is the catalogue's conduit, not a local tool. No
+spec drops the other MCP servers a CLI loads, so a column run on a machine that
+configures servers of its own for the CLI declares them as `externalDirect`, and
+is `hybrid`.
 
 A conformance column that declares a policy has it written to every execution
 record it produces, as `system.toolPolicy`, beside `catalogHash`. `mcpColumn`
@@ -333,21 +336,30 @@ plugin, it does not fetch one:
 dsh plugin --profile headless add @deepseek-ai/dsh-mcp-client
 ```
 
-### What each launch turns off
+### What each launch sets, and what it leaves alone
 
-Every spec launches its CLI with the flags that keep a measurement honest. Each
-is a permission-_prompt_ or tool-set decision rather than an authorization one:
-what secures the run is that every call is re-authorized by the kernel.
+SharedOS allows, denies or escalates the calls that reach it through MCP, and
+nothing else. It imposes no restriction on a harness's own tools or on which
+other MCP servers the harness loads: Claude Code keeps its file and shell tools
+and the MCP servers configured on the machine, and Codex and DeepSeek Harness
+keep theirs, as they always did. Pi's launch is the one exception, below: it
+still turns Pi's built-in tools off. A host that wants a restriction appends it
+through `args`, for example `--disallowedTools Bash,Edit,Write` or
+`--strict-mcp-config` for Claude Code.
 
-- **Claude Code.** `--strict-mcp-config` drops the machine's own MCP servers,
-  so a `strict` policy is checkable rather than merely declared, and the
-  disallowed-tools list removes the harness's own file and shell tools — a
-  probe that can edit files on the machine it is measuring is answering a
-  different question. `--allowedTools mcp__sharedos` auto-approves the server:
-  Claude separates prompting from authorization, and print mode has no human to
-  prompt. No `--max-turns` is set: like every other spec's, a Claude turn ends
-  at the host's tool-call and time limits, if it set any, and a host that
-  wants Claude's own cap passes it through `args`.
+A harness that reaches for its own tool instead of the catalogue's leaves no
+operation in the record. That is a finding about the harness, recorded as
+such: the row is `not exercised`, never a pass and never a kernel failure.
+
+What each launch does set is a permission-_prompt_ or connection decision
+rather than an authorization one: what secures the run is that every call is
+re-authorized by the kernel.
+
+- **Claude Code.** `--allowedTools mcp__sharedos` auto-approves the SharedOS
+  server and nothing else: Claude separates prompting from authorization, and
+  print mode has no human to prompt. No `--max-turns` is set: like every other
+  spec's, a Claude turn ends at the host's tool-call and time limits, if it set
+  any, and a host that wants Claude's own cap passes it through `args`.
 - **Codex.** `mcp_servers.sharedos.required=true` stops a run whose bridge
   failed to start rather than continuing with Codex's own tools, which would
   look like a harness that declined the catalogue.
@@ -480,7 +492,10 @@ URLs, credentials, and per-vendor flags are not SharedOS's to know:
 
 `env` and `args` are passed to the harness process untouched; `${VAR}` is read
 from the ambient environment so a shared file can name a credential without
-containing one. Declaring `credentialVariables` also makes the credential
+containing one. `externalDirect` names the MCP servers the machine configures
+for that CLI, which the launch leaves loaded, and makes the column's declared
+policy `hybrid`; `harnessLocal` replaces the CLI's built-in tool list when
+`args` narrowed it. Declaring `credentialVariables` also makes the credential
 _required_ for that column — every harness here can otherwise fall back to a
 stored session login, and a stored session authenticates to the provider the
 harness normally uses, not the one the run pinned.

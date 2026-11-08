@@ -37,6 +37,20 @@ each entry calls out what a host has to update.
 
 ### Changed
 
+- **Breaking: SharedOS no longer restricts a harness's own tools or its
+  other MCP servers.** SharedOS allows, denies or escalates the calls that
+  reach it through MCP, and nothing else. `CLAUDE_CODE_MCP_HARNESS` drops
+  `--disallowedTools ...` and `--strict-mcp-config`, so Claude Code keeps its
+  file and shell tools and the MCP servers configured on the machine;
+  `--allowedTools mcp__<server>` stays, since it only skips the approval
+  prompt for the SharedOS server. A host that wants a restriction appends it through
+  `args`. A harness that reaches for its own tool instead of the catalogue
+  leaves no operation behind, and the row is `not exercised`: a finding
+  about the harness. `mcp-conformance` declares each CLI's built-in tools as
+  `harnessLocal` and reads `externalDirect` and `harnessLocal` from the
+  run's configuration; `native-conformance` drops its Claude deny list and
+  Pi's `--no-tools`.
+
 - **The prompt reaches Claude Code, Codex and DeepSeek Harness on stdin.**
   `CLAUDE_CODE_MCP_HARNESS`, `CODEX_MCP_HARNESS` and `DEEPSEEK_MCP_HARNESS`
   passed the prompt as one argument, so a prompt over 128 KiB failed the

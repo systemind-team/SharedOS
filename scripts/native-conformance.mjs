@@ -11,10 +11,12 @@
  * `not exercised`, never as a pass and never as a kernel failure -- an absent
  * harness is not evidence about SharedOS.
  *
- * The harness's own tools are disabled where the CLI supports it. A conformance
- * probe must not be able to edit files or run commands on the machine it is
- * measuring, and a harness reaching for its own `bash` instead of the catalogue
- * would be answering a different question anyway.
+ * The harness keeps its own tools. SharedOS decides the calls that reach it and
+ * restricts nothing else, so a CLI run here can edit files and run commands on
+ * the machine it runs on, as it can anywhere. A harness that reaches for its own
+ * `bash` instead of the catalogue is a finding about the harness, recorded as
+ * such. An operator who wants those tools off passes the CLI's own flags
+ * through the configuration's `args`.
  *
  * One column here is not a CLI. Given a model API key, the standard turn loop
  * runs with the model itself in the delegate seat -- no vendor binary, no stdio,
@@ -167,9 +169,13 @@ const harnessConfig = (id) => {
  * the turn's instructions (where its tools may operate) and then the prompt.
  * Both are in the column's prompt hash, so both are handed over.
  *
- * Every entry carries the flags that keep the harness's own tools out of the
- * run. Where a CLI has no such flag the harness is still launched, because a
- * transport that cannot be exercised is a result worth recording too.
+ * No entry restricts the harness's own tools: SharedOS decides the calls
+ * that reach it and sets nothing on the rest. A CLI driven this way cannot be
+ * handed the catalogue, so a harness that reaches for its own tool does so
+ * here too, and the call it names is passed to the envelope and refused as
+ * an unpublished tool: a finding about the harness, recorded as such. An
+ * operator who wants the harness's tools off passes the CLI's own flags
+ * through the configuration's `args`.
  */
 const HARNESSES = [
   {
@@ -205,11 +211,6 @@ const HARNESSES = [
         "--output-format",
         "stream-json",
         "--verbose",
-        // The harness must not reach for its own tools: this run is about the
-        // permission-filtered catalogue, and a probe that could run Bash on the
-        // measuring machine is not a probe worth having.
-        "--disallowedTools",
-        "Bash,Edit,Write,Read,NotebookEdit,Task,WebFetch,WebSearch",
         "--max-turns",
         "6",
         ...extra,
@@ -275,7 +276,7 @@ const HARNESSES = [
     requirements: PI_REQUIREMENTS,
     launch: (extra = []) => ({
       command: PI_REQUIREMENTS.executable,
-      args: ["--mode", "rpc", "--no-session", "--no-tools", ...extra],
+      args: ["--mode", "rpc", "--no-session", ...extra],
       openingFrame: (request) => ({
         id: request.executionId,
         type: "prompt",
