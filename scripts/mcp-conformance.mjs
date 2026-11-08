@@ -207,7 +207,36 @@ const DECLARED_HARNESSES = [
     spec: DEEPSEEK_MCP_HARNESS,
     label: "DeepSeek",
     requirements: DEEPSEEK_REQUIREMENTS,
-    harnessLocal: ["shell", "apply_patch"],
+    /**
+     * The tools dsh 0.2.2-rc.1's headless profile offers its model on Linux,
+     * as its own request header records them. Another build or profile may
+     * offer others; an operator whose differs declares them as `harnessLocal`.
+     */
+    harnessLocal: [
+      "bash",
+      "create_goal",
+      "edit",
+      "get_goal",
+      "glob",
+      "grep",
+      "interrupt_agent",
+      "job_kill",
+      "job_list",
+      "job_output",
+      "list_agents",
+      "read",
+      "read_image",
+      "send_message",
+      "skill",
+      "subagent",
+      "subagent_fork",
+      "todo_write",
+      "update_goal",
+      "web_fetch",
+      "workflow",
+      "working_directory",
+      "write",
+    ],
     mcpSupport: "native",
   },
   {
