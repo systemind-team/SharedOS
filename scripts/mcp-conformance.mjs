@@ -171,6 +171,9 @@ const DECLARED_HARNESSES = [
     requirements: CLAUDE_CODE_REQUIREMENTS,
     policy: declareToolPolicy({ harnessLocal: ["TodoWrite", "SlashCommand"] }),
     mcpSupport: "native",
+    // A conformance case is a few calls. The spec sets no cap, so the probe
+    // keeps its own and a run that loops is stopped by Claude, not the clock.
+    args: ["--max-turns", "24"],
   },
   {
     spec: CODEX_MCP_HARNESS,
@@ -274,7 +277,10 @@ for (const harness of HARNESSES) {
           // Opaque, from the operator's configuration. SharedOS passes it to the
           // harness process and records the model string; it selects nothing.
           ...(host.env === undefined ? {} : { env: host.env }),
-          ...(host.args === undefined ? {} : { args: host.args }),
+          // The probe's own flags first, the operator's after them.
+          ...(harness.args === undefined && host.args === undefined
+            ? {}
+            : { args: [...(harness.args ?? []), ...(host.args ?? [])] }),
           ...(model === undefined ? {} : { model }),
           manifest: {
             ...harness.spec.manifest,

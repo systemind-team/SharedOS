@@ -648,6 +648,10 @@ const DEFAULT_SESSION_IDLE_MS = 120_000;
  * native file or shell tool either. Refusing it would only make the harness
  * do in one context what it would otherwise split across several, with no
  * gain in evidence.
+ *
+ * No `--max-turns` is set, as no other spec caps its CLI's turns: a turn ends
+ * when the host's own step and time limits say so. A host or a probe that
+ * wants Claude's cap as well appends `--max-turns <n>` through `args`.
  */
 export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: CLAUDE_CODE_VENDOR.id,
@@ -669,8 +673,6 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
       `mcp__${mcpServerName(connection)}`,
       "--disallowedTools",
       "Bash,Edit,Write,Read,Glob,Grep,NotebookEdit,WebFetch,WebSearch,TodoWrite",
-      "--max-turns",
-      "24",
     ],
     cwd: workspace,
   }),

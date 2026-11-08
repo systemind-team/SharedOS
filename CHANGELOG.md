@@ -38,6 +38,19 @@ each entry calls out what a host has to update.
   the rest of the deny list applies to it too. A host that wants the old
   behaviour appends `--disallowedTools Task` through `args`.
 
+- **Claude Code is no longer cut off at 24 turns.** `CLAUDE_CODE_MCP_HARNESS`
+  drops `--max-turns 24`, a conformance probe's cap that every host running
+  the spec inherited; no other spec caps its CLI's turns. A Claude turn now
+  ends at the host's step and time limits, as Codex's does. A host that wants
+  the cap back appends `--max-turns <n>` through `args`; `mcp-conformance`
+  passes `--max-turns 24` itself.
+
+- **A Claude Code failure with no text names its reason.** When Claude ends a
+  run with an error subtype and no `result`, the failure's message names the
+  subtype instead of the generic line: `error_max_turns` reads "Claude Code
+  stopped at its turn limit after 24 model turns (error_max_turns)", using
+  the frame's `num_turns`.
+
 - **The repository is `systemind-team/SharedOS`.** It moved from
   `Aicoo-Team/SharedOS`, and old URLs redirect. Each package's `repository`
   field, the release workflow's repository guard and the documentation links
