@@ -1,5 +1,22 @@
-import { counted } from "./internal.js";
+import { counted, exceptEscalation } from "./internal.js";
 import type { RuntimeLimits } from "./runtime-plugin.js";
+
+export interface DescribeLimitsOptions {
+  /**
+   * Whether the turn's catalogue offers the escalate affordance, as
+   * `escalationOffered(request.tools)` answers. Asking for a human ends the
+   * turn without passing through the budgets, so a turn that offers it is told
+   * that this still works once the call budget is spent.
+   */
+  readonly escalation?: boolean;
+  /**
+   * Whether the text is an MCP server's instructions to a harness with tools
+   * of its own. Only calls to the server's tools count against the budget
+   * then, so the budget is named as calls to this server's tools: "tool calls"
+   * would take in the harness's own, which nothing here counts or refuses.
+   */
+  readonly mcpServer?: boolean;
+}
 
 /**
  * The turn's limits, as the words a model is shown.
@@ -15,21 +32,27 @@ import type { RuntimeLimits } from "./runtime-plugin.js";
  * unset limit is no limit and gets no sentence, and a turn with none set has
  * nothing to say: the result is `undefined`, and a seat appends nothing.
  *
- * - `maxToolCalls` is the number of tool calls the turn may make.
+ * - `maxToolCalls` is the number of tool calls the turn may make, and once it
+ *   is spent every further one is refused, so the model should finish with
+ *   what it has. Asking for a human is named as the exception where the turn
+ *   offers it (`escalation`), and over MCP the budget is named as calls to the
+ *   server's tools (`mcpServer`).
  * - `maxSteps` is the number of steps, counted as the standard loop counts
- *   them: each tool call is one, and so is the final answer. The model is told
- *   to keep one for the answer, because a loop whose last step went on a call
- *   ends without one. A runtime whose calls declare no step is not bounded by
+ *   them: each tool call is one, and so is the final answer. Nothing is
+ *   refused when they run out. A loop whose last step went on a tool call
+ *   ends there without an answer, so the model is told to keep the last step
+ *   for its answer. A runtime whose calls declare no step is not bounded by
  *   `maxSteps` and leaves it out; the MCP harness runtime does.
  * - `timeoutMs` is a duration from the turn's start, in hours, minutes and
  *   seconds rather than milliseconds.
  *
- * It says what follows as well: once a budget is used up every further tool
- * call this turn is refused, so the model should finish with what it has. It
- * only tells. The model decides when to end, and the turn still ends at
+ * It only tells. The model decides when to end, and the turn still ends at
  * `maxSteps` or the deadline when the host set them.
  */
-export function describeLimits(limits: Partial<RuntimeLimits> | undefined): string | undefined {
+export function describeLimits(
+  limits: Partial<RuntimeLimits> | undefined,
+  options: DescribeLimitsOptions = {},
+): string | undefined {
   const maxToolCalls = positiveInteger("maxToolCalls", limits?.maxToolCalls);
   const maxSteps = positiveInteger("maxSteps", limits?.maxSteps);
   const timeoutMs = positiveInteger("timeoutMs", limits?.timeoutMs);
@@ -39,18 +62,22 @@ export function describeLimits(limits: Partial<RuntimeLimits> | undefined): stri
 
   const sentences = ["Limits the host set on this turn."];
   if (maxToolCalls !== undefined) {
-    sentences.push(`You may make at most ${counted(maxToolCalls, "tool call")}.`);
+    const escalation = exceptEscalation(options.escalation === true);
+    sentences.push(
+      options.mcpServer === true
+        ? `You may make at most ${counted(maxToolCalls, "call")} to this server's tools. ` +
+            "Once that budget is used up, every further call to them this turn is " +
+            `refused${escalation}, so finish with what you have.`
+        : `You may make at most ${counted(maxToolCalls, "tool call")}. Once that budget ` +
+            `is used up, every further tool call this turn is refused${escalation}, so ` +
+            "finish with what you have.",
+    );
   }
   if (maxSteps !== undefined) {
     sentences.push(
       `You may take at most ${counted(maxSteps, "step")}: each tool call you make is a ` +
-        "step, and so is your final answer, so keep one for the answer.",
-    );
-  }
-  if (maxToolCalls !== undefined || maxSteps !== undefined) {
-    sentences.push(
-      "Once a budget is used up, every further tool call this turn is refused, so " +
-        "finish with what you have.",
+        "step, and so is your final answer. A turn whose last step is a tool call ends " +
+        "without an answer, so keep the last step for your answer.",
     );
   }
   if (timeoutMs !== undefined) {

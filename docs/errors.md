@@ -298,17 +298,38 @@ for `tool_unavailable`.
 
 A refusal's `message` is what the model reads, so the three a limit causes say
 what follows as well as what happened. `N` is the limit, in the singular for
-one ("1 tool call", "1 step"):
+one ("1 tool call", "1 step"), and `S` is the step the call named:
 
-| Code                       | Message                                                                                                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tool_call_limit_exceeded` | This turn's budget of N tool calls is used up. No further tool call will run this turn; finish with what you have.                                                  |
-| `step_limit_exceeded`      | This turn's budget of N steps is used up. No further tool call will run this turn; finish with what you have.                                                       |
-| `turn_draining`            | The turn is ending at its deadline and takes no new tool calls; finish with what you have. When an audit outage is draining it, the same without "at its deadline". |
+| Code                       | Message                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `tool_call_limit_exceeded` | This turn's budget of N tool calls is used up. No further tool call will run this turn; finish with what you have.             |
+| `step_limit_exceeded`      | This call named step S, past this turn's budget of N steps, and did not run; no call past that budget will run this turn.      |
+| `turn_draining`            | The turn is ending at its deadline and takes no new tool calls; finish with what you have.                                     |
+| `turn_draining`            | The turn is ending and takes no new tool calls; finish with what you have. This one is for a turn an audit outage is draining. |
+
+Where the turn's catalogue offers `sharedos.escalate`, the call-budget refusal
+and the deadline one say "No further tool call will run this turn, except asking
+for a human with sharedos.escalate" and "takes no new tool calls, except asking
+for a human with sharedos.escalate". Asking for a human ends the turn without
+passing through the envelope's budgets, so it still works then. It is not named
+on an audit outage, where the ask could not be recorded.
+
+Steps are numbered from 0, so step `S` is past a budget of `N` steps whenever
+`S` is `N` or more. Only a call that names a step past the budget is refused,
+and a later call at a step inside it still runs, which is why that message
+speaks of calls past the budget rather than of every later call.
+
+`step_limit_exceeded` has two texts because it has two sources. The refusal
+above answers one call the envelope would not run, and the turn goes on. When
+the standard loop itself runs out of steps it ends the turn `failed` with the
+same code and "The agent turn reached its maximum number of steps." (see
+[turns](#turns)). That text is the turn's ending, read by the host, and no
+model is asked anything after it.
 
 The standard driver, the evaluation driver's harness codecs and the MCP bridge
-hand the code and message to the model as they are. The model is also told its limits before the turn, by
-`describeLimits` (see [host integration](host-integration.md#what-the-model-is-told-about-its-limits)).
+hand the code and message to the model as they are. The model is also told its
+limits before the turn, by `describeLimits` (see
+[host integration](host-integration.md#what-the-model-is-told-about-its-limits)).
 
 Being told changes nothing about when a turn ends. The standard loop keeps
 asking the model after a refusal, and the model decides when to finish. The
@@ -346,7 +367,7 @@ turn still ends at `maxSteps` or the deadline when the host set them.
 | `execution_in_progress`    | denied    | A turn under this `executionId` is still running. Nothing was loaded or run; wait for it, or use a new id                                                                                                                                        |
 | `no_matching_grant`        | denied    | No `sharedos.execution` / `invoke` grant for the target agent                                                                                                                                                                                    |
 | `escalation_requested`     | escalated | The runtime stopped and asked for a human. Nothing was granted                                                                                                                                                                                   |
-| `step_limit_exceeded`      | failed    | The standard loop spent its own steps while the driver was still asking for tools. The envelope's budgets refuse calls instead — see [tool invocation](#tool-invocation)                                                                         |
+| `step_limit_exceeded`      | failed    | The standard loop spent its own steps while the driver was still asking for tools, and ended the turn with its own text. The envelope's refusal of one call is another: see [what the model is told](#what-the-model-is-told)                    |
 | `driver_failed`            | failed    | Your `AgentTurnDriver` threw. The thrown error goes to `onTurnError` and nowhere else (below)                                                                                                                                                    |
 | `invalid_driver_decision`  | failed    | The driver returned something that is not a valid decision                                                                                                                                                                                       |
 | `runtime_failed`           | failed    | A `RuntimePlugin` threw, or a host port the turn body called did. The message is fixed and the thrown error goes nowhere near the wire — install `onTurnError` to see it (below)                                                                 |

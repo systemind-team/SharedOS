@@ -1153,8 +1153,18 @@ describe("what the harness is told at initialize", () => {
     const instructions = turn.output["instructions"] as string;
 
     expect(plain).not.toContain("Limits the host set");
+    // Named as calls to this server's tools: the harness has tools of its own,
+    // and the budget neither counts nor refuses those.
     expect(instructions).toBe(
-      `${plain}\n\n${String(describeLimits({ maxToolCalls: 1, timeoutMs: 120_000 }))}`,
+      `${plain}\n\nLimits the host set on this turn. You may make at most 1 call to this ` +
+        "server's tools. Once that budget is used up, every further call to them this turn is " +
+        "refused, so finish with what you have. The turn ends 2 minutes after it began, " +
+        "whether or not you have answered, so answer before then.",
+    );
+    expect(instructions).toBe(
+      `${plain}\n\n${String(
+        describeLimits({ maxToolCalls: 1, timeoutMs: 120_000 }, { mcpServer: true }),
+      )}`,
     );
     expect(instructions).not.toContain("step");
 

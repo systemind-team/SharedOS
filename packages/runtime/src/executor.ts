@@ -42,7 +42,7 @@ import {
 } from "@aicoo/sharedos-core/internal";
 
 import { escalationOffered } from "./escalation.js";
-import { counted, createTurnDeadlines } from "./internal.js";
+import { counted, createTurnDeadlines, exceptEscalation } from "./internal.js";
 import {
   reportTurnError,
   type RuntimeHost,
@@ -463,6 +463,10 @@ export class SharedOSExecutor implements TurnExecutionPort {
       const repeatableToolNames = new Set(
         effectiveTools.filter(isSafeToRepeat).map(({ name }) => name),
       );
+      // Asking for a human ends the turn without coming through here, so a
+      // refusal that tells the model nothing more will run names it as the
+      // exception on a turn whose catalogue offers it.
+      const stillOpen = exceptEscalation(escalationOffered(effectiveTools));
       // Narrowed to what this turn's catalogue operates on: a runtime acts only
       // through the tools it was handed, so reach it cannot exercise is not
       // somewhere it can work.
@@ -505,14 +509,16 @@ export class SharedOSExecutor implements TurnExecutionPort {
           // any call the envelope stops, so the trail shows a call that was
           // asked for and did not run rather than nothing at all. A turn drains
           // ahead of its deadline or on an audit outage, and the outage is
-          // noted before it drains, so with none noted the deadline is why.
+          // noted before it drains, so with none noted the deadline is why. An
+          // ask for a human is still honoured before the deadline; on an
+          // outage it could not be recorded, so it is not offered there.
           const result = refusedToolResult(
             parsedCall.data,
             "denied",
             this.#clock(),
             TURN_DRAINING,
             auditOutage === undefined
-              ? "The turn is ending at its deadline and takes no new tool calls; finish with what you have."
+              ? `The turn is ending at its deadline and takes no new tool calls${stillOpen}; finish with what you have.`
               : "The turn is ending and takes no new tool calls; finish with what you have.",
           );
           emit("tool.completed", completedToolEventData(result, step));
@@ -530,7 +536,10 @@ export class SharedOSExecutor implements TurnExecutionPort {
             "denied",
             this.#clock(),
             "step_limit_exceeded",
-            spentBudget(counted(limits.maxSteps, "step")),
+            // Refused for the step the call named, which is at or past the
+            // budget; a later call at a step inside it still runs, so this says
+            // only that nothing past the budget will.
+            `This call named step ${String(step)}, past this turn's budget of ${counted(limits.maxSteps, "step")}, and did not run; no call past that budget will run this turn.`,
           );
           emit("tool.completed", completedToolEventData(result, step));
           await this.#recordRefusedCall(executionContext, result);
@@ -541,12 +550,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
         }
 
         if (limits.maxToolCalls !== undefined && toolCallCount >= limits.maxToolCalls) {
+          // The refusal is how the model learns it has reached the limit, so it
+          // names the budget and says the next call fares no better. It does
+          // not end the turn: the model decides when to finish.
           const result = refusedToolResult(
             parsedCall.data,
             "denied",
             this.#clock(),
             "tool_call_limit_exceeded",
-            spentBudget(counted(limits.maxToolCalls, "tool call")),
+            `This turn's budget of ${counted(limits.maxToolCalls, "tool call")} is used up. No further tool call will run this turn${stillOpen}; finish with what you have.`,
           );
           emit("tool.completed", completedToolEventData(result, step));
           await this.#recordRefusedCall(executionContext, result);
@@ -1082,19 +1094,6 @@ function cancelledResult(
 
 /** The code a new tool call is refused under once the turn takes nothing new. */
 export const TURN_DRAINING = "turn_draining";
-
-/**
- * What a call refused for a spent budget tells the model.
- *
- * The refusal is how the model learns it has reached a limit, so it names the
- * budget and says what follows: no later call this turn will run either, and
- * there is no point asking again. It does not end the turn. The model is told
- * and decides when to finish, and the turn still ends at `maxSteps` or the
- * deadline when the host set them.
- */
-function spentBudget(budget: string): string {
-  return `This turn's budget of ${budget} is used up. No further tool call will run this turn; finish with what you have.`;
-}
 
 /**
  * Whether a second run of the tool repeats nothing: a `read`, or a `write` its

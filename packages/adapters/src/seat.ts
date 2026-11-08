@@ -46,11 +46,13 @@ export interface SeatTextOptions {
 /** What about the seat itself changes what it is told. */
 export interface SeatKind {
   /**
-   * Whether the seat's calls declare a step. A seat in the standard loop does,
-   * and is told its step budget. A harness that keeps its own loop declares
-   * none, so `maxSteps` does not bound it, and it is not told one.
+   * Whether the seat is a harness reached over MCP rather than a seat in the
+   * standard loop. Such a harness keeps its own loop and declares no step, so
+   * `maxSteps` does not bound it and it is not told one. It also has tools of
+   * its own, which no SharedOS budget counts, so its call budget is named as
+   * calls to the server's tools.
    */
-  readonly declaresSteps: boolean;
+  readonly mcpServer: boolean;
 }
 
 /** The two texts a seat is handed, and their identity. */
@@ -72,7 +74,7 @@ export interface SeatText {
 export async function seatText(
   options: SeatTextOptions,
   request: RuntimeTurnRequest,
-  seat: SeatKind = { declaresSteps: true },
+  seat: SeatKind = { mcpServer: false },
 ): Promise<SeatText> {
   const instructions = turnInstructions(options.instructions, request, seat);
   const prompt = (options.prompt ?? defaultPrompt)(request);
@@ -88,7 +90,8 @@ function turnInstructions(
     return configured(request);
   }
   const limits = describeLimits(
-    seat.declaresSteps ? request.options : { ...request.options, maxSteps: undefined },
+    seat.mcpServer ? { ...request.options, maxSteps: undefined } : request.options,
+    { escalation: escalationOffered(request.tools), mcpServer: seat.mcpServer },
   );
   const environment = [
     describeReach(request.context.reach),

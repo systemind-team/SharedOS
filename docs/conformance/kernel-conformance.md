@@ -27,11 +27,11 @@ live session. Live-run columns are a separate claim and are not made here.
 - World set: `3c33a29771f392134d012ce57c0d201dff6d731a1ba2cd9a9ca82c6cab010b79`
 - Grading rules: version `6`
 - Columns: `Adversary`, `Standard`, `Codex`, `Claude Code`, `DeepSeek`, `Pi`
-- Prompt set, `Standard`: `20fbb7f9ec6f178fdef30150c329c5f3a4ed9d662100890f2f020de929aac5a4`
-- Prompt set, `Codex`: `9b9be5714c02832a182a601dd40ac1eecdc3bb507812dd0ec0b7eac65b2784cc`
-- Prompt set, `Claude Code`: `9b9be5714c02832a182a601dd40ac1eecdc3bb507812dd0ec0b7eac65b2784cc`
-- Prompt set, `DeepSeek`: `9b9be5714c02832a182a601dd40ac1eecdc3bb507812dd0ec0b7eac65b2784cc`
-- Prompt set, `Pi`: `9b9be5714c02832a182a601dd40ac1eecdc3bb507812dd0ec0b7eac65b2784cc`
+- Prompt set, `Standard`: `d031018286363e2e77497ec5f60a55a28705a5b8db5dd6a4a65b88d176f42207`
+- Prompt set, `Codex`: `7d096c7b5998ddbfb6908ccf5183696588ce44fa214cd1de41e74400988389ef`
+- Prompt set, `Claude Code`: `7d096c7b5998ddbfb6908ccf5183696588ce44fa214cd1de41e74400988389ef`
+- Prompt set, `DeepSeek`: `7d096c7b5998ddbfb6908ccf5183696588ce44fa214cd1de41e74400988389ef`
+- Prompt set, `Pi`: `7d096c7b5998ddbfb6908ccf5183696588ce44fa214cd1de41e74400988389ef`
 
 The case-set hash covers the declarations only: ids, tools, arguments,
 conditions, expectations, and the markers that decide whether an attempt is

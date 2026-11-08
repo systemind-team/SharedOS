@@ -429,12 +429,93 @@ describe("RuntimePlugin security envelope", () => {
       expect(result.output).toEqual({
         first: "succeeded",
         second: "step_limit_exceeded",
+        // True of what happened: the call named a step past the budget, and a
+        // call at a step inside it, the third, still ran.
         secondMessage:
-          "This turn's budget of 1 step is used up. No further tool call will run this turn; finish with what you have.",
+          "This call named step 1, past this turn's budget of 1 step, and did not run; no call past that budget will run this turn.",
         third: "succeeded",
       });
     }
     expect(runtimeKernel.invokeTool).toHaveBeenCalledTimes(2);
+  });
+
+  it("names asking for a human as the one call a spent budget leaves, where the turn offers it", async () => {
+    const plugin = runtime(async (_input, host) => {
+      const call = (id: string) =>
+        host.invokeTool({
+          id,
+          tool: tool.name,
+          arguments: {},
+          traceId: context.traceId,
+          requestedAt: now,
+        });
+      await call("call-1");
+      const refused = await call("call-2");
+      return {
+        type: "complete",
+        output: { message: refused.status === "succeeded" ? null : refused.error.message },
+      };
+    });
+    const run = (escalation: boolean) =>
+      new SharedOSExecutor(kernel(undefined, { escalation }), plugin, {
+        clock: () => now,
+        createId: () => "event-1",
+        defaultMaxToolCalls: 1,
+      }).execute(request({ escalation }));
+
+    // An escalation ends the turn without coming through the envelope's
+    // budgets, so it still works, and the model is told so.
+    await expect(run(true)).resolves.toMatchObject({
+      status: "succeeded",
+      output: {
+        message:
+          "This turn's budget of 1 tool call is used up. No further tool call will run this turn, except asking for a human with sharedos.escalate; finish with what you have.",
+      },
+    });
+    await expect(run(false)).resolves.toMatchObject({
+      status: "succeeded",
+      output: {
+        message:
+          "This turn's budget of 1 tool call is used up. No further tool call will run this turn; finish with what you have.",
+      },
+    });
+  });
+
+  it("names asking for a human as still open while the turn drains to its deadline", async () => {
+    const plugin = runtime(async (_input, host) => {
+      // A grace as long as the limit drains the turn from its start.
+      await new Promise((resolve) => host.draining?.addEventListener("abort", resolve));
+      const refused = await host.invokeTool({
+        id: "call-late",
+        tool: tool.name,
+        arguments: {},
+        traceId: context.traceId,
+        requestedAt: now,
+      });
+      return {
+        type: "complete",
+        output: {
+          code: refused.status === "succeeded" ? null : refused.error.code,
+          message: refused.status === "succeeded" ? null : refused.error.message,
+        },
+      };
+    });
+
+    const result = await new SharedOSExecutor(kernel(undefined, { escalation: true }), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      defaultTimeoutMs: 5_000,
+      drainGraceMs: 5_000,
+    }).execute(request({ escalation: true }));
+
+    expect(result).toMatchObject({
+      status: "succeeded",
+      output: {
+        code: "turn_draining",
+        message:
+          "The turn is ending at its deadline and takes no new tool calls, except asking for a human with sharedos.escalate; finish with what you have.",
+      },
+    });
   });
 
   it("leaves a plugin that declares no step bounded by its call ceiling alone", async () => {

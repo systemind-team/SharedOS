@@ -275,9 +275,11 @@ export function createMcpHarnessRuntime(
       // the envelope holds an annotation for every ending, where the outcome's
       // own metadata rides on an outcome a cancelled turn never returns. What
       // the CLI adds of its own is not here. The harness keeps its own loop and
-      // declares no step, so it is told no step budget: none binds it.
+      // declares no step, so it is told no step budget: none binds it. Its own
+      // tools count against no budget, so the call budget is named as calls to
+      // this server's tools.
       const { instructions, prompt, promptHash } = await seatText(options, request, {
-        declaresSteps: false,
+        mcpServer: true,
       });
       host.annotate(PROMPT_HASH_ANNOTATION, promptHash);
       const server = new McpToolServer({

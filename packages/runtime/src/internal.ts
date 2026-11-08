@@ -1,5 +1,7 @@
 import { after } from "@aicoo/sharedos-core/internal";
 
+import { ESCALATION_TOOL_NAME } from "./escalation.js";
+
 /**
  * One signal for a turn: the host's, if it gave one, with the turn's own
  * deadline and the executor's own abort folded in, and a `dispose` that
@@ -107,4 +109,17 @@ export function createTurnDeadlines(
 /** A count with its noun, singular for one: "1 step", "20 tool calls". */
 export function counted(count: number, noun: string): string {
   return `${String(count)} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+/**
+ * The one call a spent budget does not stop, where the turn offers it.
+ *
+ * Asking for a human ends the turn without passing through the envelope's
+ * budgets: a driver returns an escalate decision and the MCP latch answers the
+ * call itself. A model told that nothing more will run would be told something
+ * false on a turn that offers it, so the exception is named there and only
+ * there.
+ */
+export function exceptEscalation(offered: boolean): string {
+  return offered ? `, except asking for a human with ${ESCALATION_TOOL_NAME}` : "";
 }

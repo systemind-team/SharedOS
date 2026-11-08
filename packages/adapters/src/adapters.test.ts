@@ -723,6 +723,50 @@ describe("a harness driven as a SharedOS turn", () => {
     );
   });
 
+  it("hands over the host's guidance, then the reach, then the limits", async () => {
+    const limits = { maxSteps: 6, maxToolCalls: 4 };
+    const transport = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport, instructions: "Read before you write." }), {
+      limits,
+    });
+    const opened = transport.opened[0];
+
+    expect(opened?.instructions).toBe(
+      [
+        "Read before you write.",
+        describeReach(opened?.context.reach ?? { status: "computed", reach: [] }),
+        String(describeLimits(limits)),
+      ].join("\n\n"),
+    );
+  });
+
+  it("tells the harness nothing about limits when an instructions function says what it is told", async () => {
+    const transport = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport, instructions: () => "Only this." }), {
+      limits: { maxSteps: 6, maxToolCalls: 4, timeoutMs: 120_000 },
+    });
+
+    expect(transport.opened[0]?.instructions).toBe("Only this.");
+  });
+
+  it("names asking for a human as still open once the call budget is spent, where the turn offers it", async () => {
+    const offered = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport: offered }), {
+      escalation: true,
+      limits: { maxToolCalls: 4 },
+    });
+    const notOffered = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport: notOffered }), { limits: { maxToolCalls: 4 } });
+
+    expect(offered.opened[0]?.instructions).toContain(
+      "every further tool call this turn is refused, except asking for a human with " +
+        "sharedos.escalate, so finish with what you have.",
+    );
+    expect(notOffered.opened[0]?.instructions).toContain(
+      "every further tool call this turn is refused, so finish with what you have.",
+    );
+  });
+
   it("shows the harness the sanitised context and nothing else", async () => {
     const transport = new TranscriptTransport(codexTranscript);
     await runWith(createCodexDriver({ transport }));

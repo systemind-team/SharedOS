@@ -929,11 +929,14 @@ describe("what the model is told about its limits", () => {
     });
 
     expect(plain).not.toContain("Limits the host set");
+    // The turn offers the escalate affordance, so the call budget names it as
+    // the one call that still works once the budget is spent.
     expect(limited).toBe(
       `${String(plain)}\n\n${String(
-        describeLimits({ maxSteps: 6, maxToolCalls: 4, timeoutMs: 120_000 }),
+        describeLimits({ maxSteps: 6, maxToolCalls: 4, timeoutMs: 120_000 }, { escalation: true }),
       )}`,
     );
+    expect(limited).toContain("except asking for a human with sharedos.escalate");
   });
 
   it("is told its reach and nothing more when the host set no limit", async () => {
@@ -976,7 +979,7 @@ describe("what the model is told about its limits", () => {
         error: {
           code: "tool_call_limit_exceeded",
           message:
-            "This turn's budget of 1 tool call is used up. No further tool call will run this turn; finish with what you have.",
+            "This turn's budget of 1 tool call is used up. No further tool call will run this turn, except asking for a human with sharedos.escalate; finish with what you have.",
         },
       },
     });
