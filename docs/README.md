@@ -62,8 +62,8 @@ already filtered down to what it may use, so the model never sees the mailbox
 exists. Every individual call — the exact path, the exact action — is authorized
 again at invocation time, because passing discovery is not permission to invoke.
 The model never sees the grants themselves or the authority that issued them.
-The turn carries a deadline, and what was requested, allowed, and denied is
-recorded.
+The turn carries the deadline the host set, if any, and what was requested,
+allowed, and denied is recorded.
 
 The message coordinated the work. It never carried authority.
 

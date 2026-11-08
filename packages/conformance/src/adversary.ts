@@ -460,7 +460,8 @@ export class HostileRuntime implements RuntimePlugin {
     if (attempt.tool === undefined) {
       return skipped(move, attempt, "the attempt names neither a tool nor a surface");
     }
-    if (issued >= host.limits.maxToolCalls && attempt.overBudget !== true) {
+    const { maxSteps, maxToolCalls } = host.limits;
+    if (maxToolCalls !== undefined && issued >= maxToolCalls && attempt.overBudget !== true) {
       return skipped(move, attempt, "the attempt falls outside the turn's tool-call budget");
     }
 
@@ -492,10 +493,13 @@ export class HostileRuntime implements RuntimePlugin {
       // naming a step past the other one would have the row report the wrong
       // boundary -- `step_limit_exceeded` on a condition armed to evidence
       // `tool_call_limit_exceeded`. Both are correct refusals; they are not
-      // interchangeable evidence.
+      // interchangeable evidence. With no step budget set there is nothing to
+      // name a step past, and the attempt keeps its own.
       const step =
-        attempt.overBudget === true && issued < host.limits.maxToolCalls
-          ? Math.max(issued, host.limits.maxSteps)
+        attempt.overBudget === true &&
+        maxSteps !== undefined &&
+        (maxToolCalls === undefined || issued < maxToolCalls)
+          ? Math.max(issued, maxSteps)
           : issued;
       result = await host.invokeTool(call, { step });
     } catch (error) {

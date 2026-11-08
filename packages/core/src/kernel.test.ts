@@ -1659,7 +1659,6 @@ describe("SharedOSKernel messaging and audit", () => {
                 userId: {
                   type: "string",
                   minLength: 1,
-                  maxLength: 256,
                   pattern: "^(?!\\s)[\\s\\S]*\\S$",
                 },
               },
@@ -1673,7 +1672,6 @@ describe("SharedOSKernel messaging and audit", () => {
                 agentId: {
                   type: "string",
                   minLength: 1,
-                  maxLength: 256,
                   pattern: "^(?!\\s)[\\s\\S]*\\S$",
                 },
               },
@@ -1687,7 +1685,6 @@ describe("SharedOSKernel messaging and audit", () => {
                 conversationId: {
                   type: "string",
                   minLength: 1,
-                  maxLength: 256,
                   pattern: "^(?!\\s)[\\s\\S]*\\S$",
                 },
               },
@@ -1701,7 +1698,6 @@ describe("SharedOSKernel messaging and audit", () => {
                 serviceId: {
                   type: "string",
                   minLength: 1,
-                  maxLength: 256,
                   pattern: "^(?!\\s)[\\s\\S]*\\S$",
                 },
               },
@@ -2890,6 +2886,44 @@ describe("what a failing audit sink does, by when the record is written", () => 
       } finally {
         vi.useRealTimers();
       }
+    });
+
+    it("holds a limit longer than one timer can, instead of firing at once", async () => {
+      // Real time: the platform fires a timer asked for 2^31 ms or more after 1 ms.
+      let reach: (() => void) | undefined;
+      let answer: (() => void) | undefined;
+      const reached = new Promise<void>((resolve) => {
+        reach = resolve;
+      });
+      const audit: AuditSink = {
+        record: (event) => {
+          if (event.type !== "tool.invoked") {
+            return Promise.resolve();
+          }
+          reach?.();
+          return new Promise<void>((resolve) => {
+            answer = resolve;
+          });
+        },
+      };
+      const onAuditError = vi.fn<NonNullable<SharedOSKernelOptions["onAuditError"]>>();
+      const kernel = kernelWith([grant("grant-search", FILE_RESOURCE, ["search"])], {
+        audit,
+        onAuditError,
+        auditWriteTimeoutMs: 2 ** 31,
+      });
+      kernel.registerTool(successfulTool());
+
+      const settled = vi.fn();
+      const invoked = kernel.invokeTool(context(["files"]), toolCall()).then(settled);
+      await reached;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(settled).not.toHaveBeenCalled();
+
+      answer?.();
+      await invoked;
+      expect(settled.mock.calls[0]?.[0]).toMatchObject({ status: "succeeded" });
+      expect(onAuditError).not.toHaveBeenCalled();
     });
 
     it.each([0, -1, 1.5, Number.NaN])("rejects a limit of %s", (auditWriteTimeoutMs) => {

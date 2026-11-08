@@ -49,7 +49,8 @@ try {
 ```
 
 A harness declares no step, so a turn served this way is bounded by the
-envelope's `maxToolCalls` and `timeoutMs`, not by `maxSteps`.
+envelope's `maxToolCalls` and `timeoutMs` when the host sets them, not by
+`maxSteps`. Neither has a default.
 
 ## One name
 
@@ -106,8 +107,8 @@ SharedOS is currently a `1.0.0` preview.
 
 A successful tool may include `metadata["sharedos/content"]` with inline MCP
 image blocks (`type: "image"`, `mimeType`, base64 `data`). The MCP adapter retains
-the ordinary JSON/text summary and appends valid JPEG, PNG or WebP images, bounded
-to four images and 4 MiB of encoded data per result. Other metadata, remote URLs,
+the ordinary JSON/text summary and appends valid JPEG, PNG or WebP images, at any
+count or size. Other metadata, remote URLs,
 and images on failed or denied results are not forwarded as content. This is a
 presentation hint; it grants no authority and does not change tool discovery.
 
@@ -492,7 +493,7 @@ that would let a run claim the first while being the second.
 
 ### HarnessMcpConfigFile
 
-Defined in: [mcp/src/harness-config.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L45)
+Defined in: [mcp/src/harness-config.ts:48](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L48)
 
 One generated file: what to write, and what a harness expects it to be called.
 
@@ -500,9 +501,9 @@ One generated file: what to write, and what a harness expects it to be called.
 
 | Property                                  | Modifier   | Type     | Defined in                                                                                                                  |
 | ----------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-contents"></a> `contents` | `readonly` | `string` | [mcp/src/harness-config.ts:48](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L48) |
-| <a id="property-filename"></a> `filename` | `readonly` | `string` | [mcp/src/harness-config.ts:47](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L47) |
-| <a id="property-harness"></a> `harness`   | `readonly` | `string` | [mcp/src/harness-config.ts:46](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L46) |
+| <a id="property-contents"></a> `contents` | `readonly` | `string` | [mcp/src/harness-config.ts:51](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L51) |
+| <a id="property-filename"></a> `filename` | `readonly` | `string` | [mcp/src/harness-config.ts:50](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L50) |
+| <a id="property-harness"></a> `harness`   | `readonly` | `string` | [mcp/src/harness-config.ts:49](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L49) |
 
 ---
 
@@ -529,12 +530,12 @@ never the thing that decides.
 
 #### Properties
 
-| Property                                       | Modifier   | Type     | Description                                                                             | Defined in                                                                                                                  |
-| ---------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-name"></a> `name?`             | `readonly` | `string` | The server name the harness will namespace its aliases under.                           | [mcp/src/harness-config.ts:28](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L28) |
-| <a id="property-timeoutsec"></a> `timeoutSec?` | `readonly` | `number` | Per-call timeout in the emitted config. Set by nothing today; see `docs/open-items.md`. | [mcp/src/harness-config.ts:30](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L30) |
-| <a id="property-token"></a> `token?`           | `readonly` | `string` | Bearer token for a sandboxed or remote harness.                                         | [mcp/src/harness-config.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L32) |
-| <a id="property-url"></a> `url`                | `readonly` | `string` | The Streamable HTTP endpoint the turn-scoped bridge is serving.                         | [mcp/src/harness-config.ts:26](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L26) |
+| Property                                       | Modifier   | Type     | Description                                                                                                                            | Defined in                                                                                                                  |
+| ---------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-name"></a> `name?`             | `readonly` | `string` | The server name the harness will namespace its aliases under.                                                                          | [mcp/src/harness-config.ts:28](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L28) |
+| <a id="property-timeoutsec"></a> `timeoutSec?` | `readonly` | `number` | Per-call timeout in the emitted config. Unset unless the host sets it; unset writes no timeout, and the harness's own default applies. | [mcp/src/harness-config.ts:33](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L33) |
+| <a id="property-token"></a> `token?`           | `readonly` | `string` | Bearer token for a sandboxed or remote harness.                                                                                        | [mcp/src/harness-config.ts:35](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L35) |
+| <a id="property-url"></a> `url`                | `readonly` | `string` | The Streamable HTTP endpoint the turn-scoped bridge is serving.                                                                        | [mcp/src/harness-config.ts:26](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L26) |
 
 ---
 
@@ -821,7 +822,7 @@ Defined in: [mcp/src/protocol.ts:79](https://github.com/systemind-team/SharedOS/
 
 > **McpHarnessId** = _typeof_ [`MCP_HARNESS_IDS`](#mcp_harness_ids)\[`number`\]
 
-Defined in: [mcp/src/harness-config.ts:222](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L222)
+Defined in: [mcp/src/harness-config.ts:229](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L229)
 
 ## Variables
 
@@ -945,7 +946,7 @@ Defined in: [mcp/src/protocol.ts:21](https://github.com/systemind-team/SharedOS/
 
 > `const` **MCP\_HARNESS\_IDS**: readonly \[`"codex"`, `"claude-code"`, `"deepseek"`, `"pi"`\]
 
-Defined in: [mcp/src/harness-config.ts:221](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L221)
+Defined in: [mcp/src/harness-config.ts:228](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L228)
 
 The harnesses this package emits a connection for, by id.
 
@@ -998,7 +999,7 @@ a label for equality, not an encoding: nothing parses it back into an
 
 > **claudeAgentSdkMcpOptions**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:126](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L126)
+Defined in: [mcp/src/harness-config.ts:129](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L129)
 
 Claude Agent SDK options for a non-interactive evaluation.
 
@@ -1024,7 +1025,7 @@ every one of those calls is re-authorized by the kernel.
 
 > **claudeCodeMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:102](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L102)
+Defined in: [mcp/src/harness-config.ts:105](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L105)
 
 Claude Code's `.mcp.json`.
 
@@ -1044,7 +1045,7 @@ Claude Code's `.mcp.json`.
 
 > **codexMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:92](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L92)
+Defined in: [mcp/src/harness-config.ts:95](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L95)
 
 Codex's `config.toml` fragment: [codexMcpServerSettings](#codexmcpserversettings) as a table.
 
@@ -1064,7 +1065,7 @@ Codex's `config.toml` fragment: [codexMcpServerSettings](#codexmcpserversettings
 
 > **codexMcpServerSettings**(`connection`): readonly readonly \[`string`, `string`\][]
 
-Defined in: [mcp/src/harness-config.ts:76](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L76)
+Defined in: [mcp/src/harness-config.ts:77](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L77)
 
 The settings a Codex MCP server entry carries, as key and TOML value.
 
@@ -1138,7 +1139,7 @@ Defined in: [mcp/src/policy.ts:27](https://github.com/systemind-team/SharedOS/bl
 
 > **deepseekMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:158](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L158)
+Defined in: [mcp/src/harness-config.ts:161](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L161)
 
 DeepSeek Harness's plugin patch overlay.
 
@@ -1178,7 +1179,7 @@ a harness that declined to use the catalogue, which is a different finding.
 
 > **harnessMcpConfigFile**(`harness`, `connection`): [`HarnessMcpConfigFile`](#harnessmcpconfigfile)
 
-Defined in: [mcp/src/harness-config.ts:225](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L225)
+Defined in: [mcp/src/harness-config.ts:232](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L232)
 
 Every emitter above, addressed by harness id.
 
@@ -1199,7 +1200,7 @@ Every emitter above, addressed by harness id.
 
 > **harnessToolAlias**(`serverName`, `tool`): `string`
 
-Defined in: [mcp/src/harness-config.ts:264](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L264)
+Defined in: [mcp/src/harness-config.ts:271](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L271)
 
 The harness-facing alias a tool is likely to appear under.
 
@@ -1298,7 +1299,7 @@ long-running harness the host is supervising by other means.
 
 > **mcpServerName**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L40)
+Defined in: [mcp/src/harness-config.ts:43](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L43)
 
 The server name a harness namespaces its aliases under: the connection's own,
 or `sharedos`. The one place the default is applied, so an emitted config, a
@@ -1430,7 +1431,7 @@ Defined in: [mcp/src/policy.ts:37](https://github.com/systemind-team/SharedOS/bl
 
 > **piMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:204](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L204)
+Defined in: [mcp/src/harness-config.ts:209](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L209)
 
 Pi's `.mcp.json`, read by an MCP extension.
 

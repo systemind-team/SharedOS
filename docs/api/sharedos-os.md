@@ -29,14 +29,14 @@ SharedOS is currently a `1.0.0` preview.
 
 ### StandardOsProviders
 
-Defined in: [index.ts:211](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L211)
+Defined in: [index.ts:206](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L206)
 
 #### Properties
 
 | Property                             | Modifier   | Type                                                    | Defined in                                                                                         |
 | ------------------------------------ | ---------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:212](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L212) |
-| <a id="property-repo"></a> `repo?`   | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:213](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L213) |
+| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:207](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L207) |
+| <a id="property-repo"></a> `repo?`   | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:208](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L208) |
 
 ## Type Aliases
 
@@ -52,7 +52,7 @@ Defined in: [index.ts:37](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > **FilesAppendArguments** = `z.infer`\<_typeof_ [`FilesAppendArgumentsSchema`](#filesappendargumentsschema)>\>
 
-Defined in: [index.ts:106](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L106)
+Defined in: [index.ts:102](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L102)
 
 ---
 
@@ -68,7 +68,7 @@ Defined in: [index.ts:70](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > **FilesDeleteArguments** = `z.infer`\<_typeof_ [`FilesDeleteArgumentsSchema`](#filesdeleteargumentsschema)>\>
 
-Defined in: [index.ts:115](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L115)
+Defined in: [index.ts:111](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L111)
 
 ---
 
@@ -92,7 +92,7 @@ Defined in: [index.ts:40](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > **FilesReplaceArguments** = `z.infer`\<_typeof_ [`FilesReplaceArgumentsSchema`](#filesreplaceargumentsschema)>\>
 
-Defined in: [index.ts:96](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L96)
+Defined in: [index.ts:92](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L92)
 
 ---
 
@@ -108,7 +108,7 @@ Defined in: [index.ts:49](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > **FilesSnapshotCreateArguments** = `z.infer`\<_typeof_ [`FilesSnapshotCreateArgumentsSchema`](#filessnapshotcreateargumentsschema)>\>
 
-Defined in: [index.ts:123](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L123)
+Defined in: [index.ts:119](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L119)
 
 ---
 
@@ -116,7 +116,7 @@ Defined in: [index.ts:123](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **FilesSnapshotListArguments** = `z.infer`\<_typeof_ [`FilesSnapshotListArgumentsSchema`](#filessnapshotlistargumentsschema)>\>
 
-Defined in: [index.ts:131](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L131)
+Defined in: [index.ts:127](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L127)
 
 ---
 
@@ -124,7 +124,7 @@ Defined in: [index.ts:131](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **FilesSnapshotRestoreArguments** = `z.infer`\<_typeof_ [`FilesSnapshotRestoreArgumentsSchema`](#filessnapshotrestoreargumentsschema)>\>
 
-Defined in: [index.ts:140](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L140)
+Defined in: [index.ts:136](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L136)
 
 ---
 
@@ -132,7 +132,7 @@ Defined in: [index.ts:140](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoCommitArguments** = `z.infer`\<_typeof_ [`RepoCommitArgumentsSchema`](#repocommitargumentsschema)>\>
 
-Defined in: [index.ts:199](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L199)
+Defined in: [index.ts:194](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L194)
 
 ---
 
@@ -140,7 +140,7 @@ Defined in: [index.ts:199](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoDiffArguments** = `z.infer`\<_typeof_ [`RepoDiffArgumentsSchema`](#repodiffargumentsschema)>\>
 
-Defined in: [index.ts:181](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L181)
+Defined in: [index.ts:176](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L176)
 
 ---
 
@@ -148,7 +148,7 @@ Defined in: [index.ts:181](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoLogArguments** = `z.infer`\<_typeof_ [`RepoLogArgumentsSchema`](#repologargumentsschema)>\>
 
-Defined in: [index.ts:189](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L189)
+Defined in: [index.ts:184](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L184)
 
 ---
 
@@ -156,7 +156,7 @@ Defined in: [index.ts:189](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoPathspec** = `z.infer`\<_typeof_ [`RepoPathspecSchema`](#repopathspecschema)>\>
 
-Defined in: [index.ts:153](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L153)
+Defined in: [index.ts:149](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L149)
 
 ---
 
@@ -164,7 +164,7 @@ Defined in: [index.ts:153](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoStageArguments** = `z.infer`\<_typeof_ [`RepoStageArgumentsSchema`](#repostageargumentsschema)>\>
 
-Defined in: [index.ts:194](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L194)
+Defined in: [index.ts:189](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L189)
 
 ---
 
@@ -172,7 +172,7 @@ Defined in: [index.ts:194](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoStatusArguments** = `z.infer`\<_typeof_ [`RepoStatusArgumentsSchema`](#repostatusargumentsschema)>\>
 
-Defined in: [index.ts:172](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L172)
+Defined in: [index.ts:167](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L167)
 
 ## Variables
 
@@ -196,9 +196,9 @@ The canonical SharedOS resource plane. Memory is a role of files, not a second s
 
 ### FilesAppendArgumentsSchema
 
-> `const` **FilesAppendArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
+> `const` **FilesAppendArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodString`, `string`, `string`>>\>\>; `metadata`: `ZodOptional`\<`ZodRecord`\<`ZodString`, `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>>>\>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `metadata?`: `Record`\<`string`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:98](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L98)
+Defined in: [index.ts:94](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L94)
 
 ---
 
@@ -212,9 +212,9 @@ Defined in: [index.ts:63](https://github.com/systemind-team/SharedOS/blob/main/p
 
 ### FilesDeleteArgumentsSchema
 
-> `const` **FilesDeleteArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `recursive`: `ZodDefault`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive`: `boolean`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive?`: `boolean`; \}\>
+> `const` **FilesDeleteArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodString`, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `recursive`: `ZodDefault`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive`: `boolean`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `recursive?`: `boolean`; \}\>
 
-Defined in: [index.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L108)
+Defined in: [index.ts:104](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L104)
 
 ---
 
@@ -236,9 +236,9 @@ Defined in: [index.ts:39](https://github.com/systemind-team/SharedOS/blob/main/p
 
 ### FilesReplaceArgumentsSchema
 
-> `const` **FilesReplaceArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}\>
+> `const` **FilesReplaceArgumentsSchema**: `ZodObject`\<\{ `content`: `ZodType`\<[`JsonValue`](sharedos-contracts.md#jsonvalue), `ZodTypeDef`, [`JsonValue`](sharedos-contracts.md#jsonvalue)>\>; `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodString`, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}, \{ `content`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `expectedVersion?`: `string`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:89](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L89)
+Defined in: [index.ts:85](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L85)
 
 ---
 
@@ -254,7 +254,7 @@ Defined in: [index.ts:42](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > `const` **FilesSnapshotCreateArgumentsSchema**: `ZodObject`\<\{ `label`: `ZodOptional`\<`ZodString`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `label?`: `string`; `path`: `string`[]; \}, \{ `label?`: `string`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:117](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L117)
+Defined in: [index.ts:113](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L113)
 
 ---
 
@@ -262,15 +262,15 @@ Defined in: [index.ts:117](https://github.com/systemind-team/SharedOS/blob/main/
 
 > `const` **FilesSnapshotListArgumentsSchema**: `ZodObject`\<\{ `limit`: `ZodOptional`\<`ZodNumber`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `limit?`: `number`; `path`: `string`[]; \}, \{ `limit?`: `number`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:125](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L125)
+Defined in: [index.ts:121](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L121)
 
 ---
 
 ### FilesSnapshotRestoreArgumentsSchema
 
-> `const` **FilesSnapshotRestoreArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodEffects`\<`ZodString`, `string`, `string`>\>, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `snapshotId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}\>
+> `const` **FilesSnapshotRestoreArgumentsSchema**: `ZodObject`\<\{ `expectedVersion`: `ZodOptional`\<`ZodEffects`\<`ZodString`, `string`, `string`>>\>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `snapshotId`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}, \{ `expectedVersion?`: `string`; `path`: `string`[]; `snapshotId`: `string`; \}\>
 
-Defined in: [index.ts:133](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L133)
+Defined in: [index.ts:129](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L129)
 
 ---
 
@@ -296,7 +296,7 @@ ADR 0024.
 
 > `const` **RepoCommitArgumentsSchema**: `ZodObject`\<\{ `message`: `ZodEffects`\<`ZodString`, `string`, `string`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `message`: `string`; `path`: `string`[]; \}, \{ `message`: `string`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:196](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L196)
+Defined in: [index.ts:191](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L191)
 
 ---
 
@@ -304,7 +304,7 @@ Defined in: [index.ts:196](https://github.com/systemind-team/SharedOS/blob/main/
 
 > `const` **RepoDiffArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `pathspec`: `ZodOptional`\<`ZodArray`\<`ZodArray`\<`ZodString`, `"many"`>\>, `"many"`>>\>\>; `staged`: `ZodDefault`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; `pathspec?`: `string`[][]; `staged`: `boolean`; \}, \{ `path`: `string`[]; `pathspec?`: `string`[][]; `staged?`: `boolean`; \}\>
 
-Defined in: [index.ts:174](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L174)
+Defined in: [index.ts:169](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L169)
 
 ---
 
@@ -312,7 +312,7 @@ Defined in: [index.ts:174](https://github.com/systemind-team/SharedOS/blob/main/
 
 > `const` **RepoLogArgumentsSchema**: `ZodObject`\<\{ `maxCount`: `ZodOptional`\<`ZodNumber`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `maxCount?`: `number`; `path`: `string`[]; \}, \{ `maxCount?`: `number`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:183](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L183)
+Defined in: [index.ts:178](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L178)
 
 ---
 
@@ -320,7 +320,7 @@ Defined in: [index.ts:183](https://github.com/systemind-team/SharedOS/blob/main/
 
 > `const` **RepoPathspecSchema**: `ZodArray`\<`ZodArray`\<`ZodString`, `"many"`>\>, `"many"`>\>
 
-Defined in: [index.ts:152](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L152)
+Defined in: [index.ts:148](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L148)
 
 Paths inside a repository, selecting what a diff or a stage covers.
 
@@ -337,7 +337,7 @@ authorization boundary. See ADR 0024.
 
 > `const` **RepoStageArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `pathspec`: `ZodArray`\<`ZodArray`\<`ZodString`, `"many"`>\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; `pathspec`: `string`[][]; \}, \{ `path`: `string`[]; `pathspec`: `string`[][]; \}\>
 
-Defined in: [index.ts:191](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L191)
+Defined in: [index.ts:186](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L186)
 
 ---
 
@@ -345,7 +345,7 @@ Defined in: [index.ts:191](https://github.com/systemind-team/SharedOS/blob/main/
 
 > `const` **RepoStatusArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; \}, \{ `path`: `string`[]; \}\>
 
-Defined in: [index.ts:171](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L171)
+Defined in: [index.ts:166](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L166)
 
 ---
 
@@ -361,7 +361,7 @@ Defined in: [index.ts:34](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > **createFileTools**(`provider`): readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
-Defined in: [index.ts:239](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L239)
+Defined in: [index.ts:234](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L234)
 
 Portable file tools over one host-owned provider.
 
@@ -385,7 +385,7 @@ readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
 > **createRepoTools**(`provider`): readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
-Defined in: [index.ts:473](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L473)
+Defined in: [index.ts:468](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L468)
 
 The vetted Git subset over one host-owned provider, beside the file tools.
 
@@ -419,7 +419,7 @@ readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
 > **registerStandardOsTools**(`kernel`, `providers`): `void`
 
-Defined in: [index.ts:216](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L216)
+Defined in: [index.ts:211](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L211)
 
 #### Parameters
 

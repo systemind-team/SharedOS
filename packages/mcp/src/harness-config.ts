@@ -26,7 +26,10 @@ export interface HarnessMcpConnection {
   readonly url: string;
   /** The server name the harness will namespace its aliases under. */
   readonly name?: string;
-  /** Per-call timeout in the emitted config. Set by nothing today; see `docs/open-items.md`. */
+  /**
+   * Per-call timeout in the emitted config. Unset unless the host sets it;
+   * unset writes no timeout, and the harness's own default applies.
+   */
   readonly timeoutSec?: number;
   /** Bearer token for a sandboxed or remote harness. */
   readonly token?: string;
@@ -47,8 +50,6 @@ export interface HarnessMcpConfigFile {
   readonly filename: string;
   readonly contents: string;
 }
-
-const DEFAULT_TIMEOUT_SEC = 120;
 
 /**
  * The settings a Codex MCP server entry carries, as key and TOML value.
@@ -79,7 +80,9 @@ export function codexMcpServerSettings(
   const settings: (readonly [string, string])[] = [
     ["url", JSON.stringify(connection.url)],
     ["required", "true"],
-    ["tool_timeout_sec", String(connection.timeoutSec ?? DEFAULT_TIMEOUT_SEC)],
+    ...(connection.timeoutSec === undefined
+      ? []
+      : [["tool_timeout_sec", String(connection.timeoutSec)] as const]),
     ["default_tools_approval_mode", JSON.stringify("approve")],
   ];
   if (connection.token !== undefined) {
@@ -166,7 +169,9 @@ export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
     "        transport: streamable-http",
     `        url: ${JSON.stringify(connection.url)}`,
     "        failOnStartupError: true",
-    `        toolCallTimeoutMs: ${(connection.timeoutSec ?? DEFAULT_TIMEOUT_SEC) * 1_000}`,
+    ...(connection.timeoutSec === undefined
+      ? []
+      : [`        toolCallTimeoutMs: ${connection.timeoutSec * 1_000}`]),
   ];
   if (connection.token !== undefined) {
     lines.push(
@@ -208,7 +213,9 @@ export function piMcpConfig(connection: HarnessMcpConnection): JsonObject {
       [name]: {
         url: connection.url,
         lifecycle: "eager",
-        requestTimeoutMs: (connection.timeoutSec ?? DEFAULT_TIMEOUT_SEC) * 1_000,
+        ...(connection.timeoutSec === undefined
+          ? {}
+          : { requestTimeoutMs: connection.timeoutSec * 1_000 }),
         ...(connection.token === undefined
           ? {}
           : { auth: "bearer", bearerToken: connection.token }),

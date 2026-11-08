@@ -108,4 +108,20 @@ describe("createTurnDeadlines", () => {
     expect(deadlines.draining.reason).not.toBe(outage);
     deadlines.dispose();
   });
+
+  it("arms no deadline when the turn has no time limit", async () => {
+    const deadlines = createTurnDeadlines(undefined, undefined, 5_000);
+    expect(vi.getTimerCount()).toBe(0);
+
+    await vi.advanceTimersByTimeAsync(30 * 86_400_000);
+    expect(deadlines.draining.aborted).toBe(false);
+    expect(deadlines.signal.aborted).toBe(false);
+
+    // A drain the envelope starts itself still stops the turn after the grace.
+    deadlines.drain(new Error("audit outage"));
+    expect(deadlines.draining.aborted).toBe(true);
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(deadlines.signal.aborted).toBe(true);
+    deadlines.dispose();
+  });
 });

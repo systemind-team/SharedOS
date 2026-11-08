@@ -105,7 +105,7 @@ statically through `registerTool`, or per context through a
 `ContextToolProvider`, which is what keeps one user's reload out of another
 user's registry. They are then subject to the identical three gates, because a
 tool is not trusted merely because it was registered. A published catalog holds
-at most 512 tools.
+any number of tools.
 
 `@aicoo/sharedos-conformance` also defines tools — a sealed one, an escaping one,
 a mismatched one, a brokered `notion.search`. Those are adversarial fixtures for
@@ -116,14 +116,14 @@ the conformance matrix, not part of any shipped catalog.
 Every call above resolves to one row here. This is the coordinate system the
 authorization decision actually works in — a namespace, a path, and an action.
 
-| Namespace            | Path                     | Actions                                                                                                                                   | Reached by                                    |
-| -------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `files`              | File path, ≤ 64 segments | `list`, `stat`, `read`, `search`, `grep`, `create`, `replace`, `append`, `delete`, `snapshot:create`, `snapshot:list`, `snapshot:restore` | `files.*` tools, `/v1/resources/invoke`       |
-| `sharedos.messaging` | Recipient address        | `send`                                                                                                                                    | `/v1/messages`, `messages.request`            |
-| `sharedos.execution` | Target agent address     | `invoke`                                                                                                                                  | `/v1/turns` admission                         |
-| `repo`               | Repository path          | `status`, `diff`, `log`, `stage`, `commit`                                                                                                | `repo.*` tools                                |
-| `sharedos`           | `["escalation"]`         | `request`                                                                                                                                 | whether `sharedos.escalate` is offered at all |
-| `sharedos`           | `["directory", …]`       | `read`                                                                                                                                    | `kernel.readAgentCard`                        |
+| Namespace            | Path                 | Actions                                                                                                                                   | Reached by                                    |
+| -------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `files`              | File path            | `list`, `stat`, `read`, `search`, `grep`, `create`, `replace`, `append`, `delete`, `snapshot:create`, `snapshot:list`, `snapshot:restore` | `files.*` tools, `/v1/resources/invoke`       |
+| `sharedos.messaging` | Recipient address    | `send`                                                                                                                                    | `/v1/messages`, `messages.request`            |
+| `sharedos.execution` | Target agent address | `invoke`                                                                                                                                  | `/v1/turns` admission                         |
+| `repo`               | Repository path      | `status`, `diff`, `log`, `stage`, `commit`                                                                                                | `repo.*` tools                                |
+| `sharedos`           | `["escalation"]`     | `request`                                                                                                                                 | whether `sharedos.escalate` is offered at all |
+| `sharedos`           | `["directory", …]`   | `read`                                                                                                                                    | `kernel.readAgentCard`                        |
 
 Host-registered namespaces — `calendar`, `github`, a user's `notion` MCP server —
 join this table on the same terms. Note that tool names use dots and actions use

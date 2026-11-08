@@ -13,7 +13,6 @@ import {
   SHAREDOS_API_ERROR_CODES,
   SHAREDOS_ROUTES,
   isJsonObject,
-  MAX_EXECUTION_TIMEOUT_MS,
   MessageDeliveryResultSchema,
   MessageEnvelopeSchema,
   MessageRequestArgumentsSchema,
@@ -102,6 +101,33 @@ describe("JSON-safe protocol contracts", () => {
     expect(CapabilityGrantSchema.parse(grant)).toEqual(grant);
     expect(AccessContextSchema.parse(context)).toEqual(context);
     expectTypeOf(AccessContextSchema.parse(context)).toEqualTypeOf<AccessContext>();
+  });
+
+  it("sets no size limit on a grant or a context", () => {
+    const long = "x".repeat(10_000);
+    const capability = {
+      resource: {
+        namespace: long,
+        path: Array.from({ length: 500 }, (_value, index) => `${long}-${index}`),
+        owner,
+      },
+      actions: Array.from({ length: 500 }, (_value, index) => `${long}-${index}`),
+      scope: "descendants" as const,
+    };
+    const large = {
+      ...grant,
+      id: long,
+      capabilities: Array.from({ length: 200 }, () => capability),
+      constraints: {
+        ...grant.constraints,
+        purposes: Array.from({ length: 200 }, (_value, index) => `${long}-${index}`),
+      },
+    };
+
+    expect(CapabilityGrantSchema.safeParse(large).success).toBe(true);
+    expect(
+      AccessContextSchema.safeParse({ ...context, purpose: long, traceId: long }).success,
+    ).toBe(true);
   });
 
   it("round-trips an optional execution id without granting authority", () => {
@@ -301,7 +327,7 @@ describe("JSON-safe protocol contracts", () => {
     ).toBe(false);
   });
 
-  it("validates model-authored recipient IDs without normalization and by Unicode code point", () => {
+  it("validates model-authored recipient IDs without normalization, at any length", () => {
     const recipient = (kind: string, idKey: string, id: string) => ({
       kind,
       [idKey]: id,
@@ -320,10 +346,8 @@ describe("JSON-safe protocol contracts", () => {
       "\uFEFFidentifier",
       "identifier\u00A0",
     ];
-    const ascii256 = "a".repeat(256);
-    const ascii257 = "a".repeat(257);
-    const emoji256 = "😀".repeat(256);
-    const emoji257 = "😀".repeat(257);
+    const asciiLong = "a".repeat(10_000);
+    const emojiLong = "😀".repeat(10_000);
 
     for (const [kind, idKey] of variants) {
       const parse = (id: string) =>
@@ -335,10 +359,8 @@ describe("JSON-safe protocol contracts", () => {
       for (const id of invalidWhitespace) {
         expect(parse(id).success, `${kind} should reject ${JSON.stringify(id)}`).toBe(false);
       }
-      expect(parse(ascii256).success).toBe(true);
-      expect(parse(ascii257).success).toBe(false);
-      expect(parse(emoji256).success).toBe(true);
-      expect(parse(emoji257).success).toBe(false);
+      expect(parse(asciiLong).success).toBe(true);
+      expect(parse(emojiLong).success).toBe(true);
     }
   });
 
@@ -415,17 +437,8 @@ describe("JSON-safe protocol contracts", () => {
         tools: [tool],
       }).success,
     ).toBe(true);
-    expect(
-      ExecutionRequestSchema.safeParse({
-        version: "1",
-        executionId: "execution-1",
-        agent: actor,
-        context,
-        message,
-        tools: [tool],
-        options: { maxToolCalls: 10_001 },
-      }).success,
-    ).toBe(false);
+    // SharedOS sets no ceiling on a turn: any positive limit a host names is
+    // admitted, and a non-positive one is still not a limit at all.
     expect(
       ExecutionRequestSchema.safeParse({
         version: "1",
@@ -434,18 +447,18 @@ describe("JSON-safe protocol contracts", () => {
         context,
         message,
         tools: [tool],
-        options: { timeoutMs: MAX_EXECUTION_TIMEOUT_MS },
+        options: { maxSteps: 1_000_001, maxToolCalls: 10_000_001, timeoutMs: 30 * 86_400_000 },
       }).success,
     ).toBe(true);
     expect(
       ExecutionRequestSchema.safeParse({
         version: "1",
-        executionId: "execution-too-long",
+        executionId: "execution-no-time",
         agent: actor,
         context,
         message,
         tools: [tool],
-        options: { timeoutMs: MAX_EXECUTION_TIMEOUT_MS + 1 },
+        options: { timeoutMs: 0 },
       }).success,
     ).toBe(false);
     expect(

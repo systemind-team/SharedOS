@@ -31,6 +31,60 @@ each entry calls out what a host has to update.
 
 ### Changed
 
+- **Breaking: SharedOS sets no limits of its own.** Every turn and harness
+  limit is now unset unless the host sets it, and an unset limit is no limit.
+  What a host has to update:
+  - `SharedOSExecutor`: `defaultMaxSteps` (was 16), `defaultTimeoutMs` (was
+    120 000) and `defaultMaxToolCalls` have no default, and the tool-call limit
+    no longer falls back to the step limit. A host that set only
+    `defaultMaxSteps` and relied on it to cap tool calls sets
+    `defaultMaxToolCalls` as well. `RuntimeLimits` fields are
+    `number | undefined`.
+  - `ExecutionOptions`: no ceiling on `maxSteps` (was 1,000), `maxToolCalls`
+    (was 10,000) or `timeoutMs` (was two hours). `MAX_EXECUTION_TIMEOUT_MS` and
+    `MAX_EXECUTION_TOOL_CALLS` are removed. A deadline longer than one timer
+    can hold (about 24.8 days) is waited out rather than firing early.
+  - `createStandardRuntime`: `closeTimeoutMs` (was 1 s) has no default.
+  - `OpenAiCompatibleModelClient`: `maxOutputTokens` (was 4,096) has no
+    default and, unset, sends no `max_completion_tokens`, so the provider's own
+    ceiling applies. `requestTimeoutMs` (was 120 s) has no default. A failed
+    call worth retrying is now retried ten times, 1.5 s apart (was once).
+    On Node, a model that thinks for more than 300 s before or while it
+    answers is no longer cut off: Node's built-in fetch gives up after 300 s
+    without data, so with no `fetch` passed the client now calls through
+    undici with those waits switched off. `@aicoo/sharedos-adapters` now
+    depends on `undici` 8, which uses HTTP/2 where the provider offers it.
+  - `StandardTurnDriver`'s `maxMalformedCalls` (was 8), `EvalHarnessDriver`'s
+    `maxIgnoredFrames` (was 512) and an MCP harness launch's `idleTimeoutMs`
+    (was 120 s) have no default. The harness `--version` probe no longer gives
+    up after 10 s.
+  - `HarnessMcpConnection.timeoutSec` (was 120) has no default. Unset, no
+    per-call timeout is written into the Codex, DeepSeek or Pi configuration,
+    and each harness's own default applies.
+  - Delegation chains have no default maximum (was 16;
+    `DEFAULT_MAX_DELEGATION_CHAIN_LENGTH` is removed). `maxDelegationChainLength`
+    still sets one, and a cycle still fails `chain_cycle`.
+  - Removed outright: the 256-grant cap on one decision (`MAX_RESOLVED_GRANTS`,
+    and the `grant_limit_exceeded` code with it); the 512-tool cap on a turn's
+    request and its published catalogue; the 512-character cap on an
+    escalation reason, which is no longer cut (`ESCALATION_REASON_MAX_LENGTH`);
+    the four-image and 4 MiB caps on MCP image results; and the file tools'
+    caps on results (100), grep context (100 lines), path segments (64) and
+    commit messages (500 characters).
+  - The contracts set no size limits at all. Every string length, list length
+    and count is gone: identifiers and path segments (were 256 characters),
+    resource paths, capabilities, actions and purposes per grant (were 64),
+    purposes (were 512 characters), actions, tool names and event types (were
+    128), tool descriptions and HTTP error messages (were 8,192), protocol
+    error messages (were 4,096), reach lists (were 16,384), namespace
+    catalogues and enabled namespaces (were 256), tool policy lists, message
+    parent ids, the MCP execution token's claims, and the file tools' query,
+    pattern, label, snapshot id and version token. The JSON schemas published
+    for `sharedos.message.request` and the file tools drop their matching
+    `maxLength`. Shape checks are unchanged. The conformance execution
+    record drops the same caps, so a record of a long turn no longer fails to
+    assemble and a long escalation reason is no longer read as no ask.
+
 - **Breaking: Node.js 22.19 or newer is required (was 20.11).** Node 20 has
   been end of life since April 2026, and newer dependencies such as `undici`
   8 need Node 22.19. Every package's `engines.node` is `>=22.19`, and CI runs
@@ -141,6 +195,15 @@ each entry calls out what a host has to update.
   they read 11.9 and 12.4 µs. The same blocks are read as prose and as calls;
   DeepSeek, whose calls arrive in a frame of their own, and Codex, which does
   not use the walk, never paid it.
+
+- **A host's timeout longer than about 24.8 days now waits that long.** One
+  timer holds at most 2^31 - 1 ms; asked for more, the platform fires it
+  almost at once, or refuses it. So `OpenAiCompatibleModelClient`'s
+  `requestTimeoutMs` failed every model call, retries included; an MCP
+  harness launch's `idleTimeoutMs` closed a session harness's input almost as
+  soon as it opened; and the kernel's `auditWriteTimeoutMs` treated any audit
+  write after an effect that took more than a millisecond as timed out. Each
+  is now waited out in steps, as a turn's deadline already was.
 
 ## 1.0.0-preview
 

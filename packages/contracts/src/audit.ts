@@ -110,7 +110,7 @@ export const AuditEventSchema = z
     actor: AddressSchema,
     authority: AddressSchema,
     owner: AddressSchema,
-    purpose: z.string().trim().min(1).max(512),
+    purpose: z.string().trim().min(1),
     resource: ResourceRefSchema.optional(),
     action: IdentifierSchema.optional(),
     grantId: IdentifierSchema.optional(),

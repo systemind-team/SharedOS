@@ -52,7 +52,7 @@ export const RuntimeTurnOutcomeSchema = z.discriminatedUnion("type", [
   RuntimeTurnOutcomeBaseSchema.extend({
     type: z.literal("escalate"),
     /** Why the turn stopped and what it needs a human to decide. */
-    reason: z.string().trim().min(1).max(512),
+    reason: z.string().trim().min(1),
   }).strict(),
 ]);
 

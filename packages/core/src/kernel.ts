@@ -91,6 +91,7 @@ import {
   MissingRegistrationError,
 } from "./errors.js";
 import {
+  after,
   deepFreeze,
   protocolError,
   raceAbort,
@@ -2310,7 +2311,7 @@ export class SharedOSKernel {
       await write;
       return;
     }
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let cancel: (() => void) | undefined;
     const pending = Promise.resolve(write);
     // Left running past the limit, so what it then does must land somewhere.
     pending.catch(() => undefined);
@@ -2318,11 +2319,11 @@ export class SharedOSKernel {
       await Promise.race([
         pending,
         new Promise<never>((_resolve, reject) => {
-          timer = setTimeout(() => reject(new AuditWriteTimeoutError(timeoutMs)), timeoutMs);
+          cancel = after(timeoutMs, () => reject(new AuditWriteTimeoutError(timeoutMs)));
         }),
       ]);
     } finally {
-      clearTimeout(timer);
+      cancel?.();
     }
   }
 }

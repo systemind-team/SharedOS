@@ -1,7 +1,10 @@
+import { after } from "@aicoo/sharedos-core/internal";
+
 /**
  * One signal for a turn: the host's, if it gave one, with the turn's own
  * deadline and the executor's own abort folded in, and a `dispose` that
- * releases both once the turn is over.
+ * releases both once the turn is over. With no `timeoutMs` the turn has no
+ * deadline of its own.
  */
 export function createAbortController(
   parent: AbortSignal | undefined,
@@ -14,18 +17,16 @@ export function createAbortController(
     abortFromParent();
   }
 
-  const timeout =
+  const cancelTimeout =
     timeoutMs === undefined
       ? undefined
-      : setTimeout(() => controller.abort(new Error("turn timeout")), timeoutMs);
+      : after(timeoutMs, () => controller.abort(new Error("turn timeout")));
 
   return {
     signal: controller.signal,
     abort: (reason?: unknown): void => controller.abort(reason),
     dispose: (): void => {
-      if (timeout !== undefined) {
-        clearTimeout(timeout);
-      }
+      cancelTimeout?.();
       parent?.removeEventListener("abort", abortFromParent);
     },
   };
@@ -45,10 +46,12 @@ export function createAbortController(
  * and the hard stop then follows after the grace or at the deadline, whichever
  * comes first. With no grace the two signals are one and `drain` is `abort`.
  * A host's own cancellation never drains: it asked for a stop, and gets it.
+ * With no `timeoutMs` there is no deadline to drain ahead of, and the turn
+ * drains only when `drain` is called.
  */
 export function createTurnDeadlines(
   parent: AbortSignal | undefined,
-  timeoutMs: number,
+  timeoutMs: number | undefined,
   graceMs: number,
 ): {
   signal: AbortSignal;
@@ -67,11 +70,11 @@ export function createTurnDeadlines(
     drainFromHard();
   }
 
-  let softTimeout =
-    graceMs > 0 && !soft.signal.aborted
-      ? setTimeout(() => soft.abort(new Error("turn draining")), Math.max(0, timeoutMs - graceMs))
+  let cancelSoft =
+    graceMs > 0 && timeoutMs !== undefined && !soft.signal.aborted
+      ? after(Math.max(0, timeoutMs - graceMs), () => soft.abort(new Error("turn draining")))
       : undefined;
-  let stopAfterGrace: ReturnType<typeof setTimeout> | undefined;
+  let cancelStopAfterGrace: (() => void) | undefined;
   let disposed = false;
 
   return {
@@ -86,15 +89,15 @@ export function createTurnDeadlines(
       } else if (!hard.signal.aborted && !disposed) {
         // Not once disposed: a call that outlives its turn can still ask, and a
         // timer armed then has nobody left to clear it.
-        stopAfterGrace ??= setTimeout(() => hard.abort(reason), graceMs);
+        cancelStopAfterGrace ??= after(graceMs, () => hard.abort(reason));
       }
     },
     abort: hard.abort,
     dispose: (): void => {
       disposed = true;
-      clearTimeout(softTimeout);
-      clearTimeout(stopAfterGrace);
-      softTimeout = undefined;
+      cancelSoft?.();
+      cancelStopAfterGrace?.();
+      cancelSoft = undefined;
       hard.signal.removeEventListener("abort", drainFromHard);
       hard.dispose();
     },

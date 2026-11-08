@@ -11,14 +11,15 @@ delete its row; a row that stays for another release should say why.
 
 | Item                                                  | Where                                                           | State                                                                                                                                                                                                                                                                                        | Decision                                                                                                                                          |
 | ----------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `HarnessMcpConnection.timeoutSec`                     | `packages/mcp/src/harness-config.ts`                            | Read by the three config emitters and, through `codexMcpServerSettings`, by the Codex launch; set by nothing, so every consumer sees `DEFAULT_TIMEOUT_SEC`.                                                                                                                                  | Set it on the connection the runtime builds, or remove it from the connection.                                                                    |
+| `HarnessMcpConnection.timeoutSec`                     | `packages/mcp/src/harness-config.ts`                            | Read by the three config emitters and, through `codexMcpServerSettings`, by the Codex launch; set by nothing, so no timeout is written and each harness's own default applies.                                                                                                               | Set it on the connection the runtime builds, or remove it from the connection.                                                                    |
 | `SharedOSKernel.readAgentCard`, `AgentCardViewSchema` | `packages/core/src/kernel.ts`, `packages/contracts/src/card.ts` | ADR 0021 says a card is published to the model as `sharedos.card`, the way `sharedos.escalate` is. The kernel method is built and tested; no tool, route or bridge serves it, so nothing outside `agent-card.test.ts` calls it, and the view schema waits to be that tool's argument schema. | Build the `sharedos.card` published tool over `readAgentCard`, or revise ADR 0021 to say the card is an in-process read and drop the view schema. |
 
 Also recorded by the audit and not yet decided, each declared and never set or
 never read: `HarnessMcpConfigFile.harness`; `HarnessStep.complete.metadata`;
-`EvalHarnessDriverOptions.maxIgnoredFrames` (never set, and its two failure paths
-have no unit test); `OpenAiCompatibleModelClientOptions.maxOutputTokens`,
-`temperature`, and `requestTimeoutMs` (read with defaults, set by no script);
+`EvalHarnessDriverOptions.maxIgnoredFrames` (never set, so no limit, and its two
+failure paths have no unit test); `OpenAiCompatibleModelClientOptions.maxOutputTokens`
+and `requestTimeoutMs` (no limit unless set, set by no script) and `temperature`
+(read with a default, set by no script);
 `catalogueDelivery` manifest metadata;
 `ToolAliasRecord.at`. Each is a declaration with no in-repo writer or reader;
 `git grep` on the name is the evidence.

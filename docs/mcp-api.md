@@ -171,8 +171,8 @@ namespace settings, credentials, handler references — is listed in
 
 `catalogHash` is 64 hex characters over the tools and nothing else, so two
 harnesses handed the same semantic tool set produce the same hash even though
-their execution ids, transports, and aliases differ. A catalogue holds at most
-512 tools.
+their execution ids, transports, and aliases differ. A catalogue holds any
+number of tools.
 
 ### `tools/call`
 

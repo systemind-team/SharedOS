@@ -55,6 +55,7 @@
     "@aicoo/sharedos-core": "workspace:*",
     "@aicoo/sharedos-mcp": "workspace:*",
     "@aicoo/sharedos-runtime": "workspace:*",
+    "undici": "^8.12.4",
     "zod": "^3.24.1"
   },
   "devDependencies": {

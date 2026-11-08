@@ -286,6 +286,26 @@ describe("delegation chain validation", () => {
     });
   });
 
+  it("walks a chain of any length when no maximum is set", async () => {
+    const links = 20;
+    const agent = (index: number) => ({ kind: "agent", agentId: `agent-${index}` }) as const;
+    const chain = Array.from({ length: links + 1 }, (_value, index) =>
+      parentGrant({
+        id: `grant-${index}`,
+        subject: agent(index),
+        issuer: index === 0 ? OWNER : agent(index - 1),
+        constraints: { ...parentGrant().constraints, delegationDepth: links - index + 1 },
+        ...(index === 0 ? {} : { parentGrantId: `grant-${index - 1}` }),
+      }),
+    );
+    const leaf = chain[links] as CapabilityGrant;
+
+    await expect(validate(leaf, resolverFor(...chain))).resolves.toEqual({
+      status: "valid",
+      chain: Array.from({ length: links }, (_value, index) => `grant-${links - 1 - index}`),
+    });
+  });
+
   it("fails closed when the chain cannot be established", async () => {
     await expect(validate(childGrant(), undefined)).resolves.toMatchObject({
       status: "unverified",

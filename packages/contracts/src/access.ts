@@ -20,7 +20,7 @@ export const AccessContextSchema = z
     actor: AddressSchema,
     authority: AddressSchema,
     owner: AddressSchema,
-    purpose: z.string().trim().min(1).max(512),
+    purpose: z.string().trim().min(1),
     traceId: IdentifierSchema,
     /**
      * The execution this context belongs to, carried by every kernel call the

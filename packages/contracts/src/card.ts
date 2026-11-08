@@ -99,7 +99,7 @@ export const AgentCardSchema = z.discriminatedUnion("view", [
     .object({
       view: z.literal("namespaces"),
       ...cardIdentity,
-      namespaces: z.array(ReachSummarySchema).max(256),
+      namespaces: z.array(ReachSummarySchema),
     })
     .strict(),
 ]);

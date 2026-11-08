@@ -59,8 +59,8 @@ export const SharedOSApiErrorResponseSchema = z
   .object({
     error: z
       .object({
-        code: z.string().trim().min(1).max(128),
-        message: z.string().min(1).max(8_192),
+        code: z.string().trim().min(1),
+        message: z.string().min(1),
         requestId: IdentifierSchema.optional(),
       })
       .strict(),

@@ -30,6 +30,10 @@ const turns = new SharedOSExecutor(kernel, runtime, {
 const result = await turns.execute(executionRequest);
 ```
 
+The limits above are the host's choice. Each is unset unless the host sets it,
+and an unset limit is no limit: SharedOS sets no step, tool-call or time limit
+of its own.
+
 ## Escalation
 
 A turn may end by asking a human to decide (ADR 0011, ADR 0017). The ask is a

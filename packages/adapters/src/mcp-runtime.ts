@@ -9,6 +9,7 @@ import type {
   ToolCall,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
+import { after } from "@aicoo/sharedos-core/internal";
 import {
   McpToolServer,
   mcpServerName,
@@ -79,16 +80,16 @@ export interface McpHarnessLaunch {
    * whoever reads the result.
    *
    * When set, stdin is held open until the protocol reports the turn's terminal
-   * frame, or until the harness has been silent for `idleTimeoutMs`.
+   * frame, or, when `idleTimeoutMs` is set, until the harness has been silent
+   * that long.
    */
   readonly keepStdinOpen?: boolean;
   /**
    * How long a session harness may produce no output before stdin is closed.
    *
    * Only consulted with `keepStdinOpen`. A one-shot harness exits on its own; a
-   * session harness that never reaches a terminal frame would otherwise hold the
-   * turn open indefinitely. Pi streams token deltas throughout a turn, so
-   * silence is a stall rather than a long step.
+   * session harness that never reaches a terminal frame holds the turn open
+   * until the turn ends. Unset unless the host sets it, and unset is no limit.
    */
   readonly idleTimeoutMs?: number;
 }
@@ -520,30 +521,29 @@ async function runHarness(
 
   // A session harness is shut down by closing its command channel, so the close
   // is deferred to the turn's terminal frame instead of happening at the write.
-  const idleMs = launch.idleTimeoutMs ?? DEFAULT_SESSION_IDLE_MS;
-  let idleTimer: NodeJS.Timeout | undefined;
+  const idleMs = launch.idleTimeoutMs;
+  let cancelIdle: (() => void) | undefined;
   const closeStdin = (): void => {
-    if (idleTimer !== undefined) {
-      clearTimeout(idleTimer);
-      idleTimer = undefined;
-    }
+    cancelIdle?.();
+    cancelIdle = undefined;
     harness.endInput();
   };
   const touch = (): void => {
-    if (launch.keepStdinOpen !== true || harness.inputEnded) {
+    if (idleMs === undefined || launch.keepStdinOpen !== true || harness.inputEnded) {
       return;
     }
-    if (idleTimer !== undefined) {
-      clearTimeout(idleTimer);
-    }
-    idleTimer = setTimeout(() => {
-      options.onDiagnostic?.(
-        spec.id,
-        `no output for ${String(idleMs)}ms; closing the harness session`,
-      );
-      closeStdin();
-    }, idleMs);
-    idleTimer.unref();
+    cancelIdle?.();
+    cancelIdle = after(
+      idleMs,
+      () => {
+        options.onDiagnostic?.(
+          spec.id,
+          `no output for ${String(idleMs)}ms; closing the harness session`,
+        );
+        closeStdin();
+      },
+      { unref: true },
+    );
   };
 
   // The turn's hard signal ends the process. A draining turn does not: the
@@ -622,9 +622,6 @@ async function runHarness(
   );
 }
 
-/** Two minutes of silence from a session harness is a stall, not a long step. */
-const DEFAULT_SESSION_IDLE_MS = 120_000;
-
 /**
  * Claude Code, connected to the SharedOS bridge.
  *
@@ -650,8 +647,9 @@ const DEFAULT_SESSION_IDLE_MS = 120_000;
  * gain in evidence.
  *
  * No `--max-turns` is set, as no other spec caps its CLI's turns: a turn ends
- * when the host's own step and time limits say so. A host or a probe that
- * wants Claude's cap as well appends `--max-turns <n>` through `args`.
+ * when the harness finishes, or when the host's own limits say so if it set
+ * any. A host or a probe that wants Claude's cap as well appends
+ * `--max-turns <n>` through `args`.
  */
 export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: CLAUDE_CODE_VENDOR.id,

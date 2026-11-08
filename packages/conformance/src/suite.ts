@@ -1,5 +1,3 @@
-import { MAX_EXECUTION_TIMEOUT_MS } from "@aicoo/sharedos-contracts";
-
 import type { AttackMove } from "./adversary.js";
 import type { TurnExpectation } from "./judge.js";
 import { canonicalMove } from "./moves.js";
@@ -262,8 +260,8 @@ export const CANONICAL_CONFORMANCE_CASES: readonly ConformanceCase[] = Object.fr
       {
         id: "draining-from-the-start",
         description:
-          "The envelope is given a drain grace as long as the longest turn it admits, so the turn takes no new call from its first instant. No clock is involved: every call the runtime makes is refused, on every run.",
-        world: { drainGraceMs: MAX_EXECUTION_TIMEOUT_MS },
+          "The envelope is given a drain grace as long as the turn's time limit, so the turn takes no new call from its first instant. No clock is involved: every call the runtime makes is refused, on every run.",
+        world: { timeoutMs: 120_000, drainGraceMs: 120_000 },
       },
     ],
   },

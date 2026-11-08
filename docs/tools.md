@@ -59,8 +59,7 @@ appear in the catalog at all. The literal `"*"` is the one action that covers
 every other, so a grant listing it makes all twelve visible — see the
 [permission model](security/permission-model.md#capabilities-and-resources).
 
-`path` is an array of segments, at most 64, each at most 256 characters.
-Separators, traversal markers, and control characters are rejected by the
+`path` is an array of segments, at any length. Separators, traversal markers, and control characters are rejected by the
 contract, so every host receives the same canonical vocabulary.
 
 Argument schemas are exported if you need to validate ahead of a call:

@@ -19,13 +19,13 @@ import { z } from "zod";
  */
 export const ExecutionTokenClaimsSchema = z
   .object({
-    executionId: z.string().min(1).max(256),
-    namespaceId: z.string().min(1).max(256),
+    executionId: z.string().min(1),
+    namespaceId: z.string().min(1),
     /**
      * The acting principal as {@link canonicalActor} renders it: `<kind>:<id>`,
      * for example `agent:a-1`. Compared by equality, never parsed back.
      */
-    actor: z.string().min(1).max(512),
+    actor: z.string().min(1),
     catalogHash: z.string().regex(/^[0-9a-f]{64}$/u),
     /** RFC 3339. A token with no expiry is not issued. */
     expiresAt: z.string().datetime({ offset: true }),

@@ -1,9 +1,7 @@
 import {
   ExecutionRequestSchema,
   JsonValueSchema,
-  MAX_EXECUTION_TOOL_CALLS,
   PROTOCOL_VERSION,
-  MAX_EXECUTION_TIMEOUT_MS,
   RuntimeEventSchema,
   RuntimeManifestSchema,
   RuntimeTurnOutcomeSchema,
@@ -57,6 +55,11 @@ import {
 export interface SharedOSExecutorOptions {
   clock?: () => string;
   createId?: () => string;
+  /**
+   * The turn limits used when a request sets none. Each is unset unless the
+   * host sets it, and an unset limit is no limit: a turn then runs until its
+   * runtime ends it or the host cancels it.
+   */
   defaultMaxSteps?: number;
   defaultMaxToolCalls?: number;
   defaultTimeoutMs?: number;
@@ -73,7 +76,8 @@ export interface SharedOSExecutorOptions {
    *
    * Zero, the default, is the behaviour before this option. It is not capped
    * against a request's `timeoutMs`; a grace no smaller than the limit leaves a
-   * turn no time in which a call is taken, and choosing it is the host's.
+   * turn no time in which a call is taken, and choosing it is the host's. A
+   * turn with no `timeoutMs` has no deadline to drain ahead of.
    */
   drainGraceMs?: number;
   /**
@@ -147,9 +151,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
   readonly #manifest: RuntimeManifest;
   readonly #clock: () => string;
   readonly #createId: () => string;
-  readonly #defaultMaxSteps: number;
+  readonly #defaultMaxSteps: number | undefined;
   readonly #defaultMaxToolCalls: number | undefined;
-  readonly #defaultTimeoutMs: number;
+  readonly #defaultTimeoutMs: number | undefined;
   readonly #drainGraceMs: number;
   readonly #spans: SpanSink | undefined;
   readonly #onTurnError: TurnErrorReporter | undefined;
@@ -171,37 +175,24 @@ export class SharedOSExecutor implements TurnExecutionPort {
     });
     this.#clock = options.clock ?? (() => new Date().toISOString());
     this.#createId = options.createId ?? (() => crypto.randomUUID());
-    this.#defaultMaxSteps = options.defaultMaxSteps ?? 16;
+    this.#defaultMaxSteps = options.defaultMaxSteps;
     this.#defaultMaxToolCalls = options.defaultMaxToolCalls;
-    this.#defaultTimeoutMs = options.defaultTimeoutMs ?? 120_000;
+    this.#defaultTimeoutMs = options.defaultTimeoutMs;
     this.#drainGraceMs = options.drainGraceMs ?? 0;
     this.#spans = options.spans;
     this.#onTurnError = options.onTurnError;
 
-    if (!Number.isInteger(this.#defaultMaxSteps) || this.#defaultMaxSteps <= 0) {
-      throw new TypeError("defaultMaxSteps must be a positive integer");
+    for (const [name, value] of [
+      ["defaultMaxSteps", this.#defaultMaxSteps],
+      ["defaultMaxToolCalls", this.#defaultMaxToolCalls],
+      ["defaultTimeoutMs", this.#defaultTimeoutMs],
+    ] as const) {
+      if (value !== undefined && (!Number.isInteger(value) || value <= 0)) {
+        throw new TypeError(`${name} must be a positive integer`);
+      }
     }
-    if (
-      this.#defaultMaxToolCalls !== undefined &&
-      (!Number.isInteger(this.#defaultMaxToolCalls) ||
-        this.#defaultMaxToolCalls <= 0 ||
-        this.#defaultMaxToolCalls > MAX_EXECUTION_TOOL_CALLS)
-    ) {
-      throw new TypeError(`defaultMaxToolCalls must be between 1 and ${MAX_EXECUTION_TOOL_CALLS}`);
-    }
-    if (
-      !Number.isInteger(this.#defaultTimeoutMs) ||
-      this.#defaultTimeoutMs <= 0 ||
-      this.#defaultTimeoutMs > MAX_EXECUTION_TIMEOUT_MS
-    ) {
-      throw new TypeError(`defaultTimeoutMs must be between 1 and ${MAX_EXECUTION_TIMEOUT_MS}`);
-    }
-    if (
-      !Number.isInteger(this.#drainGraceMs) ||
-      this.#drainGraceMs < 0 ||
-      this.#drainGraceMs > MAX_EXECUTION_TIMEOUT_MS
-    ) {
-      throw new TypeError(`drainGraceMs must be between 0 and ${MAX_EXECUTION_TIMEOUT_MS}`);
+    if (!Number.isInteger(this.#drainGraceMs) || this.#drainGraceMs < 0) {
+      throw new TypeError("drainGraceMs must be a non-negative integer");
     }
   }
 
@@ -343,10 +334,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
     }
 
     const timeoutMs = request.options?.timeoutMs ?? this.#defaultTimeoutMs;
-    const maxSteps = request.options?.maxSteps ?? this.#defaultMaxSteps;
     const limits: RuntimeLimits = deepFreeze({
-      maxSteps,
-      maxToolCalls: request.options?.maxToolCalls ?? this.#defaultMaxToolCalls ?? maxSteps,
+      maxSteps: request.options?.maxSteps ?? this.#defaultMaxSteps,
+      maxToolCalls: request.options?.maxToolCalls ?? this.#defaultMaxToolCalls,
       timeoutMs,
     });
     const abort = createTurnDeadlines(options.signal, timeoutMs, this.#drainGraceMs);
@@ -540,7 +530,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
           steps.add(step);
         }
 
-        if (toolCallCount >= limits.maxToolCalls) {
+        if (limits.maxToolCalls !== undefined && toolCallCount >= limits.maxToolCalls) {
           const result = refusedToolResult(
             parsedCall.data,
             "denied",
@@ -926,9 +916,14 @@ function toRuntimeTurnRequest(
  * A plugin that declares no step at all is not step-bounded, because the
  * envelope sees tool calls and cannot infer model turns from them. That plugin
  * is still bounded by `maxToolCalls`, which needs nothing from the runtime.
+ * With no `maxSteps` set every step is inside the budget.
  */
-function stepIsWithinBudget(step: number, seen: ReadonlySet<number>, maxSteps: number): boolean {
-  return step < maxSteps && (seen.has(step) || seen.size < maxSteps);
+function stepIsWithinBudget(
+  step: number,
+  seen: ReadonlySet<number>,
+  maxSteps: number | undefined,
+): boolean {
+  return maxSteps === undefined || (step < maxSteps && (seen.has(step) || seen.size < maxSteps));
 }
 
 function parseRuntimeStep(step: number | undefined): number | undefined {

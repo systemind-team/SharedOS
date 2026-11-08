@@ -220,10 +220,8 @@ describe("standard OS file tools", () => {
       for (const value of invalidWhitespace) {
         expect(schema.safeParse(argumentsFor(schema, value)).success).toBe(false);
       }
-      expect(schema.safeParse(argumentsFor(schema, "a".repeat(256))).success).toBe(true);
-      expect(schema.safeParse(argumentsFor(schema, "a".repeat(257))).success).toBe(false);
-      expect(schema.safeParse(argumentsFor(schema, "😀".repeat(256))).success).toBe(true);
-      expect(schema.safeParse(argumentsFor(schema, "😀".repeat(257))).success).toBe(false);
+      expect(schema.safeParse(argumentsFor(schema, "a".repeat(10_000))).success).toBe(true);
+      expect(schema.safeParse(argumentsFor(schema, "😀".repeat(10_000))).success).toBe(true);
     }
 
     expect(
@@ -244,7 +242,6 @@ describe("standard OS file tools", () => {
     const expectedPublishedVersionSchema = {
       type: "string",
       minLength: 1,
-      maxLength: 256,
       pattern: "^(?!\\s)[\\s\\S]*\\S$",
     };
     for (const name of [

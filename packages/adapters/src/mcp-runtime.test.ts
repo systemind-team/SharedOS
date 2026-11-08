@@ -493,7 +493,7 @@ for await (const line of createInterface({ input: process.stdin })) {
 }
 `;
 
-function sessionHarness(keepStdinOpen: boolean): McpHarnessSpec {
+function sessionHarness(keepStdinOpen: boolean, idleTimeoutMs = 10_000): McpHarnessSpec {
   return {
     id: "session",
     manifest: {
@@ -519,7 +519,7 @@ function sessionHarness(keepStdinOpen: boolean): McpHarnessSpec {
       args: [configPaths["harness.mjs"] as string, configPaths[".mcp.json"] as string],
       stdin: `${JSON.stringify({ call: { name: "files.read", arguments: { path: GRANTED } } })}\n`,
       keepStdinOpen,
-      idleTimeoutMs: 10_000,
+      idleTimeoutMs,
     }),
   };
 }
@@ -533,6 +533,19 @@ describe("a harness whose stdin is a session", () => {
     expect(result.events.filter(({ type }) => type === "tool.requested")).toHaveLength(1);
     // The turn ended, so the channel was closed rather than left open: a session
     // held past its terminal frame would hang the run instead of finishing it.
+  }, 30_000);
+
+  it("holds an idle timeout longer than one timer can, instead of closing at once", async () => {
+    // The platform fires a timer asked for 2^31 ms or more after 1 ms, which
+    // would close the session before the harness made its call.
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(sessionHarness(true, 2 ** 31)),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    expect(result.events.filter(({ type }) => type === "tool.requested")).toHaveLength(1);
   }, 30_000);
 
   it("makes no call at all when the channel is closed at the write", async () => {
@@ -902,16 +915,20 @@ describe("the Codex spec", () => {
     const settings = codexMcpServerSettings(connection);
     const emitted = codexMcpConfig(connection);
 
+    // No per-call timeout unless the host sets one: Codex's own default applies.
     expect(settings.map(([key]) => key)).toEqual([
       "url",
       "required",
-      "tool_timeout_sec",
       "default_tools_approval_mode",
     ]);
     for (const [key, value] of settings) {
       expect(launch.args).toContain(`mcp_servers.sharedos.${key}=${value}`);
       expect(emitted).toContain(`${key} = ${value}`);
     }
+    expect(codexMcpServerSettings({ ...connection, timeoutSec: 300 })).toContainEqual([
+      "tool_timeout_sec",
+      "300",
+    ]);
   });
 
   it("makes the scratch workspace the project root, so no checkout above it is read", () => {

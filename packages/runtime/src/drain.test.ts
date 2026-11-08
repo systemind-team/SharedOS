@@ -572,7 +572,7 @@ describe("a turn that drains before its deadline", () => {
     const { kernel } = world(0);
     expect(() =>
       executor(kernel, createStandardRuntime({ driver: scripted([]).driver }), drainGraceMs),
-    ).toThrow("drainGraceMs must be between 0 and");
+    ).toThrow("drainGraceMs must be a non-negative integer");
   });
 });
 

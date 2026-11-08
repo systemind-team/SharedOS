@@ -106,7 +106,7 @@ export type SystemIdentity = z.infer<typeof SystemIdentitySchema>;
 export const AuthoritySnapshotRecordSchema = z
   .object({
     hash: ContentHashSchema,
-    grantIds: z.array(IdentifierSchema).max(256),
+    grantIds: z.array(IdentifierSchema),
     grantCount: z.number().int().nonnegative(),
     firstSeenAt: TimestampSchema,
     lastSeenAt: TimestampSchema,
@@ -121,9 +121,9 @@ export const AuthorityRecordSchema = z
     actor: AddressSchema,
     owner: AddressSchema,
     namespaceId: IdentifierSchema,
-    purpose: z.string().min(1).max(512),
+    purpose: z.string().min(1),
     /** Every distinct authority state the turn observed, in first-seen order. */
-    snapshots: z.array(AuthoritySnapshotRecordSchema).max(256),
+    snapshots: z.array(AuthoritySnapshotRecordSchema),
     /** Set only when one authority state covered the whole turn. */
     stableAuthorityHash: ContentHashSchema.optional(),
   })
@@ -189,7 +189,7 @@ export type OperationRecord = z.infer<typeof OperationRecordSchema>;
 
 /** What a delegate states when it recognises the escalation affordance. */
 export const EscalationAskedSchema = z
-  .object({ tool: IdentifierSchema, reason: z.string().max(512) })
+  .object({ tool: IdentifierSchema, reason: z.string() })
   .strict();
 export type EscalationAsked = z.infer<typeof EscalationAskedSchema>;
 
@@ -241,11 +241,11 @@ export const ExecutionRecordExecutionSchema = z
      */
     callsAfterEscalation: z.number().int().nonnegative().optional(),
     /** Tools the permission filter actually exposed to the runtime. */
-    exposedTools: z.array(IdentifierSchema).max(512),
-    requestedTools: z.array(IdentifierSchema).max(512),
-    decisions: z.array(DecisionRecordSchema).max(4_096),
-    operations: z.array(OperationRecordSchema).max(4_096),
-    events: z.array(ExecutionEventSchema).max(8_192),
+    exposedTools: z.array(IdentifierSchema),
+    requestedTools: z.array(IdentifierSchema),
+    decisions: z.array(DecisionRecordSchema),
+    operations: z.array(OperationRecordSchema),
+    events: z.array(ExecutionEventSchema),
     /** Where the full audit stream lives; SharedOS does not own audit storage. */
     auditRef: z
       .object({

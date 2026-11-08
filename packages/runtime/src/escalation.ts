@@ -7,13 +7,6 @@ export const ESCALATION_TOOL_NAME = "sharedos.escalate";
 export const ESCALATION_RESOURCE_PATH: readonly string[] = Object.freeze(["escalation"]);
 export const ESCALATION_ACTION = "request";
 /**
- * The longest reason an escalation can carry, restating the contract's bound on
- * `RuntimeTurnOutcome.reason` and `Escalation.reason` rather than importing a
- * schema this package does not validate with.
- */
-export const ESCALATION_REASON_MAX_LENGTH = 512;
-
-/**
  * The key a delegate states the ask under, through `RuntimeHost.annotate`.
  *
  * Every path that honours the affordance ends the turn without forwarding the
@@ -82,7 +75,6 @@ export const ESCALATION_TOOL_DEFINITION: ToolDefinition = Object.freeze({
       reason: {
         type: "string",
         minLength: 1,
-        maxLength: ESCALATION_REASON_MAX_LENGTH,
         description: "What needs deciding, and why this turn cannot decide it.",
       },
     },
@@ -151,41 +143,15 @@ export function createEscalationTool(): ToolHandler {
  * will refuse it, which turns "the driver asked for a human" into "the agent
  * made a malformed call" -- the wrong record of what happened.
  *
- * A reason longer than the outcome can carry is cut to
- * {@link ESCALATION_REASON_MAX_LENGTH}, not replaced. It is the occupant's own
- * words, and the first 512 characters of what was said are a truer record than
- * a sentence saying nothing was.
+ * The reason is the occupant's own words and is kept whole, at any length.
  */
 export function escalationRequest(tool: string, arguments_: unknown): string | undefined {
   if (tool !== ESCALATION_TOOL_NAME) {
     return undefined;
   }
   const object = JsonObjectSchema.safeParse(arguments_);
-  const reason = object.success ? boundedReason(object.data["reason"]) : undefined;
+  const reason = object.success ? escalationReason(object.data["reason"]) : undefined;
   return reason ?? "the turn asked for a human decision without saying what needs deciding";
-}
-
-/**
- * The seat occupant's reason, kept verbatim up to the bound.
- *
- * Cut on a character rather than mid-way through a surrogate pair, so the
- * recorded reason is still well-formed text; the schema measures UTF-16 units,
- * and so does the cut.
- */
-function boundedReason(value: unknown): string | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return undefined;
-  }
-  if (trimmed.length <= ESCALATION_REASON_MAX_LENGTH) {
-    return trimmed;
-  }
-  const cut = trimmed.slice(0, ESCALATION_REASON_MAX_LENGTH);
-  const last = cut.charCodeAt(cut.length - 1);
-  return last >= 0xd800 && last <= 0xdbff ? cut.slice(0, -1) : cut;
 }
 
 /** The arguments an escalation is requested with, for a driver writing the call. */
@@ -194,26 +160,19 @@ export function escalationArguments(reason: string): JsonObject {
 }
 
 /**
- * A reason string bounded exactly as `RuntimeTurnOutcome`'s is.
+ * A reason string as `RuntimeTurnOutcome` accepts one: text that is not empty
+ * once trimmed, at any length.
  *
  * Checked here rather than with a schema because this package carries no
- * validator of its own; the bounds are the contract's and are restated, not
- * loosened, so a decision that parses here still parses as an outcome.
- *
- * Strict where {@link escalationRequest} cuts, on purpose. That function reads
- * a model's or a harness's words, which are input; this one checks a driver's
- * decision, which is code. A driver that hands the loop an overlong reason has
- * a bug, and the loop refusing the decision is how the bug is found rather
- * than quietly trimmed away.
+ * validator of its own; the rule is the contract's, restated, so a decision
+ * that parses here still parses as an outcome.
  */
 export function escalationReason(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
   const trimmed = value.trim();
-  return trimmed.length === 0 || trimmed.length > ESCALATION_REASON_MAX_LENGTH
-    ? undefined
-    : trimmed;
+  return trimmed.length === 0 ? undefined : trimmed;
 }
 
 /**

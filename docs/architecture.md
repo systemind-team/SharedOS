@@ -310,10 +310,11 @@ Two runtimes ship. `createStandardRuntime({ driver })` uses `AgentTurnDriver` as
 its model/provider seam, and `StandardTurnDriver` fills it from a model API.
 `createMcpHarnessRuntime` seats a vendor CLI that runs its own loop. A host can
 also install its own `RuntimePlugin`. All of them receive frozen,
-sanitized input without grants or issuing authority. Turn timeouts are bounded
-and their `AbortSignal` is propagated through plugins, drivers, tools,
-resources, and HTTP requests. Every plugin receives the effective step budget,
-and the envelope holds both ceilings itself rather than trusting the plugin to:
+sanitized input without grants or issuing authority. A turn has a timeout
+only when the host sets one, and its `AbortSignal` is propagated through
+plugins, drivers, tools, resources, and HTTP requests. Every plugin receives
+the effective limits, unset unless the host set them, and the envelope holds
+both ceilings itself rather than trusting the plugin to:
 a hard tool-call limit, which needs nothing from the runtime, and a step limit
 over the steps a plugin declares. A plugin that declares no step is bounded by
 the call ceiling alone, because the envelope sees tool calls and cannot infer

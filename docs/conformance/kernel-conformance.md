@@ -23,8 +23,8 @@ out — the transport that would carry the frames from a live CLI, and whether
 the vendor still emits these shapes — so these columns say nothing about a
 live session. Live-run columns are a separate claim and are not made here.
 
-- Case set: `9bec2d5476f98f6914fd8471c7aecc07e7125a0d8a9d116578f2ed9c6dc83188`
-- World set: `072e045f04d45440355e3a5e36c9763d405837190c6e51d781db6df292279c2b`
+- Case set: `119e339e4a9f912b7eb5cca7fda05176b199322d1c63a51744a6aec19fa0da47`
+- World set: `3c33a29771f392134d012ce57c0d201dff6d731a1ba2cd9a9ca82c6cab010b79`
 - Grading rules: version `6`
 - Columns: `Adversary`, `Standard`, `Codex`, `Claude Code`, `DeepSeek`, `Pi`
 - Prompt set, `Standard`: `5ca34d3273889b3aaf1eb29cc6558b3953b26cde529f9243655b801d5fe5b5b9`
@@ -316,7 +316,7 @@ The turn is admitted with a budget of two steps and eight tool calls.
 
 ### Start a call on a turn that is taking nothing new — `draining-from-the-start`
 
-The envelope is given a drain grace as long as the longest turn it admits, so the turn takes no new call from its first instant. No clock is involved: every call the runtime makes is refused, on every run.
+The envelope is given a drain grace as long as the turn's time limit, so the turn takes no new call from its first instant. No clock is involved: every call the runtime makes is refused, on every run.
 
 - **Adversary** — pass; 1 of 1 attempts issued; refused by `envelope`; reason `turn_draining`; record usable
 - **Standard** — not applicable; 1 attempt declared, none issued; the standard loop stops itself once the turn is draining and asks its driver for nothing more, so a seat inside it never issues a call on a draining turn. Only a runtime that owns its loop, a plugin or a CLI connected over MCP, can make one and be refused

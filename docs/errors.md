@@ -77,7 +77,6 @@ can tell a broken store from a rejected one:
 | the source threw                                        | `grant_source_failed`    |
 | a grant does not satisfy `CapabilityGrantSchema`        | `invalid_grant_material` |
 | a grant is outside the context's namespace/actor/issuer | `grant_scope_mismatch`   |
-| more grants than `MAX_RESOLVED_GRANTS`                  | `grant_limit_exceeded`   |
 
 A source that answers with a superset fails closed rather than being quietly
 filtered: pre-filtering to (namespace, actor, authority) is part of the
@@ -490,20 +489,20 @@ Codes from `@aicoo/sharedos-adapters`. The `harness_*` and `model_*` codes are
 how a driver or plugin ends its turn, so they surface as a `failed`
 `ExecutionResult`; `escalation_pending` is a tool result on the MCP path.
 
-| Code                                                                                                                        | Status | Means                                                                                                                                                                                                                                                                    |
-| --------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `escalation_pending`                                                                                                        | denied | A `tools/call` made after the turn asked for a human. The bridge refuses it in band and nothing further runs on that turn (ADR 0018). An agent without the escalation grant gets `tool_unavailable`                                                                      |
-| `harness_not_started`                                                                                                       | failed | The vendor CLI could not be spawned                                                                                                                                                                                                                                      |
-| `harness_exited_without_outcome`                                                                                            | failed | The CLI exited non-zero without a terminal frame                                                                                                                                                                                                                         |
-| `harness_ended_without_outcome`                                                                                             | failed | The harness closed its channel before completing the turn                                                                                                                                                                                                                |
-| `harness_frame_limit_exceeded`                                                                                              | failed | Too many frames without an outcome (`maxIgnoredFrames`)                                                                                                                                                                                                                  |
-| `harness_arguments_unparseable`                                                                                             | failed | Codex or DeepSeek Harness sent tool arguments that are not a JSON object                                                                                                                                                                                                 |
-| `harness_command_rejected`                                                                                                  | failed | Pi rejected a command. Retryable                                                                                                                                                                                                                                         |
-| `harness_failed`                                                                                                            | failed | The harness reported its own failure. Retryable; Codex and Claude Code substitute the vendor's own code when the frame names one. The Codex CLI's `turn.failed` names none, so it keeps this code with the CLI's message                                                 |
-| `harness_turn_aborted`, `harness_turn_blocked`, `harness_turn_error`, `harness_turn_max_tokens`, `harness_turn_interrupted` | failed | DeepSeek Harness ended its turn without completing it, for the reason the code names. Retryable; the vendor's own code is substituted when the frame names one, and DeepSeek never reports `harness_failed`                                                              |
-| `model_call_failed`                                                                                                         | failed | `StandardTurnDriver`'s provider call threw, other than by cancellation                                                                                                                                                                                                   |
-| `model_output_truncated`                                                                                                    | failed | The provider cut `StandardTurnDriver`'s reply at the output-token ceiling (`finish_reason: length`). Nothing in a cut-off reply is a decision the model finished making, so none of it is released                                                                       |
-| `model_malformed_call_limit_exceeded`                                                                                       | failed | The model made more than `maxMalformedCalls` (default 8) calls whose arguments were not a JSON object. Each was refused in place as `invalid_tool_arguments` and answered back to the model, never sent as `{}`; the turn's metadata counts them as `malformedToolCalls` |
+| Code                                                                                                                        | Status | Means                                                                                                                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `escalation_pending`                                                                                                        | denied | A `tools/call` made after the turn asked for a human. The bridge refuses it in band and nothing further runs on that turn (ADR 0018). An agent without the escalation grant gets `tool_unavailable`                                                                                          |
+| `harness_not_started`                                                                                                       | failed | The vendor CLI could not be spawned                                                                                                                                                                                                                                                          |
+| `harness_exited_without_outcome`                                                                                            | failed | The CLI exited non-zero without a terminal frame                                                                                                                                                                                                                                             |
+| `harness_ended_without_outcome`                                                                                             | failed | The harness closed its channel before completing the turn                                                                                                                                                                                                                                    |
+| `harness_frame_limit_exceeded`                                                                                              | failed | Too many frames without an outcome (`maxIgnoredFrames`, unset by default)                                                                                                                                                                                                                    |
+| `harness_arguments_unparseable`                                                                                             | failed | Codex or DeepSeek Harness sent tool arguments that are not a JSON object                                                                                                                                                                                                                     |
+| `harness_command_rejected`                                                                                                  | failed | Pi rejected a command. Retryable                                                                                                                                                                                                                                                             |
+| `harness_failed`                                                                                                            | failed | The harness reported its own failure. Retryable; Codex and Claude Code substitute the vendor's own code when the frame names one. The Codex CLI's `turn.failed` names none, so it keeps this code with the CLI's message                                                                     |
+| `harness_turn_aborted`, `harness_turn_blocked`, `harness_turn_error`, `harness_turn_max_tokens`, `harness_turn_interrupted` | failed | DeepSeek Harness ended its turn without completing it, for the reason the code names. Retryable; the vendor's own code is substituted when the frame names one, and DeepSeek never reports `harness_failed`                                                                                  |
+| `model_call_failed`                                                                                                         | failed | `StandardTurnDriver`'s provider call threw, other than by cancellation                                                                                                                                                                                                                       |
+| `model_output_truncated`                                                                                                    | failed | The provider cut `StandardTurnDriver`'s reply at the output-token ceiling (`finish_reason: length`). Nothing in a cut-off reply is a decision the model finished making, so none of it is released                                                                                           |
+| `model_malformed_call_limit_exceeded`                                                                                       | failed | The model made more than `maxMalformedCalls` (unset unless the host sets it) calls whose arguments were not a JSON object. Each was refused in place as `invalid_tool_arguments` and answered back to the model, never sent as `{}`; the turn's metadata counts them as `malformedToolCalls` |
 
 ## HTTP
 
@@ -565,7 +564,7 @@ in `AuthorizationDecision.metadata`.
 | `delegation_depth_exceeded`    | The child's budget is not strictly smaller                              |
 | `bounded_parent_not_delegable` | The parent is bounded by `maxUses`                                      |
 | `chain_cycle`                  | The chain leads back to a grant already walked                          |
-| `chain_too_long`               | More links than `DEFAULT_MAX_DELEGATION_CHAIN_LENGTH`                   |
+| `chain_too_long`               | More links than the host's `maxDelegationChainLength`, when it set one  |
 
 And as `delegation_chain_unverified`, when the chain could not be established at
 all: `resolver_unavailable` (none installed), `parent_not_found`, or
@@ -744,19 +743,15 @@ are never limited.
 
 ## Contract limits
 
-Rejected by the schemas, so they hold identically on both boundaries.
+The schemas set no size limits: no string length, list length or count. What
+they check is shape (a non-empty identifier, a well-formed path segment, a
+known field) and that holds identically on both boundaries. Turn limits
+(steps, tool calls, time, delegation chain length and the rest) are unset
+unless the host sets them, and an unset limit is no limit: SharedOS sets none
+of its own. What bounds a value in practice is whatever carries it: a
+filesystem's own name and path length, a vendor's rules for a tool name, an
+HTTP server's header size.
 
-| Limit                       | Value                | Limit                  | Value         |
-| --------------------------- | -------------------- | ---------------------- | ------------- |
-| Turn timeout                | ≤ 600,000 ms         | Tool calls per turn    | ≤ 10,000      |
-| Steps per turn              | ≤ 1,000              | Tools per request      | ≤ 512         |
-| Path segments               | ≤ 64                 | Segment length         | ≤ 256 chars   |
-| Capabilities per grant      | ≤ 64                 | Actions per capability | ≤ 64          |
-| Purposes per grant          | ≤ 64                 | Purpose length         | ≤ 512 chars   |
-| Delegation chain            | ≤ 16                 | Namespaces per catalog | ≤ 256         |
-| Search query / grep pattern | ≤ 8,192 chars        | Search results         | ≤ 100         |
-| Grep context                | ≤ 100 lines per side | Tool description       | ≤ 8,192 chars |
-
-Path segments additionally reject separators, traversal markers, and control
+Path segments reject separators, traversal markers, and control
 characters. A filesystem-backed provider must **still** resolve beneath its own
 root and reject link escapes — the contract cannot see your disk.

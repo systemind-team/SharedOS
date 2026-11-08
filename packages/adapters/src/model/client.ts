@@ -1,6 +1,9 @@
 import type { JsonObject } from "@aicoo/sharedos-contracts";
+import { after } from "@aicoo/sharedos-core/internal";
 
 import { z } from "zod";
+
+import { modelFetch } from "./fetch.js";
 
 /**
  * One tool call a model asked for, exactly as it came off the wire.
@@ -165,6 +168,10 @@ export interface OpenAiCompatibleModelClientOptions {
   readonly provider: string;
   /** The chat-completions root, without a trailing slash. */
   readonly baseUrl: string;
+  /**
+   * The ceiling on one reply, sent as `max_completion_tokens`. Unset unless
+   * the host sets it; unset sends no ceiling, and the provider's own applies.
+   */
   readonly maxOutputTokens?: number;
   /**
    * Left at zero by default, which reduces variation between runs but does not
@@ -173,7 +180,10 @@ export interface OpenAiCompatibleModelClientOptions {
    * produce a different call sequence on a different day.
    */
   readonly temperature?: number;
-  /** How long one model call may take, independently of the turn's own budget. */
+  /**
+   * How long one model call may take, independently of the turn's own budget.
+   * Unset unless the host sets it, and unset is no limit.
+   */
   readonly requestTimeoutMs?: number;
   /**
    * Whether the model reasons before it answers, sent as DeepSeek's `thinking`
@@ -192,27 +202,23 @@ export interface OpenAiCompatibleModelClientOptions {
    * reported through {@link ModelClient.settings} beside `thinking`.
    */
   readonly reasoningEffort?: ReasoningEffort;
-  /** Injected for tests, which must never reach a network. */
+  /**
+   * The fetch to call the provider with. Unset, a call on Node has no wait
+   * limit of its own (see `modelFetch`); tests inject one so they never reach
+   * a network.
+   */
   readonly fetch?: typeof globalThis.fetch;
 }
 
 /**
- * Room for a tool-heavy turn. A reply that hits this ceiling is not a decision
- * the model finished making, and the driver fails the turn on it rather than
- * grading the cut as a choice; the ceiling is set so that a turn issuing
- * several calls with JSON arguments does not reach it in ordinary use.
- */
-const DEFAULT_MAX_OUTPUT_TOKENS = 4_096;
-const DEFAULT_REQUEST_TIMEOUT_MS = 120_000;
-/**
- * One retry, on the failures that are worth retrying.
+ * Ten retries, on the failures that are worth retrying.
  *
  * A conformance run is dozens of turns and a single 429 would otherwise leave a
  * row reported `not exercised` -- indistinguishable, in the manifest, from a
  * model that chose not to make the call. Retrying a rate limit is recovering
  * evidence; retrying a 400 would only be asking the same wrong question twice.
  */
-const RETRYABLE_ATTEMPTS = 2;
+const RETRIES = 10;
 const RETRY_DELAY_MS = 1_500;
 
 /**
@@ -231,10 +237,10 @@ export class OpenAiCompatibleModelClient implements ModelClient {
   readonly #thinking?: "enabled" | "disabled";
   readonly #reasoningEffort?: ReasoningEffort;
   readonly #baseUrl: string;
-  readonly #maxOutputTokens: number;
+  readonly #maxOutputTokens: number | undefined;
   readonly #temperature: number;
-  readonly #requestTimeoutMs: number;
-  readonly #fetch: typeof globalThis.fetch;
+  readonly #requestTimeoutMs: number | undefined;
+  readonly #fetch: typeof globalThis.fetch | undefined;
 
   constructor(options: OpenAiCompatibleModelClientOptions) {
     if (options.apiKey.trim() === "") {
@@ -244,10 +250,10 @@ export class OpenAiCompatibleModelClient implements ModelClient {
     this.provider = options.provider;
     this.#apiKey = options.apiKey;
     this.#baseUrl = options.baseUrl.replace(/\/+$/u, "");
-    this.#maxOutputTokens = options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
+    this.#maxOutputTokens = options.maxOutputTokens;
     this.#temperature = options.temperature ?? 0;
-    this.#requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
-    this.#fetch = options.fetch ?? globalThis.fetch.bind(globalThis);
+    this.#requestTimeoutMs = options.requestTimeoutMs;
+    this.#fetch = options.fetch;
     const settings: JsonObject = {};
     if (options.thinking !== undefined) {
       this.#thinking = options.thinking;
@@ -282,14 +288,16 @@ export class OpenAiCompatibleModelClient implements ModelClient {
       // so far, but a gateway may treat the legacy one as a visible-output ask
       // and scale it up for a reasoning model before the vendor's own limit,
       // so a ceiling sent as `max_tokens` is not the ceiling the model gets.
-      max_completion_tokens: this.#maxOutputTokens,
+      ...(this.#maxOutputTokens === undefined
+        ? {}
+        : { max_completion_tokens: this.#maxOutputTokens }),
       temperature: this.#temperature,
       ...(this.#thinking === undefined ? {} : { thinking: { type: this.#thinking } }),
       ...(this.#reasoningEffort === undefined ? {} : { reasoning_effort: this.#reasoningEffort }),
     });
 
     let lastError: ModelRequestError | undefined;
-    for (let attempt = 1; attempt <= RETRYABLE_ATTEMPTS; attempt += 1) {
+    for (let attempt = 0; attempt <= RETRIES; attempt += 1) {
       try {
         return await this.#request(body, signal);
       } catch (error) {
@@ -300,7 +308,7 @@ export class OpenAiCompatibleModelClient implements ModelClient {
           error instanceof ModelRequestError
             ? error
             : new ModelRequestError(`the model call failed: ${describe(error)}`);
-        if (attempt === RETRYABLE_ATTEMPTS || !isRetryable(failure)) {
+        if (attempt === RETRIES || !isRetryable(failure)) {
           throw failure;
         }
         lastError = failure;
@@ -312,36 +320,42 @@ export class OpenAiCompatibleModelClient implements ModelClient {
   }
 
   async #request(body: string, signal: AbortSignal): Promise<ModelReply> {
-    // Two deadlines, not one. The turn's signal ends the whole execution; this
-    // one ends a single hung request so a stalled connection is a failed call
-    // rather than a failed run.
-    const deadline = AbortSignal.timeout(this.#requestTimeoutMs);
-    const response = await this.#fetch(`${this.#baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${this.#apiKey}`,
-      },
-      body,
-      signal: AbortSignal.any([signal, deadline]),
-    });
+    // Two deadlines, not one. The turn's signal ends the whole execution; the
+    // host's request timeout, when it set one, ends a single hung request so a
+    // stalled connection is a failed call rather than a failed run.
+    const timeout =
+      this.#requestTimeoutMs === undefined ? undefined : timeoutSignal(this.#requestTimeoutMs);
+    try {
+      const fetch = this.#fetch ?? (await modelFetch());
+      const response = await fetch(`${this.#baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${this.#apiKey}`,
+        },
+        body,
+        signal: timeout === undefined ? signal : AbortSignal.any([signal, timeout.signal]),
+      });
 
-    if (!response.ok) {
-      // The body is read and discarded rather than surfaced. A provider error
-      // can quote the request back, and the request carries the turn's prompt
-      // and arguments; the status is what a caller can act on anyway.
-      await response.text().catch(() => "");
-      throw new ModelRequestError(
-        `the model provider answered ${String(response.status)}`,
-        response.status,
-      );
-    }
+      if (!response.ok) {
+        // The body is read and discarded rather than surfaced. A provider error
+        // can quote the request back, and the request carries the turn's prompt
+        // and arguments; the status is what a caller can act on anyway.
+        await response.text().catch(() => "");
+        throw new ModelRequestError(
+          `the model provider answered ${String(response.status)}`,
+          response.status,
+        );
+      }
 
-    const reply = decodeChatCompletion(await response.json());
-    if (reply === undefined) {
-      throw new ModelRequestError("the model provider returned an unreadable completion");
+      const reply = decodeChatCompletion(await response.json());
+      if (reply === undefined) {
+        throw new ModelRequestError("the model provider returned an unreadable completion");
+      }
+      return reply;
+    } finally {
+      timeout?.dispose();
     }
-    return reply;
   }
 }
 
@@ -410,6 +424,25 @@ export function encodeModelMessage(message: ModelMessage): JsonObject {
 
 function isRetryable(error: ModelRequestError): boolean {
   return error.status === undefined || error.status === 429 || error.status >= 500;
+}
+
+/**
+ * `AbortSignal.timeout(ms)` for any `ms`. The platform's own fires at once, or
+ * throws, past one timer's reach (about 24.8 days); a host's timeout is held
+ * as set.
+ * Like the platform's, the wait does not by itself keep a Node process running.
+ */
+function timeoutSignal(ms: number): { readonly signal: AbortSignal; dispose(): void } {
+  const controller = new AbortController();
+  const dispose = after(
+    ms,
+    () =>
+      controller.abort(
+        new DOMException("The operation was aborted due to timeout", "TimeoutError"),
+      ),
+    { unref: true },
+  );
+  return { signal: controller.signal, dispose };
 }
 
 function delay(ms: number, signal: AbortSignal): Promise<void> {
