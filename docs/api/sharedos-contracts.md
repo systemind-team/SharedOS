@@ -1006,7 +1006,7 @@ In particular, this rejects undefined, bigint, Date, NaN, and Infinity.
 
 ### MAX\_EXECUTION\_TIMEOUT\_MS
 
-> `const` **MAX\_EXECUTION\_TIMEOUT\_MS**: `600000` = `600_000`
+> `const` **MAX\_EXECUTION\_TIMEOUT\_MS**: `7200000` = `7_200_000`
 
 Defined in: [execution.ts:12](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/execution.ts#L12)
 
