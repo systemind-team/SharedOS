@@ -782,9 +782,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
         this.#clock(),
         "failed",
         // A plugin says whether its own failure is the passing kind. It does not
-        // know what the calls it made went on to do, and the harness adapters
-        // state `retryable` on any harness failure, so its `true` stands only
-        // where running the turn again repeats nothing.
+        // know what the calls it made went on to do, and a harness adapter
+        // states `retryable` from what the harness reported, so its `true`
+        // stands only where running the turn again repeats nothing.
         outcome.data.error.retryable === true && !safeToRetry()
           ? { ...outcome.data.error, retryable: false }
           : outcome.data.error,
