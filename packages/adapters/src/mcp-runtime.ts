@@ -4,6 +4,7 @@ import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 import type {
   JsonObject,
+  ProtocolError,
   RuntimeManifest,
   RuntimeTurnOutcome,
   ToolCall,
@@ -141,13 +142,16 @@ export interface McpHarnessSpec {
   readonly configFiles?: (connection: HarnessMcpConnection) => readonly HarnessMcpConfigFile[];
   readonly launch: (context: McpLaunchContext) => McpHarnessLaunch;
   /**
-   * Reads what the CLI says beside its frames, for a condition its frames
-   * never carry.
+   * Reads what the CLI says beside its frames, for a failure its frames never
+   * carry.
    *
-   * Called with each line of stderr and each stdout line that is not a frame.
-   * A step it returns is taken as a frame's would be: a `failed` one is the
-   * turn's outcome unless the turn already has one. Absent, what the CLI says
-   * there is kept for diagnosis only, as it always was.
+   * Called with each line of stderr and each stdout line that is not a frame,
+   * until the turn has an outcome. A failure it returns is the turn's outcome,
+   * and the process is ended there and then: the turn is over, and what the
+   * CLI would go on to do, with its own tools and none of SharedOS's, is no
+   * longer part of it. Only a failure can be returned, so a line of prose can
+   * never complete a turn. Absent, what the CLI says there is kept for
+   * diagnosis only, as it always was.
    *
    * It exists for a harness that reports a broken connection to SharedOS in
    * prose and then carries on without it: a turn that went on with only the
@@ -158,7 +162,7 @@ export interface McpHarnessSpec {
     text: string,
     stream: "stdout" | "stderr",
     connection: HarnessMcpConnection,
-  ) => HarnessStep | undefined;
+  ) => ProtocolError | undefined;
 }
 
 /**
@@ -617,9 +621,15 @@ async function runHarness(
       },
       onDiagnostic: (text, stream) => {
         options.onDiagnostic?.(spec.id, text);
-        const step = spec.readDiagnostic?.(text, stream, connection);
-        if (step !== undefined) {
-          take([step]);
+        const failure =
+          terminal === undefined ? spec.readDiagnostic?.(text, stream, connection) : undefined;
+        if (failure !== undefined) {
+          terminal = { type: "fail", error: failure };
+          // Closing stdin would not stop a one-shot CLI, which has read its
+          // prompt already: it would run the task to the end with its own
+          // tools, the turn waiting on it, and a deadline reached in the
+          // meantime would cancel the turn and lose this outcome.
+          harness.kill();
         }
         // A banner on stdout is not the harness working; stderr is.
         if (stream === "stderr") {
@@ -788,8 +798,9 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
  * The overlay's `failOnStartupError: true` no longer stops a run whose client
  * could not reach the bridge: from dsh 0.1.6 the run goes on with only dsh's
  * own tools, and the one sign of it is a line on stderr. `readDiagnostic`
- * reads that line and fails the turn `harness_not_connected`, so the turn is
- * not read as a harness that declined the catalogue.
+ * reads that line, fails the turn `harness_not_connected` and ends dsh, so
+ * the turn is not read as a harness that declined the catalogue and dsh does
+ * not go on to run the task without it.
  */
 export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: DEEPSEEK_VENDOR.id,
@@ -808,12 +819,9 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
       return undefined;
     }
     return {
-      type: "failed",
-      error: {
-        code: "harness_not_connected",
-        message: `DeepSeek Harness did not connect to the SharedOS MCP server and went on without it: ${text.slice(prefix.length)}`,
-        retryable: false,
-      },
+      code: "harness_not_connected",
+      message: `DeepSeek Harness did not connect to the SharedOS MCP server: ${text.slice(prefix.length)}`,
+      retryable: false,
     };
   },
   launch: ({ prompt, workspace, configPaths }) => ({

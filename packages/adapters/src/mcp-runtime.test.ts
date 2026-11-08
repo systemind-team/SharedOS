@@ -1537,13 +1537,21 @@ describe("the Codex CLI's own events, on the MCP toolshare path", () => {
  */
 const DSH_CLI = `
 process.stderr.write(JSON.parse(process.argv[4]));
+// How long the run goes on after its startup warning, as dsh's does when it
+// carries on without the bridge to run the task with its own tools.
+await new Promise((resolve) => setTimeout(resolve, Number(process.argv[5])));
 for (const event of JSON.parse(process.argv[2])) {
   process.stdout.write(JSON.stringify(event) + "\\n");
 }
 process.exitCode = Number(process.argv[3]);
 `;
 
-function dshCli(events: readonly JsonObject[], exitCode: number, stderr = ""): McpHarnessSpec {
+function dshCli(
+  events: readonly JsonObject[],
+  exitCode: number,
+  stderr = "",
+  runsForMs = 0,
+): McpHarnessSpec {
   return {
     ...DEEPSEEK_MCP_HARNESS,
     configFiles: () => [{ harness: "deepseek", filename: "dsh.mjs", contents: DSH_CLI }],
@@ -1554,6 +1562,7 @@ function dshCli(events: readonly JsonObject[], exitCode: number, stderr = ""): M
         JSON.stringify(events),
         String(exitCode),
         JSON.stringify(stderr),
+        String(runsForMs),
       ],
     }),
   };
@@ -1678,6 +1687,25 @@ describe("DeepSeek Harness's headless run, on the MCP toolshare path", () => {
     );
     // Still kept for diagnosis, as every line beside the frames is.
     expect(diagnostics).toContain("dsh: warning: 1 entry did not activate");
+  }, 30_000);
+
+  it("ends a run that went on without the bridge, and returns at once", async () => {
+    // Left alone, dsh would run the whole task with its own tools, and the
+    // turn would wait for it; a deadline reached first would cancel the turn
+    // and lose the outcome SharedOS had already reached.
+    const startedAt = Date.now();
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(
+        dshCli(completed, 0, notActivated("mcp-sharedos", "sharedos"), 60_000),
+      ),
+    ).execute({ ...executionRequest(), options: { timeoutMs: 20_000 } });
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "harness_not_connected" },
+    });
+    expect(Date.now() - startedAt).toBeLessThan(15_000);
   }, 30_000);
 
   it("leaves a failing MCP server of the owner's own to the owner", async () => {
