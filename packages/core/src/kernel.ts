@@ -1875,10 +1875,8 @@ export class SharedOSKernel {
     } catch (error) {
       // An unrecorded decision is not acted on, so the use it spent goes back.
       // A store that cannot return it keeps it; the caller is told of the
-      // outage either way.
-      if (consume && decision.allowed && decision.matchedGrantId !== undefined) {
-        await this.#authorizer.release(authority, decision.matchedGrantId).catch(() => undefined);
-      }
+      // outage either way. A decision that spent nothing gives nothing back.
+      await this.#authorizer.release(decision).catch(() => undefined);
       throw error;
     }
 

@@ -231,9 +231,15 @@ when that record is refused. The method is optional. A store without it, or one
 that throws from it, keeps the use as every store did before, and the caller is
 told of the audit outage either way. Nothing else gives a use back: a call
 cancelled or failed after its decision was recorded has used the grant. A sink
-that stored the event and then threw leaves an `authorization.checked` that
-says a use was spent, with no operation record after it, for a use that went
-back.
+that stored the event and then threw leaves an allowed, consuming
+`authorization.checked` with no operation record after it (for an admission, no
+turn), for a use that went back.
+
+The use given back is the one that decision spent. The authorizer keeps it
+against the decision, not the grant id, because nothing makes a grant id unique
+within an authority: looked up by id, an unbounded grant's unrecorded decision
+would give back a use a bounded grant under the same id spent on a call that
+ran.
 
 ### An audit outage before an effect ends the turn
 
