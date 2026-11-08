@@ -1659,7 +1659,6 @@ describe("SharedOSKernel messaging and audit", () => {
                 userId: {
                   type: "string",
                   minLength: 1,
-                  maxLength: 256,
                   pattern: "^(?!\\s)[\\s\\S]*\\S$",
                 },
               },
@@ -1673,7 +1672,6 @@ describe("SharedOSKernel messaging and audit", () => {
                 agentId: {
                   type: "string",
                   minLength: 1,
-                  maxLength: 256,
                   pattern: "^(?!\\s)[\\s\\S]*\\S$",
                 },
               },
@@ -1687,7 +1685,6 @@ describe("SharedOSKernel messaging and audit", () => {
                 conversationId: {
                   type: "string",
                   minLength: 1,
-                  maxLength: 256,
                   pattern: "^(?!\\s)[\\s\\S]*\\S$",
                 },
               },
@@ -1701,7 +1698,6 @@ describe("SharedOSKernel messaging and audit", () => {
                 serviceId: {
                   type: "string",
                   minLength: 1,
-                  maxLength: 256,
                   pattern: "^(?!\\s)[\\s\\S]*\\S$",
                 },
               },

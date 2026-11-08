@@ -43,7 +43,6 @@ export const MESSAGE_REQUEST_TOOL_DEFINITION: ToolDefinition = {
               userId: {
                 type: "string",
                 minLength: 1,
-                maxLength: 256,
                 pattern: "^(?!\\s)[\\s\\S]*\\S$",
               },
             },
@@ -57,7 +56,6 @@ export const MESSAGE_REQUEST_TOOL_DEFINITION: ToolDefinition = {
               agentId: {
                 type: "string",
                 minLength: 1,
-                maxLength: 256,
                 pattern: "^(?!\\s)[\\s\\S]*\\S$",
               },
             },
@@ -71,7 +69,6 @@ export const MESSAGE_REQUEST_TOOL_DEFINITION: ToolDefinition = {
               conversationId: {
                 type: "string",
                 minLength: 1,
-                maxLength: 256,
                 pattern: "^(?!\\s)[\\s\\S]*\\S$",
               },
             },
@@ -85,7 +82,6 @@ export const MESSAGE_REQUEST_TOOL_DEFINITION: ToolDefinition = {
               serviceId: {
                 type: "string",
                 minLength: 1,
-                maxLength: 256,
                 pattern: "^(?!\\s)[\\s\\S]*\\S$",
               },
             },

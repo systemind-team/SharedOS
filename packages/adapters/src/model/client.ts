@@ -204,14 +204,14 @@ export interface OpenAiCompatibleModelClientOptions {
 }
 
 /**
- * One retry, on the failures that are worth retrying.
+ * Ten retries, on the failures that are worth retrying.
  *
  * A conformance run is dozens of turns and a single 429 would otherwise leave a
  * row reported `not exercised` -- indistinguishable, in the manifest, from a
  * model that chose not to make the call. Retrying a rate limit is recovering
  * evidence; retrying a 400 would only be asking the same wrong question twice.
  */
-const RETRYABLE_ATTEMPTS = 2;
+const RETRIES = 10;
 const RETRY_DELAY_MS = 1_500;
 
 /**
@@ -290,7 +290,7 @@ export class OpenAiCompatibleModelClient implements ModelClient {
     });
 
     let lastError: ModelRequestError | undefined;
-    for (let attempt = 1; attempt <= RETRYABLE_ATTEMPTS; attempt += 1) {
+    for (let attempt = 0; attempt <= RETRIES; attempt += 1) {
       try {
         return await this.#request(body, signal);
       } catch (error) {
@@ -301,7 +301,7 @@ export class OpenAiCompatibleModelClient implements ModelClient {
           error instanceof ModelRequestError
             ? error
             : new ModelRequestError(`the model call failed: ${describe(error)}`);
-        if (attempt === RETRYABLE_ATTEMPTS || !isRetryable(failure)) {
+        if (attempt === RETRIES || !isRetryable(failure)) {
           throw failure;
         }
         lastError = failure;

@@ -743,20 +743,15 @@ are never limited.
 
 ## Contract limits
 
-Rejected by the schemas, so they hold identically on both boundaries.
+The schemas set no size limits: no string length, list length or count. What
+they check is shape (a non-empty identifier, a well-formed path segment, a
+known field) and that holds identically on both boundaries. Turn limits
+(steps, tool calls, time, delegation chain length and the rest) are unset
+unless the host sets them, and an unset limit is no limit: SharedOS sets none
+of its own. What bounds a value in practice is whatever carries it: a
+filesystem's own name and path length, a vendor's rules for a tool name, an
+HTTP server's header size.
 
-| Limit                       | Value         | Limit                  | Value         |
-| --------------------------- | ------------- | ---------------------- | ------------- |
-| Path segments               | ≤ 64          | Segment length         | ≤ 256 chars   |
-| Capabilities per grant      | ≤ 64          | Actions per capability | ≤ 64          |
-| Purposes per grant          | ≤ 64          | Purpose length         | ≤ 512 chars   |
-| Namespaces per catalog      | ≤ 256         | Tool description       | ≤ 8,192 chars |
-| Search query / grep pattern | ≤ 8,192 chars |                        |               |
-
-Turn limits are not among them. Steps, tool calls, time, delegation chain
-length and the rest are unset unless the host sets them, and an unset limit is
-no limit: SharedOS sets none of its own.
-
-Path segments additionally reject separators, traversal markers, and control
+Path segments reject separators, traversal markers, and control
 characters. A filesystem-backed provider must **still** resolve beneath its own
 root and reject link escapes — the contract cannot see your disk.

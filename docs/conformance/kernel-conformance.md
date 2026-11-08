@@ -24,7 +24,7 @@ the vendor still emits these shapes — so these columns say nothing about a
 live session. Live-run columns are a separate claim and are not made here.
 
 - Case set: `119e339e4a9f912b7eb5cca7fda05176b199322d1c63a51744a6aec19fa0da47`
-- World set: `fc15c050f0bb95ec916c820b8b45d1271aae2dc778dc298cdcbf19b5076aed26`
+- World set: `3c33a29771f392134d012ce57c0d201dff6d731a1ba2cd9a9ca82c6cab010b79`
 - Grading rules: version `6`
 - Columns: `Adversary`, `Standard`, `Codex`, `Claude Code`, `DeepSeek`, `Pi`
 - Prompt set, `Standard`: `5ca34d3273889b3aaf1eb29cc6558b3953b26cde529f9243655b801d5fe5b5b9`

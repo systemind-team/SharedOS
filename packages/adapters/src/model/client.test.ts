@@ -223,21 +223,23 @@ describe("the chat-completions client", () => {
     expect(reply.model).toBe("served-model");
   });
 
-  it("retries a server error once and then gives up", async () => {
+  it("retries a server error ten times and then gives up", async () => {
     vi.useFakeTimers();
     const fetch = vi.fn<Fetch>(async () => respond("upstream fell over", 503));
 
     const pending = client(fetch).complete(REQUEST, signal());
     // The rejection is observed before the clock moves, so an unhandled
-    // rejection cannot fire between the second attempt and the assertion.
+    // rejection cannot fire between the last attempt and the assertion.
     const outcome = pending.then(
       () => "resolved",
       (error: unknown) => error,
     );
+    await vi.advanceTimersByTimeAsync(9 * 1_500);
+    expect(fetch).toHaveBeenCalledTimes(10);
     await vi.advanceTimersByTimeAsync(1_500);
     const error = await outcome;
 
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(11);
     expect(error).toBeInstanceOf(ModelRequestError);
     expect((error as ModelRequestError).status).toBe(503);
   });
@@ -279,12 +281,12 @@ describe("the chat-completions client", () => {
       () => "resolved",
       (error: unknown) => error,
     );
-    await vi.advanceTimersByTimeAsync(1_500);
+    await vi.advanceTimersByTimeAsync(10 * 1_500);
     const error = await outcome;
 
-    // Unreadable is retried once like any statusless failure -- a provider's
-    // bad moment -- and then refused as its own error, not as a parse crash.
-    expect(fetch).toHaveBeenCalledTimes(2);
+    // Unreadable is retried like any statusless failure, as a provider's bad
+    // moment, and then refused as its own error, not as a parse crash.
+    expect(fetch).toHaveBeenCalledTimes(11);
     expect(error).toBeInstanceOf(ModelRequestError);
     expect((error as Error).message).toBe("the model provider returned an unreadable completion");
   });

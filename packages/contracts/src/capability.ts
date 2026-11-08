@@ -16,18 +16,17 @@ export const PathSegmentSchema = z
   .string()
   .trim()
   .min(1)
-  .max(256)
   .regex(/^(?!\.{1,2}$)[^/\\\u0000-\u001f\u007f]+$/u, {
     message: "path segments must not contain traversal markers, separators, or control characters",
   });
-const ActionSchema = z.string().trim().min(1).max(128);
-const PurposeSchema = z.string().trim().min(1).max(512);
+const ActionSchema = z.string().trim().min(1);
+const PurposeSchema = z.string().trim().min(1);
 
 /** A host-independent reference to a resource exposed through SharedOS. */
 export const ResourceRefSchema = z
   .object({
     namespace: IdentifierSchema,
-    path: z.array(PathSegmentSchema).max(64),
+    path: z.array(PathSegmentSchema),
     owner: AddressSchema.optional(),
   })
   .strict();
@@ -38,7 +37,7 @@ export type ResourceRef = z.infer<typeof ResourceRefSchema>;
 export const CapabilitySchema = z
   .object({
     resource: ResourceRefSchema,
-    actions: z.array(ActionSchema).min(1).max(64),
+    actions: z.array(ActionSchema).min(1),
     scope: z.enum(["exact", "descendants"]),
   })
   .strict();
@@ -47,7 +46,7 @@ export type Capability = z.infer<typeof CapabilitySchema>;
 
 export const CapabilityConstraintsSchema = z
   .object({
-    purposes: z.array(PurposeSchema).min(1).max(64).optional(),
+    purposes: z.array(PurposeSchema).min(1).optional(),
     notBefore: TimestampSchema.optional(),
     expiresAt: TimestampSchema.optional(),
     maxUses: z.number().int().positive().optional(),
@@ -93,7 +92,7 @@ export const CapabilityRequestSchema = z
     namespaceId: IdentifierSchema,
     requester: AddressSchema,
     owner: AddressSchema,
-    capabilities: z.array(CapabilitySchema).min(1).max(64),
+    capabilities: z.array(CapabilitySchema).min(1),
     purpose: PurposeSchema,
     constraints: CapabilityConstraintsSchema.optional(),
     requestedAt: TimestampSchema,
@@ -121,7 +120,7 @@ export const CapabilityGrantSchema = z
     namespaceId: IdentifierSchema,
     subject: AddressSchema,
     issuer: AddressSchema,
-    capabilities: z.array(CapabilitySchema).min(1).max(64),
+    capabilities: z.array(CapabilitySchema).min(1),
     constraints: CapabilityConstraintsSchema,
     issuedAt: TimestampSchema,
     revokedAt: TimestampSchema.optional(),
@@ -168,8 +167,8 @@ export type CapabilityRequirement = z.infer<typeof CapabilityRequirementSchema>;
 export const ResourceReachSchema = z
   .object({
     namespace: IdentifierSchema,
-    path: z.array(PathSegmentSchema).max(64),
-    actions: z.array(ActionSchema).min(1).max(64),
+    path: z.array(PathSegmentSchema),
+    actions: z.array(ActionSchema).min(1),
     scope: z.enum(["exact", "descendants"]),
   })
   .strict();
@@ -177,7 +176,7 @@ export const ResourceReachSchema = z
 export type ResourceReach = z.infer<typeof ResourceReachSchema>;
 
 /** As many entries as one reach may carry, on a card or on the wire. */
-export const ReachListSchema = z.array(ResourceReachSchema).max(16_384);
+export const ReachListSchema = z.array(ResourceReachSchema);
 
 /**
  * Why a reach could not be established.

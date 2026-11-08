@@ -28,7 +28,6 @@ import { ProtocolErrorSchema } from "./protocol-error.js";
 export const ToolNameSchema = z
   .string()
   .min(1)
-  .max(128)
   .regex(/^[A-Za-z0-9_.-]+$/u, {
     message: "tool names may contain only letters, digits, underscore, dot, and hyphen",
   });
@@ -51,7 +50,6 @@ export type ToolReadWrite = z.infer<typeof ToolReadWriteSchema>;
 
 export const EnabledToolNamespacesSchema = z
   .array(ToolNamespaceSchema)
-  .max(256)
   .superRefine((namespaces, context) => {
     if (new Set(namespaces).size !== namespaces.length) {
       context.addIssue({
@@ -111,7 +109,7 @@ export type ToolAnnotations = z.infer<typeof ToolAnnotationsSchema>;
 export const ToolDefinitionSchema = z
   .object({
     name: ToolNameSchema,
-    description: z.string().min(1).max(8_192),
+    description: z.string().min(1),
     namespace: ToolNamespaceSchema,
     source: ToolSourceSchema,
     readWrite: ToolReadWriteSchema,
@@ -190,7 +188,7 @@ export type PublishedToolMetadata = z.infer<typeof PublishedToolMetadataSchema>;
 export const PublishedToolDefinitionSchema = z
   .object({
     name: ToolNameSchema,
-    description: z.string().min(1).max(8_192),
+    description: z.string().min(1),
     inputSchema: JsonObjectSchema,
     outputSchema: JsonObjectSchema.optional(),
     annotations: PublishedToolAnnotationsSchema.optional(),
@@ -251,9 +249,9 @@ export type SharedOSToolCatalog = z.infer<typeof SharedOSToolCatalogSchema>;
 export const ToolPolicySchema = z
   .object({
     mode: z.enum(["strict", "hybrid"]),
-    managedMcp: z.array(IdentifierSchema).max(64),
-    harnessLocal: z.array(ToolNameSchema).max(256),
-    externalDirect: z.array(IdentifierSchema).max(64),
+    managedMcp: z.array(IdentifierSchema),
+    harnessLocal: z.array(ToolNameSchema),
+    externalDirect: z.array(IdentifierSchema),
   })
   .strict()
   .superRefine((policy, context) => {
@@ -277,7 +275,7 @@ export type ToolPolicy = z.infer<typeof ToolPolicySchema>;
 export const ToolNamespaceDescriptorSchema = z
   .object({
     namespace: ToolNamespaceSchema,
-    sources: z.array(ToolSourceSchema).min(1).max(64),
+    sources: z.array(ToolSourceSchema).min(1),
     toolCount: z.number().int().positive(),
     enabled: z.boolean(),
   })
@@ -295,7 +293,7 @@ export type ToolNamespaceDescriptor = z.infer<typeof ToolNamespaceDescriptorSche
 
 export const ToolNamespaceCatalogSchema = z
   .object({
-    namespaces: z.array(ToolNamespaceDescriptorSchema).max(256),
+    namespaces: z.array(ToolNamespaceDescriptorSchema),
     summary: z
       .object({
         total: z.number().int().nonnegative(),

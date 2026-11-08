@@ -103,6 +103,33 @@ describe("JSON-safe protocol contracts", () => {
     expectTypeOf(AccessContextSchema.parse(context)).toEqualTypeOf<AccessContext>();
   });
 
+  it("sets no size limit on a grant or a context", () => {
+    const long = "x".repeat(10_000);
+    const capability = {
+      resource: {
+        namespace: long,
+        path: Array.from({ length: 500 }, (_value, index) => `${long}-${index}`),
+        owner,
+      },
+      actions: Array.from({ length: 500 }, (_value, index) => `${long}-${index}`),
+      scope: "descendants" as const,
+    };
+    const large = {
+      ...grant,
+      id: long,
+      capabilities: Array.from({ length: 200 }, () => capability),
+      constraints: {
+        ...grant.constraints,
+        purposes: Array.from({ length: 200 }, (_value, index) => `${long}-${index}`),
+      },
+    };
+
+    expect(CapabilityGrantSchema.safeParse(large).success).toBe(true);
+    expect(
+      AccessContextSchema.safeParse({ ...context, purpose: long, traceId: long }).success,
+    ).toBe(true);
+  });
+
   it("round-trips an optional execution id without granting authority", () => {
     const turnContext = { ...context, executionId: "execution-1" };
     expect(AccessContextSchema.parse(JSON.parse(JSON.stringify(turnContext)))).toEqual(turnContext);
@@ -300,7 +327,7 @@ describe("JSON-safe protocol contracts", () => {
     ).toBe(false);
   });
 
-  it("validates model-authored recipient IDs without normalization and by Unicode code point", () => {
+  it("validates model-authored recipient IDs without normalization, at any length", () => {
     const recipient = (kind: string, idKey: string, id: string) => ({
       kind,
       [idKey]: id,
@@ -319,10 +346,8 @@ describe("JSON-safe protocol contracts", () => {
       "\uFEFFidentifier",
       "identifier\u00A0",
     ];
-    const ascii256 = "a".repeat(256);
-    const ascii257 = "a".repeat(257);
-    const emoji256 = "😀".repeat(256);
-    const emoji257 = "😀".repeat(257);
+    const asciiLong = "a".repeat(10_000);
+    const emojiLong = "😀".repeat(10_000);
 
     for (const [kind, idKey] of variants) {
       const parse = (id: string) =>
@@ -334,10 +359,8 @@ describe("JSON-safe protocol contracts", () => {
       for (const id of invalidWhitespace) {
         expect(parse(id).success, `${kind} should reject ${JSON.stringify(id)}`).toBe(false);
       }
-      expect(parse(ascii256).success).toBe(true);
-      expect(parse(ascii257).success).toBe(false);
-      expect(parse(emoji256).success).toBe(true);
-      expect(parse(emoji257).success).toBe(false);
+      expect(parse(asciiLong).success).toBe(true);
+      expect(parse(emojiLong).success).toBe(true);
     }
   });
 

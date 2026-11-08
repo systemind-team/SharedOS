@@ -13,7 +13,7 @@ import { ProtocolErrorSchema } from "./protocol-error.js";
 export const MessageProvenanceSchema = z
   .object({
     source: IdentifierSchema,
-    parentIds: z.array(IdentifierSchema).max(64),
+    parentIds: z.array(IdentifierSchema),
     metadata: JsonObjectSchema.optional(),
   })
   .strict();
@@ -30,7 +30,7 @@ export const MessageEnvelopeSchema = z
     id: IdentifierSchema,
     sender: AddressSchema,
     receiver: AddressSchema,
-    purpose: z.string().trim().min(1).max(512),
+    purpose: z.string().trim().min(1),
     payload: JsonValueSchema,
     traceId: IdentifierSchema,
     createdAt: TimestampSchema,
@@ -46,9 +46,6 @@ const MessageRequestRecipientIdentifierSchema = z
   .min(1)
   .refine((value) => value.trim() === value, {
     message: "recipient identifiers must not have leading or trailing whitespace",
-  })
-  .refine((value) => [...value].length <= 256, {
-    message: "recipient identifiers must contain at most 256 Unicode code points",
   });
 
 const MessageRequestRecipientAddressSchema = z.discriminatedUnion("kind", [

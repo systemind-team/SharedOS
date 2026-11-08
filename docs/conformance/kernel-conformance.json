@@ -2,7 +2,7 @@
   "version": "1",
   "judgeVersion": "6",
   "caseSetHash": "119e339e4a9f912b7eb5cca7fda05176b199322d1c63a51744a6aec19fa0da47",
-  "worldSetHash": "fc15c050f0bb95ec916c820b8b45d1271aae2dc778dc298cdcbf19b5076aed26",
+  "worldSetHash": "3c33a29771f392134d012ce57c0d201dff6d731a1ba2cd9a9ca82c6cab010b79",
   "columns": [
     {
       "id": "adversary-embedded",

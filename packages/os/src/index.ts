@@ -42,7 +42,7 @@ export type FilesPathArguments = z.infer<typeof FilesPathArgumentsSchema>;
 export const FilesSearchArgumentsSchema = z
   .object({
     path: FilePathSchema,
-    query: z.string().trim().min(1).max(8_192),
+    query: z.string().trim().min(1),
     limit: z.number().int().positive().optional(),
   })
   .strict();
@@ -51,7 +51,7 @@ export type FilesSearchArguments = z.infer<typeof FilesSearchArgumentsSchema>;
 export const FilesGrepArgumentsSchema = z
   .object({
     path: FilePathSchema,
-    pattern: z.string().min(1).max(8_192),
+    pattern: z.string().min(1),
     mode: z.enum(["literal", "regex"]).default("literal"),
     caseSensitive: z.boolean().default(false),
     contextBefore: z.number().int().nonnegative().default(0),
@@ -74,15 +74,11 @@ const OpaqueVersionTokenSchema = z
   .min(1)
   .refine((value) => value.trim() === value, {
     message: "version tokens must not have leading or trailing whitespace",
-  })
-  .refine((value) => [...value].length <= 256, {
-    message: "version tokens must contain at most 256 Unicode code points",
   });
 
 const opaqueVersionTokenJsonSchema = {
   type: "string",
   minLength: 1,
-  maxLength: 256,
   pattern: "^(?!\\s)[\\s\\S]*\\S$",
 } as const;
 
@@ -117,7 +113,7 @@ export type FilesDeleteArguments = z.infer<typeof FilesDeleteArgumentsSchema>;
 export const FilesSnapshotCreateArgumentsSchema = z
   .object({
     path: FilePathSchema,
-    label: z.string().trim().min(1).max(256).optional(),
+    label: z.string().trim().min(1).optional(),
   })
   .strict();
 export type FilesSnapshotCreateArguments = z.infer<typeof FilesSnapshotCreateArgumentsSchema>;
@@ -133,7 +129,7 @@ export type FilesSnapshotListArguments = z.infer<typeof FilesSnapshotListArgumen
 export const FilesSnapshotRestoreArgumentsSchema = z
   .object({
     path: FilePathSchema.min(1),
-    snapshotId: z.string().trim().min(1).max(256),
+    snapshotId: z.string().trim().min(1),
     expectedVersion: OpaqueVersionTokenSchema.optional(),
   })
   .strict();

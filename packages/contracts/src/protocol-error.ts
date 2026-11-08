@@ -7,7 +7,7 @@ import { JsonObjectSchema } from "./json.js";
 export const ProtocolErrorSchema = z
   .object({
     code: IdentifierSchema,
-    message: z.string().min(1).max(4_096),
+    message: z.string().min(1),
     retryable: z.boolean().optional(),
     details: JsonObjectSchema.optional(),
   })

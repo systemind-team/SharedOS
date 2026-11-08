@@ -34,7 +34,7 @@ did not authorize.
 ToolDefinition.name  =  SharedOS canonical tool ID  =  raw MCP Tool.name
 ```
 
-`ToolNameSchema` enforces it at registration: 1–128 characters of
+`ToolNameSchema` enforces it at registration: one or more characters of
 `[A-Za-z0-9_.-]`, deliberately narrower than `IdentifierSchema`. A tool name goes
 on a wire, so the character set has to be one every harness carries unchanged.
 

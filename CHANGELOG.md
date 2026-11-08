@@ -47,8 +47,8 @@ each entry calls out what a host has to update.
   - `createStandardRuntime`: `closeTimeoutMs` (was 1 s) has no default.
   - `OpenAiCompatibleModelClient`: `maxOutputTokens` (was 4,096) has no
     default and, unset, sends no `max_completion_tokens`, so the provider's own
-    ceiling applies. `requestTimeoutMs` (was 120 s) has no default. Retries are
-    unchanged.
+    ceiling applies. `requestTimeoutMs` (was 120 s) has no default. A failed
+    call worth retrying is now retried ten times, 1.5 s apart (was once).
   - `StandardTurnDriver`'s `maxMalformedCalls` (was 8), `EvalHarnessDriver`'s
     `maxIgnoredFrames` (was 512) and an MCP harness launch's `idleTimeoutMs`
     (was 120 s) have no default. The harness `--version` probe no longer gives
@@ -65,8 +65,18 @@ each entry calls out what a host has to update.
     escalation reason, which is no longer cut (`ESCALATION_REASON_MAX_LENGTH`);
     the four-image and 4 MiB caps on MCP image results; and the file tools'
     caps on results (100), grep context (100 lines), path segments (64) and
-    commit messages (500 characters). A file path is still held to 64 segments
-    by the contract's resource path.
+    commit messages (500 characters).
+  - The contracts set no size limits at all. Every string length, list length
+    and count is gone: identifiers and path segments (were 256 characters),
+    resource paths, capabilities, actions and purposes per grant (were 64),
+    purposes (were 512 characters), actions, tool names and event types (were
+    128), tool descriptions and HTTP error messages (were 8,192), protocol
+    error messages (were 4,096), reach lists (were 16,384), namespace
+    catalogues and enabled namespaces (were 256), tool policy lists, message
+    parent ids, the MCP execution token's claims, and the file tools' query,
+    pattern, label, snapshot id and version token. The JSON schemas published
+    for `sharedos.message.request` and the file tools drop their matching
+    `maxLength`. Shape checks are unchanged.
 
 - **Breaking: Node.js 22.19 or newer is required (was 20.11).** Node 20 has
   been end of life since April 2026, and newer dependencies such as `undici`

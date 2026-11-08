@@ -48,7 +48,7 @@ export const ExecutionEventSchema = z
     executionId: IdentifierSchema,
     traceId: IdentifierSchema,
     sequence: z.number().int().nonnegative(),
-    type: z.string().trim().min(1).max(128),
+    type: z.string().trim().min(1),
     data: JsonValueSchema,
     occurredAt: TimestampSchema,
   })
