@@ -218,9 +218,12 @@ connection or tool synchronization failed` on stderr and carries on with
 "SHAREDOS_MCP_TOKEN"`, and the new export `SHAREDOS_MCP_TOKEN_VARIABLE`
   names the variable. `CODEX_MCP_HARNESS` passes the setting as a `-c`
   override, which it used to filter out, and sets the variable to the token
-  in the CLI's environment, so the token is on no command line. A host that
-  writes the emitted `config.toml` itself starts Codex with
-  `SHAREDOS_MCP_TOKEN` set to the token.
+  in the CLI's environment, so the token is on no command line. It is
+  visible to the harness's own commands, since Codex passes its environment
+  to the shell commands it runs, as the other harnesses' tokens are in the
+  workspace files they read; it grants nothing, and the bridge
+  re-authorizes every call. A host that writes the emitted `config.toml`
+  itself starts Codex with `SHAREDOS_MCP_TOKEN` set to the token.
 
 - **A Codex turn that reconnected and then completed is no longer failed.**
   `codex exec --json` prints a top-level `{"type":"error","message":

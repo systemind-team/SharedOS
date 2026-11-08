@@ -746,7 +746,10 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
  * `bearer_token_env_var`: the override names
  * {@link SHAREDOS_MCP_TOKEN_VARIABLE} and the token is set in the CLI's
  * environment under it, which keeps it off the command line, where every
- * local process can read it.
+ * local process can read it. It is not hidden from the harness: Codex passes
+ * its environment to the shell commands it runs, as the other harnesses'
+ * tokens sit in the workspace files they read. The token identifies the
+ * bridge session and grants nothing, and every call is re-authorized.
  */
 export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: CODEX_VENDOR.id,

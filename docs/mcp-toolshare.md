@@ -456,7 +456,12 @@ Pass the token as `McpHarnessRuntimeOptions.token` and each spec hands it to its
 CLI in the form that CLI takes: a header in Claude Code's and DeepSeek's
 configuration, Pi's `bearerToken`, and for Codex the environment variable
 `SHAREDOS_MCP_TOKEN` (`SHAREDOS_MCP_TOKEN_VARIABLE`), which the Codex override
-names as `bearer_token_env_var`.
+names as `bearer_token_env_var`. None of these hides the token from the harness
+itself. Codex's default `shell_environment_policy` passes its environment,
+the variable included, to every shell command the model runs, as the other
+harnesses can read the workspace files their tokens are written to. That is
+safe for the reason below: the token identifies the session and carries no
+authority, and the bridge re-authorizes every call.
 
 `canonicalActor` renders an `Address` as `<kind>:<id>` — `agent:agent-bob` —
 which is the one string form a token's `actor` takes; it is compared by
