@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type {
   AccessContext,
@@ -261,6 +261,122 @@ describe("CapabilityAuthorizer", () => {
 
     await expect(store.tryConsume("tenant-a", "grant\u0000victim", 1)).resolves.toBe(true);
     await expect(store.getUsage("tenant-a\u0000grant", "victim")).resolves.toBe(0);
+  });
+
+  it("gives one use back at a time and never counts below zero", async () => {
+    const store = new InMemoryGrantUsageStore();
+
+    await store.release("tenant-a", "grant-1");
+    await expect(store.getUsage("tenant-a", "grant-1")).resolves.toBe(0);
+
+    await expect(store.tryConsume("tenant-a", "grant-1", 1)).resolves.toBe(true);
+    await store.release("tenant-b", "grant-1");
+    await expect(store.tryConsume("tenant-a", "grant-1", 1)).resolves.toBe(false);
+    await store.release("tenant-a", "grant-1");
+    await expect(store.tryConsume("tenant-a", "grant-1", 1)).resolves.toBe(true);
+  });
+
+  describe("giving back a spent use", () => {
+    const NS = "world-alpha";
+    const READ = { resource: RESOURCE, action: "read" };
+    const WRITE = { resource: RESOURCE, action: "write" };
+    const WRITABLE = [{ resource: RESOURCE, actions: ["write"], scope: "exact" as const }];
+
+    /** An in-memory store whose `release` is watched. */
+    function watchedStore() {
+      const counted = new InMemoryGrantUsageStore();
+      const release = vi.fn((namespaceId: string, grantId: string) =>
+        counted.release(namespaceId, grantId),
+      );
+      const usageStore: GrantUsageStore = {
+        getUsage: (namespaceId, grantId) => counted.getUsage(namespaceId, grantId),
+        tryConsume: (namespaceId, grantId, maximumUses) =>
+          counted.tryConsume(namespaceId, grantId, maximumUses),
+        release,
+      };
+      return { usageStore, release, used: (grantId: string) => counted.getUsage(NS, grantId) };
+    }
+
+    it("gives back the use the decision spent, once", async () => {
+      const { usageStore, release, used } = watchedStore();
+      const authorizer = new CapabilityAuthorizer({ usageStore });
+      const access = context([grant({ id: "grant-bounded", constraints: { maxUses: 1 } })]);
+
+      const decision = await authorizer.authorize(access, READ, { consume: true });
+      expect(decision).toMatchObject({ allowed: true, matchedGrantId: "grant-bounded" });
+      await authorizer.release(decision);
+      await authorizer.release(decision);
+
+      expect(release).toHaveBeenCalledTimes(1);
+      expect(release).toHaveBeenCalledWith(NS, "grant-bounded");
+      await expect(used("grant-bounded")).resolves.toBe(0);
+    });
+
+    it("gives back nothing for a decision that spent nothing", async () => {
+      const { usageStore, release, used } = watchedStore();
+      const authorizer = new CapabilityAuthorizer({ usageStore });
+      const bounded = grant({ id: "grant-bounded", constraints: { maxUses: 1 } });
+      const access = context([bounded, grant({ id: "grant-open", capabilities: WRITABLE })]);
+      const spent = await authorizer.authorize(access, READ, { consume: true });
+      const forged: AuthorizationDecision = {
+        allowed: true,
+        reasonCode: "allowed",
+        matchedGrantId: bounded.id,
+      };
+
+      const spentNothing = [
+        // An unbounded allow: `tryConsume` was never asked.
+        await authorizer.authorize(access, WRITE, { consume: true }),
+        // Checks that only looked.
+        await authorizer.authorize(access, READ),
+        await authorizer.canDiscover(access, READ),
+        // A denial: the one use is gone.
+        await authorizer.authorize(access, READ, { consume: true }),
+        // Decisions this authorizer did not make, though they name the grant.
+        forged,
+        await new CapabilityAuthorizer({ usageStore: new InMemoryGrantUsageStore() }).authorize(
+          access,
+          READ,
+          { consume: true },
+        ),
+      ];
+      expect(spentNothing[0]).toMatchObject({ allowed: true, matchedGrantId: "grant-open" });
+      expect(spentNothing[3]).toMatchObject({ allowed: false, reasonCode: "grant_exhausted" });
+      for (const decision of spentNothing) {
+        await authorizer.release(decision);
+      }
+      expect(release).not.toHaveBeenCalled();
+      await expect(used(bounded.id)).resolves.toBe(1);
+
+      await authorizer.release(spent);
+      expect(release).toHaveBeenCalledTimes(1);
+    });
+
+    // A grant id names no grant uniquely: nothing stops a source returning two
+    // grants under one id. The unbounded one spent nothing, so it gives back
+    // nothing, and above all not the use the bounded one spent.
+    it("gives back nothing for an unbounded grant that shares a bounded grant's id", async () => {
+      const { usageStore, release, used } = watchedStore();
+      const authorizer = new CapabilityAuthorizer({ usageStore });
+      const access = context([
+        grant({ id: "grant-twin", constraints: { maxUses: 1 } }),
+        grant({ id: "grant-twin", capabilities: WRITABLE }),
+      ]);
+
+      await expect(authorizer.authorize(access, READ, { consume: true })).resolves.toMatchObject({
+        allowed: true,
+      });
+      const twin = await authorizer.authorize(access, WRITE, { consume: true });
+      expect(twin).toMatchObject({ allowed: true, matchedGrantId: "grant-twin" });
+      await authorizer.release(twin);
+
+      expect(release).not.toHaveBeenCalled();
+      await expect(used("grant-twin")).resolves.toBe(1);
+      await expect(authorizer.authorize(access, READ, { consume: true })).resolves.toMatchObject({
+        allowed: false,
+        reasonCode: "grant_exhausted",
+      });
+    });
   });
 
   describe("the operation instant", () => {

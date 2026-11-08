@@ -731,7 +731,8 @@ invite a retry of something already done. The records written before an effect
 — an authority load, a decision, a catalogue listing — do not reach it: a sink
 that throws on one of those rejects the operation with an
 `AuditUnavailableError`, nothing runs, and inside a turn the envelope ends the
-turn `audit_unavailable`.
+turn `audit_unavailable`. A bounded use spent by a decision whose record was
+refused is given back, where the usage store implements `release` (ADR 0023).
 
 A sink that hangs is not a throw. Set `auditWriteTimeoutMs` on the kernel and a
 record written after an effect that is still unanswered at the limit reaches

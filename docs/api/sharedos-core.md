@@ -325,7 +325,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### CapabilityAuthorizer
 
-Defined in: [packages/core/src/authorization.ts:341](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L341)
+Defined in: [packages/core/src/authorization.ts:356](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L356)
 
 #### Constructors
 
@@ -333,7 +333,7 @@ Defined in: [packages/core/src/authorization.ts:341](https://github.com/systemin
 
 > **new CapabilityAuthorizer**(`options?`): [`CapabilityAuthorizer`](#capabilityauthorizer)
 
-Defined in: [packages/core/src/authorization.ts:349](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L349)
+Defined in: [packages/core/src/authorization.ts:375](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L375)
 
 ###### Parameters
 
@@ -353,7 +353,7 @@ Defined in: [packages/core/src/authorization.ts:349](https://github.com/systemin
 
 > **get** **hasHostCeiling**(): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:366](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L366)
+Defined in: [packages/core/src/authorization.ts:392](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L392)
 
 Whether a host ceiling is installed.
 
@@ -372,7 +372,7 @@ the difference between a count and a guess (ADR 0020).
 
 > **authorize**(`authority`, `request`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/authorization.ts:370](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L370)
+Defined in: [packages/core/src/authorization.ts:415](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L415)
 
 ###### Parameters
 
@@ -395,7 +395,7 @@ Defined in: [packages/core/src/authorization.ts:370](https://github.com/systemin
 
 > **canDiscover**(`authority`, `ceiling`, `options?`): `Promise`\<\{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \}\>
 
-Defined in: [packages/core/src/authorization.ts:393](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L393)
+Defined in: [packages/core/src/authorization.ts:438](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L438)
 
 Non-consuming catalog check. A narrow grant can discover a tool whose
 declared resource is a broader ceiling; invocation still checks the exact
@@ -422,7 +422,7 @@ argument-selected resource.
 
 > **reach**(`authority`, `options?`): `Promise`\<\{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}\>
 
-Defined in: [packages/core/src/authorization.ts:448](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L448)
+Defined in: [packages/core/src/authorization.ts:493](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L493)
 
 The reachable surface an authority describes, with the authority removed.
 
@@ -466,6 +466,50 @@ own scope.
 ###### Returns
 
 `Promise`\<\{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}\>
+
+##### release()
+
+> **release**(`decision`): `Promise`\<`void`>\>
+
+Defined in: [packages/core/src/authorization.ts:406](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L406)
+
+Give back the bounded use a decision spent.
+
+For the kernel, when that decision's record could not be written and its
+operation therefore never ran. The use given back is the one `tryConsume`
+took for this decision, under the same namespace and grant id, and it goes
+back at most once. Nothing happens for a decision that spent nothing (a
+denial, a non-consuming check, an unbounded grant), for one this authorizer
+did not make, or with a store that has no `release`.
+
+###### Parameters
+
+| Parameter                                                 | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `decision`                                                | \{ `allowed`: `boolean`; `matchedGrantId?`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reasonCode`: `string`; `requiredAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; \} |
+| `decision.allowed`                                        | `boolean`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `decision.matchedGrantId?`                                | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.metadata?`                                      | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `decision.reasonCode`                                     | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.requiredAuthority?`                             | \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}                                                                                                                                                                        |
+| `decision.requiredAuthority.capabilities`                 | `object`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `decision.requiredAuthority.constraints?`                 | \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `decision.requiredAuthority.constraints.delegationDepth?` | `number`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.requiredAuthority.constraints.expiresAt?`       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.requiredAuthority.constraints.maxUses?`         | `number`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.requiredAuthority.constraints.notBefore?`       | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.requiredAuthority.constraints.purposes?`        | `string`[]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `decision.requiredAuthority.id`                           | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.requiredAuthority.metadata?`                    | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `decision.requiredAuthority.namespaceId`                  | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.requiredAuthority.owner`                        | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `decision.requiredAuthority.purpose`                      | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.requiredAuthority.requestedAt`                  | `string`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `decision.requiredAuthority.requester`                    | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+
+###### Returns
+
+`Promise`\<`void`\>
 
 ---
 
@@ -748,7 +792,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### InMemoryGrantUsageStore
 
-Defined in: [packages/core/src/authorization.ts:317](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L317)
+Defined in: [packages/core/src/authorization.ts:324](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L324)
 
 An atomic, process-local usage store suitable for tests and single-process
 hosts. Distributed hosts should inject a durable compare-and-set store.
@@ -773,7 +817,7 @@ hosts. Distributed hosts should inject a durable compare-and-set store.
 
 > **getUsage**(`namespaceId`, `grantId`): `Promise`\<`number`>\>
 
-Defined in: [packages/core/src/authorization.ts:320](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L320)
+Defined in: [packages/core/src/authorization.ts:327](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L327)
 
 ###### Parameters
 
@@ -790,11 +834,37 @@ Defined in: [packages/core/src/authorization.ts:320](https://github.com/systemin
 
 [`GrantUsageStore`](#grantusagestore).[`getUsage`](#getusage-1)
 
+##### release()
+
+> **release**(`namespaceId`, `grantId`): `Promise`\<`void`>\>
+
+Defined in: [packages/core/src/authorization.ts:347](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L347)
+
+Give back one use `tryConsume` took, for a decision whose operation never
+ran because its record could not be written. Atomic, and never below zero.
+
+Optional. Without it, or when it throws, the use stays spent.
+
+###### Parameters
+
+| Parameter     | Type     |
+| ------------- | -------- |
+| `namespaceId` | `string` |
+| `grantId`     | `string` |
+
+###### Returns
+
+`Promise`\<`void`\>
+
+###### Implementation of
+
+[`GrantUsageStore`](#grantusagestore).[`release`](#release-2)
+
 ##### tryConsume()
 
 > **tryConsume**(`namespaceId`, `grantId`, `maximumUses`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:324](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L324)
+Defined in: [packages/core/src/authorization.ts:331](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L331)
 
 ###### Parameters
 
@@ -2136,7 +2206,7 @@ A card the reader was authorized for, in the shape it was authorized for.
 
 ### AllowedDecision
 
-Defined in: [packages/core/src/authorization.ts:128](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L128)
+Defined in: [packages/core/src/authorization.ts:135](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L135)
 
 A decision that allowed, and the grant that produced it.
 
@@ -2148,10 +2218,10 @@ prevented from ever seeing one.
 
 | Property                                              | Modifier   | Type                                             | Defined in                                                                                                                             |
 | ----------------------------------------------------- | ---------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-allowed"></a> `allowed`               | `readonly` | `true`                                           | [packages/core/src/authorization.ts:129](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L129) |
-| <a id="property-matchedgrantid"></a> `matchedGrantId` | `readonly` | `string`                                         | [packages/core/src/authorization.ts:131](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L131) |
-| <a id="property-metadata"></a> `metadata?`            | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/core/src/authorization.ts:132](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L132) |
-| <a id="property-reasoncode-1"></a> `reasonCode`       | `readonly` | `"allowed"`                                      | [packages/core/src/authorization.ts:130](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L130) |
+| <a id="property-allowed"></a> `allowed`               | `readonly` | `true`                                           | [packages/core/src/authorization.ts:136](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L136) |
+| <a id="property-matchedgrantid"></a> `matchedGrantId` | `readonly` | `string`                                         | [packages/core/src/authorization.ts:138](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L138) |
+| <a id="property-metadata"></a> `metadata?`            | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/core/src/authorization.ts:139](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L139) |
+| <a id="property-reasoncode-1"></a> `reasonCode`       | `readonly` | `"allowed"`                                      | [packages/core/src/authorization.ts:137](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L137) |
 
 ---
 
@@ -2291,7 +2361,7 @@ because the authorizer was constructed without the store it needed.
 
 ### AuthorizationInstantOptions
 
-Defined in: [packages/core/src/authorization.ts:244](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L244)
+Defined in: [packages/core/src/authorization.ts:251](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L251)
 
 The instant one decision is made at, when it is not the turn's own.
 
@@ -2313,13 +2383,13 @@ move and which do not, and ADR 0016 for why.
 
 | Property                         | Modifier   | Type     | Defined in                                                                                                                             |
 | -------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-now"></a> `now?` | `readonly` | `string` | [packages/core/src/authorization.ts:245](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L245) |
+| <a id="property-now"></a> `now?` | `readonly` | `string` | [packages/core/src/authorization.ts:252](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L252) |
 
 ---
 
 ### AuthorizeOptions
 
-Defined in: [packages/core/src/authorization.ts:248](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L248)
+Defined in: [packages/core/src/authorization.ts:255](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L255)
 
 The instant one decision is made at, when it is not the turn's own.
 
@@ -2340,32 +2410,32 @@ move and which do not, and ADR 0016 for why.
 
 | Property                                     | Modifier   | Type                      | Description                                                                                                                                                                                                                          | Inherited from                                                                       | Defined in                                                                                                                             |
 | -------------------------------------------- | ---------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-consume"></a> `consume?`     | `readonly` | `boolean`                 | Consumption is reserved for execution. Discovery calls must leave this false so merely viewing a catalog cannot spend a bounded grant.                                                                                               | -                                                                                    | [packages/core/src/authorization.ts:253](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L253) |
-| <a id="property-now-1"></a> `now?`           | `readonly` | `string`                  | -                                                                                                                                                                                                                                    | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | [packages/core/src/authorization.ts:245](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L245) |
-| <a id="property-onexplain"></a> `onExplain?` | `readonly` | (`explanation`) => `void` | Called once with the host-facing account of a denial, before it is returned. Never called for an allow. The callback runs synchronously on a frozen value and must not throw: a diagnostic that can change a decision is a decision. | -                                                                                    | [packages/core/src/authorization.ts:261](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L261) |
+| <a id="property-consume"></a> `consume?`     | `readonly` | `boolean`                 | Consumption is reserved for execution. Discovery calls must leave this false so merely viewing a catalog cannot spend a bounded grant.                                                                                               | -                                                                                    | [packages/core/src/authorization.ts:260](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L260) |
+| <a id="property-now-1"></a> `now?`           | `readonly` | `string`                  | -                                                                                                                                                                                                                                    | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | [packages/core/src/authorization.ts:252](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L252) |
+| <a id="property-onexplain"></a> `onExplain?` | `readonly` | (`explanation`) => `void` | Called once with the host-facing account of a denial, before it is returned. Never called for an allow. The callback runs synchronously on a frozen value and must not throw: a diagnostic that can change a decision is a decision. | -                                                                                    | [packages/core/src/authorization.ts:268](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L268) |
 
 ---
 
 ### CapabilityAuthorizerOptions
 
-Defined in: [packages/core/src/authorization.ts:279](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L279)
+Defined in: [packages/core/src/authorization.ts:286](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L286)
 
 #### Properties
 
 | Property                                                                   | Modifier   | Type                                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Defined in                                                                                                                             |
 | -------------------------------------------------------------------------- | ---------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-delegationresolver"></a> `delegationResolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | Trusted ancestor lookup for delegated grants. Without it, a grant that claims a parent can never authorize anything.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/authorization.ts:286](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L286) |
-| <a id="property-grantverifier"></a> `grantVerifier?`                       | `readonly` | [`CapabilityGrantVerifier`](#capabilitygrantverifier) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:281](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L281) |
-| <a id="property-hostceiling"></a> `hostCeiling?`                           | `readonly` | [`HostCeiling`](#hostceiling)\<`unknown`\>            | Product or organization policy the kernel consults. See [HostCeiling](#hostceiling). Installed by whoever constructs the authorizer, which is the party that already chooses the `GrantSource`. That is not a new privilege: anyone who decides what authority exists can already decide it is none. The per-turn policy it decides against, when it has one, comes from `SharedOSKernelOptions.policySource` -- on the kernel rather than here, because the load is a turn-boundary event and the kernel owns the turn boundary. The authorizer only carries what was loaded to the ceiling. | [packages/core/src/authorization.ts:300](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L300) |
-| <a id="property-maxdelegationchainlength"></a> `maxDelegationChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:287](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L287) |
-| <a id="property-onprovidererror"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)     | Where a throw from [HostCeiling.narrow](#narrow) is reported. The same shape `SharedOSKernelOptions.onProviderError` takes, and a host wanting both passes one function to both: the ceiling is installed here rather than on the kernel, so the kernel's hook cannot reach it. Without this, a ceiling that fails denies every operation in the deployment as `host_policy_unavailable` and says nothing about why.                                                                                                                                                                          | [packages/core/src/authorization.ts:310](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L310) |
-| <a id="property-usagestore"></a> `usageStore?`                             | `readonly` | [`GrantUsageStore`](#grantusagestore)                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:280](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L280) |
+| <a id="property-delegationresolver"></a> `delegationResolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | Trusted ancestor lookup for delegated grants. Without it, a grant that claims a parent can never authorize anything.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [packages/core/src/authorization.ts:293](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L293) |
+| <a id="property-grantverifier"></a> `grantVerifier?`                       | `readonly` | [`CapabilityGrantVerifier`](#capabilitygrantverifier) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:288](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L288) |
+| <a id="property-hostceiling"></a> `hostCeiling?`                           | `readonly` | [`HostCeiling`](#hostceiling)\<`unknown`\>            | Product or organization policy the kernel consults. See [HostCeiling](#hostceiling). Installed by whoever constructs the authorizer, which is the party that already chooses the `GrantSource`. That is not a new privilege: anyone who decides what authority exists can already decide it is none. The per-turn policy it decides against, when it has one, comes from `SharedOSKernelOptions.policySource` -- on the kernel rather than here, because the load is a turn-boundary event and the kernel owns the turn boundary. The authorizer only carries what was loaded to the ceiling. | [packages/core/src/authorization.ts:307](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L307) |
+| <a id="property-maxdelegationchainlength"></a> `maxDelegationChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:294](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L294) |
+| <a id="property-onprovidererror"></a> `onProviderError?`                   | `readonly` | [`ProviderErrorReporter`](#providererrorreporter)     | Where a throw from [HostCeiling.narrow](#narrow) is reported. The same shape `SharedOSKernelOptions.onProviderError` takes, and a host wanting both passes one function to both: the ceiling is installed here rather than on the kernel, so the kernel's hook cannot reach it. Without this, a ceiling that fails denies every operation in the deployment as `host_policy_unavailable` and says nothing about why.                                                                                                                                                                          | [packages/core/src/authorization.ts:317](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L317) |
+| <a id="property-usagestore"></a> `usageStore?`                             | `readonly` | [`GrantUsageStore`](#grantusagestore)                 | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | [packages/core/src/authorization.ts:287](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L287) |
 
 ---
 
 ### CapabilityGrantVerifier
 
-Defined in: [packages/core/src/authorization.ts:117](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L117)
+Defined in: [packages/core/src/authorization.ts:124](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L124)
 
 #### Methods
 
@@ -2373,7 +2443,7 @@ Defined in: [packages/core/src/authorization.ts:117](https://github.com/systemin
 
 > **verify**(`grant`, `context`): `Promise`\<`boolean`>\>
 
-Defined in: [packages/core/src/authorization.ts:118](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L118)
+Defined in: [packages/core/src/authorization.ts:125](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L125)
 
 ###### Parameters
 
@@ -2530,7 +2600,7 @@ Defined in: [packages/core/src/delegation.ts:292](https://github.com/systemind-t
 
 ### DiscoverOptions
 
-Defined in: [packages/core/src/authorization.ts:264](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L264)
+Defined in: [packages/core/src/authorization.ts:271](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L271)
 
 The instant one decision is made at, when it is not the turn's own.
 
@@ -2551,8 +2621,8 @@ move and which do not, and ADR 0016 for why.
 
 | Property                                       | Modifier   | Type                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Inherited from                                                                       | Defined in                                                                                                                             |
 | ---------------------------------------------- | ---------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-now-2"></a> `now?`             | `readonly` | `string`                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | [packages/core/src/authorization.ts:245](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L245) |
-| <a id="property-onexplain-1"></a> `onExplain?` | `readonly` | (`explanation`) => `void` | The same account [AuthorizeOptions.onExplain](#property-onexplain) hands over, for a discovery check that refuses a call somebody made. Left unset when a catalogue is being filtered: that denies constantly and by design, and explaining each one would bury the denials that surprised somebody. `SharedOSKernel.listTools` passes none. `invokeTool` passes one, because a call refused at this check is refused nowhere else, and it is the path a missing `usageStore` always takes for a tool whose only grant is bounded. | -                                                                                    | [packages/core/src/authorization.ts:276](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L276) |
+| <a id="property-now-2"></a> `now?`             | `readonly` | `string`                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | [`AuthorizationInstantOptions`](#authorizationinstantoptions).[`now`](#property-now) | [packages/core/src/authorization.ts:252](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L252) |
+| <a id="property-onexplain-1"></a> `onExplain?` | `readonly` | (`explanation`) => `void` | The same account [AuthorizeOptions.onExplain](#property-onexplain) hands over, for a discovery check that refuses a call somebody made. Left unset when a catalogue is being filtered: that denies constantly and by design, and explaining each one would bury the denials that surprised somebody. `SharedOSKernel.listTools` passes none. `invokeTool` passes one, because a call refused at this check is refused nowhere else, and it is the path a missing `usageStore` always takes for a tool whose only grant is bounded. | -                                                                                    | [packages/core/src/authorization.ts:283](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L283) |
 
 ---
 
@@ -2656,6 +2726,28 @@ Defined in: [packages/core/src/authorization.ts:113](https://github.com/systemin
 
 `Promise`\<`number`\>
 
+##### release()?
+
+> `optional` **release**(`namespaceId`, `grantId`): `Promise`\<`void`>\>
+
+Defined in: [packages/core/src/authorization.ts:121](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L121)
+
+Give back one use `tryConsume` took, for a decision whose operation never
+ran because its record could not be written. Atomic, and never below zero.
+
+Optional. Without it, or when it throws, the use stays spent.
+
+###### Parameters
+
+| Parameter     | Type     |
+| ------------- | -------- |
+| `namespaceId` | `string` |
+| `grantId`     | `string` |
+
+###### Returns
+
+`Promise`\<`void`\>
+
 ##### tryConsume()
 
 > **tryConsume**(`namespaceId`, `grantId`, `maximumUses`): `Promise`\<`boolean`>\>
@@ -2678,7 +2770,7 @@ Defined in: [packages/core/src/authorization.ts:114](https://github.com/systemin
 
 ### HostCeiling
 
-Defined in: [packages/core/src/authorization.ts:223](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L223)
+Defined in: [packages/core/src/authorization.ts:230](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L230)
 
 Product or organization policy, consulted on a grant that would otherwise
 allow.
@@ -2751,7 +2843,7 @@ like every other unavailable trusted component.
 
 > **narrow**(`decision`, `request`, `context`, `policy`): [`HostCeilingVerdict`](#hostceilingverdict)
 
-Defined in: [packages/core/src/authorization.ts:224](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L224)
+Defined in: [packages/core/src/authorization.ts:231](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L231)
 
 ###### Parameters
 
@@ -2784,7 +2876,7 @@ Defined in: [packages/core/src/authorization.ts:224](https://github.com/systemin
 
 ### HostPolicyDenial
 
-Defined in: [packages/core/src/authorization.ts:143](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L143)
+Defined in: [packages/core/src/authorization.ts:150](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L150)
 
 A refusal by host policy, the one input to a decision no grant expresses.
 
@@ -2797,9 +2889,9 @@ to make its own refusal look like an absent grant. Say more in `metadata`.
 
 | Property                                        | Modifier   | Type                                             | Defined in                                                                                                                             |
 | ----------------------------------------------- | ---------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-allowed-1"></a> `allowed`       | `readonly` | `false`                                          | [packages/core/src/authorization.ts:144](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L144) |
-| <a id="property-metadata-2"></a> `metadata?`    | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/core/src/authorization.ts:146](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L146) |
-| <a id="property-reasoncode-3"></a> `reasonCode` | `readonly` | `"host_policy_denied"`                           | [packages/core/src/authorization.ts:145](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L145) |
+| <a id="property-allowed-1"></a> `allowed`       | `readonly` | `false`                                          | [packages/core/src/authorization.ts:151](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L151) |
+| <a id="property-metadata-2"></a> `metadata?`    | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | [packages/core/src/authorization.ts:153](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L153) |
+| <a id="property-reasoncode-3"></a> `reasonCode` | `readonly` | `"host_policy_denied"`                           | [packages/core/src/authorization.ts:152](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L152) |
 
 ---
 
@@ -3756,7 +3848,7 @@ host through the `authority.resolved` audit event.
 
 > **HostCeilingVerdict** = [`AllowedDecision`](#alloweddecision) \| [`HostPolicyDenial`](#hostpolicydenial)
 
-Defined in: [packages/core/src/authorization.ts:161](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L161)
+Defined in: [packages/core/src/authorization.ts:168](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L168)
 
 The only two things a ceiling may say: the decision it was handed, or no.
 
@@ -4660,7 +4752,7 @@ Structural JSON equality for protocol values with unordered object keys.
 
 > **capabilityIntersectsCeiling**(`capability`, `ceiling`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:924](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L924)
+Defined in: [packages/core/src/authorization.ts:973](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L973)
 
 #### Parameters
 
@@ -4751,7 +4843,7 @@ is a stricter question with its own predicate inside `deriveGrant`.
 
 > **capabilityMatches**(`capability`, `request`, `context`): `boolean`
 
-Defined in: [packages/core/src/authorization.ts:896](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L896)
+Defined in: [packages/core/src/authorization.ts:945](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authorization.ts#L945)
 
 #### Parameters
 

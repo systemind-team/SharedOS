@@ -112,6 +112,13 @@ export interface AuthorizationExplanation {
 export interface GrantUsageStore {
   getUsage(namespaceId: string, grantId: string): Promise<number>;
   tryConsume(namespaceId: string, grantId: string, maximumUses: number): Promise<boolean>;
+  /**
+   * Give back one use `tryConsume` took, for a decision whose operation never
+   * ran because its record could not be written. Atomic, and never below zero.
+   *
+   * Optional. Without it, or when it throws, the use stays spent.
+   */
+  release?(namespaceId: string, grantId: string): Promise<void>;
 }
 
 export interface CapabilityGrantVerifier {
@@ -336,6 +343,14 @@ export class InMemoryGrantUsageStore implements GrantUsageStore {
     namespaceUsage.set(grantId, current + 1);
     return true;
   }
+
+  async release(namespaceId: string, grantId: string): Promise<void> {
+    const namespaceUsage = this.#usageByNamespace.get(namespaceId);
+    const current = namespaceUsage?.get(grantId) ?? 0;
+    if (current > 0) {
+      namespaceUsage?.set(grantId, current - 1);
+    }
+  }
 }
 
 export class CapabilityAuthorizer {
@@ -345,6 +360,17 @@ export class CapabilityAuthorizer {
   readonly #maxDelegationChainLength: number | undefined;
   readonly #hostCeiling: HostCeiling | undefined;
   readonly #onProviderError: ProviderErrorReporter | undefined;
+  /**
+   * The use each consuming allow took, under the decision that took it.
+   *
+   * `release` reads this rather than finding the grant by id, because a grant
+   * id names no grant uniquely: an unbounded grant sharing a bounded one's id
+   * would otherwise give back a use the bounded one spent on a call that ran.
+   */
+  readonly #spentUses = new WeakMap<
+    AuthorizationDecision,
+    { readonly namespaceId: string; readonly grantId: string }
+  >();
 
   constructor(options: CapabilityAuthorizerOptions = {}) {
     this.#usageStore = options.usageStore;
@@ -365,6 +391,25 @@ export class CapabilityAuthorizer {
    */
   get hasHostCeiling(): boolean {
     return this.#hostCeiling !== undefined;
+  }
+
+  /**
+   * Give back the bounded use a decision spent.
+   *
+   * For the kernel, when that decision's record could not be written and its
+   * operation therefore never ran. The use given back is the one `tryConsume`
+   * took for this decision, under the same namespace and grant id, and it goes
+   * back at most once. Nothing happens for a decision that spent nothing (a
+   * denial, a non-consuming check, an unbounded grant), for one this authorizer
+   * did not make, or with a store that has no `release`.
+   */
+  async release(decision: AuthorizationDecision): Promise<void> {
+    const spent = this.#spentUses.get(decision);
+    if (spent === undefined) {
+      return;
+    }
+    this.#spentUses.delete(decision);
+    await this.#usageStore?.release?.(spent.namespaceId, spent.grantId);
   }
 
   async authorize(
@@ -670,7 +715,11 @@ export class CapabilityAuthorizer {
           : (await this.#usageStore.getUsage(context.namespaceId, grant.id)) < maximumUses;
 
         if (available) {
-          return allow(grant.id);
+          const decision = allow(grant.id);
+          if (consume) {
+            this.#spentUses.set(decision, { namespaceId: context.namespaceId, grantId: grant.id });
+          }
+          return decision;
         }
 
         rejections.push({ grantId: grant.id, reason: "exhausted" });

@@ -105,6 +105,18 @@ each entry calls out what a host has to update.
   to close removed the authority the second still held; the later one now
   joins. Nothing on the wire changes: the HTTP schemas omit the context. ADR
   0010 is revised.
+- **A bounded use is given back when the decision that spent it could not be
+  recorded.** A `maxUses` grant is spent when the decision is made, and the
+  decision's `authorization.checked` is written after. A sink that threw there
+  refused the call, correctly, and kept the use: one outage exhausted a
+  `maxUses: 1` grant whose provider was never entered. The kernel now gives the
+  use back through a new optional `GrantUsageStore.release(namespaceId, grantId)`,
+  which `InMemoryGrantUsageStore` and the reference host's SQLite store implement.
+  A host's own store keeps the old behaviour until it implements one, as an atomic
+  decrement that stops at zero. A host that calls `admitTurn` itself must treat a
+  rejection as admitting nothing and not run the turn: its use has gone back. A
+  use whose decision was recorded stays spent, even when a later record fails
+  before anything runs. ADR 0023 is revised.
 - **Reading a Claude Code or Pi tool call no longer pays for a failed parse.**
   The content-block walk the vendor codecs share recognised prose by running
   `TextBlockSchema.safeParse` on every block, where each codec had compared

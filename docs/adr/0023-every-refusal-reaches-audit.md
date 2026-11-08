@@ -17,6 +17,8 @@
   below.
 - Revised: 2026-09-20. The conformance record carries `interrupted` as its own
   outcome and a refusal's `cause` on the operation, under judge version 6.
+- Revised: 2026-10-04. A bounded use spent by a decision that could not be
+  recorded is given back, where the usage store can. In the Decision below.
 - Extends: `docs/adr/0012-one-refusal-vocabulary.md`
 
 ## Context
@@ -218,9 +220,26 @@ changes nothing.
 
 `escalation.requested` is on the second path. It is the turn's terminal record,
 not a gate; written on the first, a sink that threw ended the turn
-`runtime_failed` and blamed a plugin that had done nothing wrong. One limit is
-known and unchanged: a bounded use is spent before `authorization.checked` is
-written, so a sink that throws there costs a use with nothing run.
+`runtime_failed` and blamed a plugin that had done nothing wrong.
+
+A bounded use is spent before `authorization.checked` is written. Spending it
+is what decides whether the call is allowed, and that has to be atomic across
+workers, so the order stays. A sink that threw there used to cost a use with
+nothing run: one outage exhausted a `maxUses: 1` grant whose provider was never
+entered. The kernel now gives the use back through `GrantUsageStore.release`
+when that record is refused. The method is optional. A store without it, or one
+that throws from it, keeps the use as every store did before, and the caller is
+told of the audit outage either way. Nothing else gives a use back: a call
+cancelled or failed after its decision was recorded has used the grant. A sink
+that stored the event and then threw leaves an allowed, consuming
+`authorization.checked` with no operation record after it (for an admission, no
+turn), for a use that went back.
+
+The use given back is the one that decision spent. The authorizer keeps it
+against the decision, not the grant id, because nothing makes a grant id unique
+within an authority: looked up by id, an unbounded grant's unrecorded decision
+would give back a use a bounded grant under the same id spent on a call that
+ran.
 
 ### An audit outage before an effect ends the turn
 
@@ -260,7 +279,7 @@ calling back into the kernel.
 
 A typed refusal that let the turn continue was weighed and rejected. A model
 reads a refusal as something to try again, each attempt is refused again, and
-while a bounded use is spent before its record each attempt also costs a use.
+on a store that cannot give a use back each attempt also costs one.
 
 ### An operation stopped after its port was entered is recorded `interrupted`
 
