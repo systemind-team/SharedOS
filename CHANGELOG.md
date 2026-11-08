@@ -139,6 +139,19 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **A Claude Code run that stopped is read as failed on every version.**
+  Before Claude Code 2.1.89 the `result` frame for `error_max_turns` and
+  `error_during_execution` carried `is_error: false`, so the turn was read
+  as complete with empty output. Any `result` whose `subtype` is not
+  `success` now fails the turn, and the frame's `errors` list is named in
+  the failure's message. An API error, which arrives as `subtype:
+"success"` with `is_error: true`, failed with the code `success`; its code
+  is now the frame's `terminal_reason` (`api_error`), or `harness_failed`
+  when there is none. A Claude Code failure is no longer always
+  `retryable`: only a transient API error is (408, 429 or a 5xx status, a
+  timeout, a dropped connection, overload). A turn limit, a budget, a
+  refused credential or an exhausted balance is not.
+
 - **An outcome at the frame limit ends the turn.** With
   `maxIgnoredFrames: N`, `EvalHarnessDriver` read the frame after the Nth
   ignored one and never interpreted it, so N ignored frames followed by a
