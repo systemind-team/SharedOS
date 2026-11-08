@@ -76,7 +76,7 @@ Authenticated callers remain untrusted for authorization.
 | Cross-user MCP mutation  | One user's reload replaces another user's dynamic tools           | Resolve dynamic catalogs per trusted context; avoid shared mutable registration                                                                             |
 | Discovery leakage        | Tool list reveals a private connector or account                  | Permission-filter definitions and metadata before returning the catalog                                                                                     |
 | Tenant/world escape      | Crafted path reaches another run or user                          | Bind namespace/world and owner in every provider call; use segment-safe paths                                                                               |
-| Replay                   | Captured request repeats a destructive call                       | Host-owned durable deduplication and freshness checks; SharedOS ships no replay port                                                                        |
+| Replay                   | Captured request repeats a destructive call                       | Kernel replay gate backed by a host durable ReplayStore; stable IDs and host freshness policy                                                               |
 | Revocation race          | Grant is revoked while a turn is running                          | Decided at admission and observed by the next turn (ADR 0010/0016); bound turn length, or issue short-lived grants, whose expiry is refused inside the turn |
 | Bounded-use race         | Two workers consume the last use                                  | Durable atomic compare-and-set; deny when the usage store is unavailable                                                                                    |
 | SSRF / connector escape  | MCP tool fetches metadata endpoints                               | Destination allowlists, DNS/IP validation, redirects policy, egress controls                                                                                |
@@ -224,15 +224,21 @@ specific deployment policy allows them.
 
 ### Idempotency and concurrency
 
-SharedOS does **not** yet implement durable replay or
-idempotency enforcement for message IDs, call IDs, operation IDs, or execution
-IDs, and it does not impose a created-at freshness window. A production host
-must atomically bind each accepted identifier to namespace/world,
-authenticated actor, operation, target, and semantic input, and must reject a
-replay whose input changes. This is a production gate, not a publication one: the
-packages are public, and until this is a tested SharedOS port with production and
-isolated adapters it stays a host obligation
-([release readiness](../release-readiness.md)).
+SharedOS owns replay semantics through `SharedOSKernelOptions.replayStore`.
+Installing a host durable `ReplayStore` activates tenant-scoped atomic claims
+for execution, message, tool-call and resource-operation identities. Same-key
+changed input is rejected; terminal results replay without another effect.
+Pending, interrupted and expired identities cannot be automatically re-executed.
+See [ADR 0028](../adr/0028-durable-operation-replay.md) for canonical fingerprints,
+nested operations, retention and fenced recovery.
+
+Protocol v1 deployments without a store retain their legacy unprotected behavior.
+Production hosts must install durable storage; testkit's isolated in-memory
+adapter is not durable. Store outages fail closed once replay protection is
+configured. No universal created-at freshness window is imposed. A crash between
+an external effect and durable result storage remains ambiguous: replay protection
+does not guarantee exactly-once external execution. Grant-use reservation and
+transactional audit/effect commits remain separate host obligations.
 
 A retry is the commonest replay, and the envelope says when one is unsafe. A
 turn's ending carries `retryable`, and it is `false` once a call to a `write`
@@ -300,7 +306,7 @@ SharedOS does not by itself:
 - verify that a declared purpose reflects a model's private motivation;
 - make arbitrary third-party tools trustworthy;
 - provide user authentication, credential custody, or network sandboxing;
-- provide durable replay protection; that remains a host obligation;
+- supply production replay storage or guarantee exactly-once external effects;
 - guarantee storage durability or deletion when a host provider violates its
   contract;
 - define host billing policy or the statistical validity of an evaluation.

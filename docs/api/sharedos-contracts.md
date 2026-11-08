@@ -428,6 +428,22 @@ Defined in: [http.ts:21](https://github.com/systemind-team/SharedOS/blob/main/pa
 
 ---
 
+### ReplayKey
+
+> **ReplayKey** = `z.infer`\<_typeof_ [`ReplayKeySchema`](#replaykeyschema)>\>
+
+Defined in: [replay.ts:15](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/replay.ts#L15)
+
+---
+
+### ReplayRecord
+
+> **ReplayRecord** = `z.infer`\<_typeof_ [`ReplayRecordSchema`](#replayrecordschema)>\>
+
+Defined in: [replay.ts:36](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/replay.ts#L36)
+
+---
+
 ### ResourceOperation
 
 > **ResourceOperation** = `z.infer`\<_typeof_ [`ResourceOperationSchema`](#resourceoperationschema)>\>
@@ -1238,6 +1254,26 @@ Turn request accepted over HTTP; authority and visible tools are host-derived.
 Defined in: [http.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/http.ts#L18)
 
 Resource operation accepted over HTTP; authority is injected by the host.
+
+---
+
+### ReplayKeySchema
+
+> `const` **ReplayKeySchema**: `ZodObject`\<\{ `id`: `ZodString`; `kind`: `ZodEnum`\<\[`"execution"`, `"tool"`, `"resource"`, `"message"`\]\>; `namespaceId`: `ZodString`; `scope`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}\>
+
+Defined in: [replay.ts:7](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/replay.ts#L7)
+
+A structural tenant-scoped identity; scope is an execution ID for tool calls.
+
+---
+
+### ReplayRecordSchema
+
+> `const` **ReplayRecordSchema**: `ZodEffects`\<`ZodObject`\<\{ `fingerprint`: `ZodString`; `key`: `ZodObject`\<\{ `id`: `ZodString`; `kind`: `ZodEnum`\<\[`"execution"`, `"tool"`, `"resource"`, `"message"`\]\>; `namespaceId`: `ZodString`; `scope`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}, \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}\>; `result`: `ZodOptional`\<`ZodType`\<[`JsonValue`](#jsonvalue), `ZodTypeDef`, [`JsonValue`](#jsonvalue)>>\>\>; `state`: `ZodEnum`\<\[`"pending"`, `"completed"`, `"failed"`, `"interrupted"`, `"expired"`\]\>; `token`: `ZodString`; \}, `"strict"`, `ZodTypeAny`, \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}, \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}\>, \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}, \{ `fingerprint`: `string`; `key`: \{ `id`: `string`; `kind`: `"message"` \| `"resource"` \| `"tool"` \| `"execution"`; `namespaceId`: `string`; `scope`: `string`; \}; `result?`: [`JsonValue`](#jsonvalue); `state`: `"failed"` \| `"interrupted"` \| `"pending"` \| `"completed"` \| `"expired"`; `token`: `string`; \}\>
+
+Defined in: [replay.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/contracts/src/replay.ts#L18)
+
+Durable identity survives result-body expiry and never becomes claimable again.
 
 ---
 

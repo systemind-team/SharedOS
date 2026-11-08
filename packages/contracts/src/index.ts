@@ -12,3 +12,4 @@ export * from "./protocol-error.js";
 export * from "./resource.js";
 export * from "./runtime.js";
 export * from "./tool.js";
+export * from "./replay.js";

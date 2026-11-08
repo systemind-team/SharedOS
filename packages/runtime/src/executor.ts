@@ -1,5 +1,6 @@
 import {
   ExecutionRequestSchema,
+  ExecutionResultSchema,
   JsonValueSchema,
   MAX_EXECUTION_TOOL_CALLS,
   PROTOCOL_VERSION,
@@ -25,6 +26,8 @@ import {
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
 import {
+  ReplayError,
+  replayContext,
   AUDIT_UNAVAILABLE,
   AuditUnavailableError,
   ExecutionInProgressError,
@@ -127,6 +130,7 @@ export interface TurnExecutionPort {
  */
 export type TurnKernel = Pick<
   SharedOSKernel,
+  | "replayProtection"
   | "admitTurn"
   | "reach"
   | "listTools"
@@ -216,12 +220,72 @@ export class SharedOSExecutor implements TurnExecutionPort {
     return measure(
       this.#spans,
       SPAN.TURN,
-      () => this.#execute(input, options),
+      () => this.#replayExecute(input, options),
       (result, span) => {
         span.set("executionId", result.executionId);
         span.set("status", result.status);
       },
     );
+  }
+
+  async #replayExecute(
+    input: ExecutionRequest,
+    options: ExecuteTurnOptions,
+  ): Promise<ExecutionResult> {
+    const parsed = ExecutionRequestSchema.safeParse(structuredClone(input));
+    if (!parsed.success)
+      throw new TypeError("ExecutionRequest does not match the SharedOS v1 contract");
+    const request = {
+      ...parsed.data,
+      context: { ...parsed.data.context, executionId: parsed.data.executionId },
+    };
+    if (options.signal?.aborted === true) return this.#execute(request, options);
+    try {
+      return await this.#kernel.replayProtection.run(
+        {
+          namespaceId: request.context.namespaceId,
+          kind: "execution",
+          scope: "",
+          id: request.executionId,
+        },
+        {
+          ...request,
+          context: replayContext(request.context),
+          runtime: this.#manifest,
+          defaults: {
+            maxSteps: this.#defaultMaxSteps,
+            maxToolCalls: this.#defaultMaxToolCalls,
+            timeoutMs: this.#defaultTimeoutMs,
+            drainGraceMs: this.#drainGraceMs,
+          },
+        },
+        () => this.#execute(request, options),
+        (value) => {
+          const result = ExecutionResultSchema.parse(value);
+          if (
+            result.executionId !== request.executionId ||
+            result.traceId !== request.context.traceId
+          )
+            throw new Error("Mismatched replay result");
+          return result;
+        },
+      );
+    } catch (error) {
+      if (!(error instanceof ReplayError)) throw error;
+      const now = this.#clock();
+      const refused: ExecutionResult = {
+        version: PROTOCOL_VERSION,
+        executionId: request.executionId,
+        traceId: request.context.traceId,
+        events: [],
+        startedAt: now,
+        completedAt: now,
+        status: error.code === "replay_conflict" ? "denied" : "failed",
+        error: protocolError(error.code, "Operation replay refused"),
+      };
+      await this.#recordTurnEnd(request, refused);
+      return refused;
+    }
   }
 
   async #execute(
@@ -570,6 +634,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         const withKernel = watchAudit(
           this.#kernel.invokeTool(contextAt(executionContext, this.#clock()), parsedCall.data, {
             signal: abort.signal,
+            executionId: request.executionId,
           }),
         ).then(
           (settled) => {

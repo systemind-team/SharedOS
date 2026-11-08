@@ -222,7 +222,7 @@ Defined in: [packages/client/src/index.ts:97](https://github.com/systemind-team/
 
 ##### reach()
 
-> **reach**(`options?`): `Promise`\<\{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}\>
+> **reach**(`options?`): `Promise`\<\{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"usage_store_unavailable"` \| `"authority_unavailable"`; `status`: `"unavailable"`; \}\>
 
 Defined in: [packages/client/src/index.ts:112](https://github.com/systemind-team/SharedOS/blob/main/packages/client/src/index.ts#L112)
 
@@ -244,7 +244,7 @@ rather than an error: nothing could be established, and the code says why.
 
 ###### Returns
 
-`Promise`\<\{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"authority_unavailable"` \| `"usage_store_unavailable"`; `status`: `"unavailable"`; \}\>
+`Promise`\<\{ `reach`: `object`[]; `status`: `"computed"`; \} \| \{ `reasonCode`: `"usage_store_unavailable"` \| `"authority_unavailable"`; `status`: `"unavailable"`; \}\>
 
 ##### sendMessage()
 

@@ -23,9 +23,13 @@ vulnerability-reporting contact.
 
 ## Production security gates
 
-- Define a durable replay/freshness port for execution IDs, message IDs, tool
-  call IDs, and resource operation IDs. Implement atomic production and isolated
-  test adapters and reject same-key/different-input replays.
+- Install a production durable `ReplayStore` for the kernel replay gates covering
+  execution IDs, message IDs, tool-call IDs and resource-operation IDs (ADR 0028).
+  SharedOS now defines atomic claim, conflict rejection, result replay and fenced
+  interruption semantics; testkit supplies an isolated in-memory adapter. Verify
+  host storage against these rules across processes, retain identity tombstones,
+  and configure host freshness policy. Protocol v1 without a store remains
+  unprotected; mandatory activation is coordinated with protocol versioning.
 - Use a trusted grant store or verifier and a durable compare-and-set usage store
   for bounded grants. The kernel intentionally fails bounded grants closed when
   no usage store is supplied.
@@ -46,6 +50,9 @@ vulnerability-reporting contact.
   stable manifest provenance. Run untrusted adapters outside the host process.
 
 ## Already enforced in this bootstrap
+
+- Durable replay semantics when a host `ReplayStore` is installed, including
+  concurrent duplicate refusal, conflicting-input rejection and retained results.
 
 - Deny-by-default complete capability matching with segment-safe paths.
 - Separate recipient-scoped grants for messaging and target-agent execution.

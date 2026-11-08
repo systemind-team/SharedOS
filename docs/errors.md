@@ -759,3 +759,24 @@ Rejected by the schemas, so they hold identically on both boundaries.
 Path segments additionally reject separators, traversal markers, and control
 characters. A filesystem-backed provider must **still** resolve beneath its own
 root and reject link escapes — the contract cannot see your disk.
+
+## Durable replay
+
+Installing `SharedOSKernelOptions.replayStore` activates the replay state machine
+in [ADR 0028](adr/0028-durable-operation-replay.md). Production storage belongs to
+the host. Keep IDs stable across transport retries; use a new ID only for a new
+intent after reconciling any ambiguous effect.
+
+| Code                 | Meaning                                                                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `replay_conflict`    | The tenant-scoped ID is already bound to different input or trusted context. Denied; do not reuse it.                                     |
+| `replay_pending`     | Another worker owns the claim. Poll/retry the same ID for its retained result; never dispatch a replacement effect.                       |
+| `replay_interrupted` | The outcome is ambiguous or the operation was interrupted. Reconcile through trusted host recovery.                                       |
+| `replay_expired`     | The result body expired; the identity tombstone still prevents another effect.                                                            |
+| `replay_unavailable` | Storage or its response could not be trusted. No effect starts without a claim; failure to persist a result after an effect is ambiguous. |
+
+All replay refusals are non-retryable as new turns/effects. Pending requests can
+be resubmitted with the same ID to retrieve the result. Except for conflict,
+refusals use `failed` rather than `denied`, since a previous or concurrent effect
+may already exist. Replayed terminal results preserve their original timestamps,
+IDs, metadata and events. Replaying an execution does not stream new events.

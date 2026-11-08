@@ -53,5 +53,8 @@
     "@aicoo/sharedos-runtime": "workspace:*",
     "@aicoo/sharedos-testkit": "workspace:*",
     "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@aicoo/sharedos-http": "workspace:*"
   }
 }

@@ -9,6 +9,7 @@
   "references": [
     { "path": "../adapters" },
     { "path": "../contracts" },
+    { "path": "../http" },
     { "path": "../core" },
     { "path": "../mcp" },
     { "path": "../os" },

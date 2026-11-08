@@ -1,3 +1,4 @@
+import { ReplayProtection } from "@aicoo/sharedos-core";
 import { describe, expect, it, vi } from "vitest";
 
 import type {
@@ -89,6 +90,7 @@ function request(options: { readonly escalation?: boolean } = {}): ExecutionRequ
 function kernel(result?: ToolResult, options: { readonly escalation?: boolean } = {}): TurnKernel {
   const catalogue = options.escalation === true ? [tool, ESCALATION_TOOL_DEFINITION] : [tool];
   return {
+    replayProtection: new ReplayProtection(),
     admitTurn: vi.fn(async () => ({
       allowed: true as const,
       reasonCode: "allowed" as const,

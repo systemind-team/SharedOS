@@ -26,6 +26,7 @@ import {
   type ResourceProvider,
   type ToolNamespaceSettingsStore,
 } from "@aicoo/sharedos-core";
+import { InMemoryReplayStore } from "./replay.js";
 import { addressesEqual } from "@aicoo/sharedos-core/internal";
 
 export class InMemoryAuditSink implements AuditSink {
@@ -307,6 +308,7 @@ export function createTestKernel(options: TestKernelOptions = {}): TestKernel {
   return {
     kernel: new SharedOSKernel({
       grantSource: options.grantSource ?? grants,
+      replayStore: new InMemoryReplayStore(),
       audit,
       authorizer: new CapabilityAuthorizer({
         usageStore: new InMemoryGrantUsageStore(),
@@ -402,3 +404,4 @@ async function echoResourceOperation(operation: ResourceOperation): Promise<Reso
     completedAt: operation.context.now,
   };
 }
+export * from "./replay.js";

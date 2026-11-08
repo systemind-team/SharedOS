@@ -2,6 +2,7 @@ import type {
   AccessContext,
   CapabilityRequirement,
   JsonObject,
+  ReplayKey,
   ToolCall,
   ToolDefinition,
   ToolNamespaceCatalog,
@@ -18,7 +19,13 @@ export interface ToolHandler {
   readonly parseArguments: (arguments_: JsonObject) => unknown;
   /** Resolve argument-selected resources immediately before execution. */
   readonly resolveRequirement?: (context: AccessContext, call: ToolCall) => CapabilityRequirement;
-  invoke(context: AccessContext, call: ToolCall, signal: AbortSignal): Promise<ToolResult>;
+  /** The optional identity is trusted kernel provenance for stable nested operation IDs. */
+  invoke(
+    context: AccessContext,
+    call: ToolCall,
+    signal: AbortSignal,
+    identity?: ReplayKey,
+  ): Promise<ToolResult>;
 }
 
 /**
@@ -82,7 +89,7 @@ export class ToolRegistry {
     const registered: ToolHandler = {
       definition,
       parseArguments: (arguments_) => parseArguments(arguments_),
-      invoke: (context, call, signal) => invoke(context, call, signal),
+      invoke: (context, call, signal, identity) => invoke(context, call, signal, identity),
       ...(resolveRequirement === undefined
         ? {}
         : {
