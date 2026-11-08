@@ -79,6 +79,14 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **Two opens of one execution id give the turn to the one called first.**
+  `openTurnAuthority` let both load authority and gave the turn to whichever
+  load finished first, so now and then the later call held the turn and the
+  first was refused with `execution_in_progress`. The first open now claims
+  the turn before it loads, and a second open under the same execution id is
+  refused at once, without a store read, as it already was once the turn was
+  held. Opens without an execution id are unchanged.
+
 - **A turn Codex answers in prose now has that prose as its output.** The
   Codex protocol read the OpenAI Responses shape and said the CLI's own
   event envelope was the transport's to carry; but `CODEX_MCP_HARNESS` is

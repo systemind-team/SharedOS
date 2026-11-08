@@ -405,20 +405,53 @@ describe("SharedOSKernel turn-scoped authority", () => {
   });
 
   it("refuses the later of two opens that race under one execution id", async () => {
-    let finish!: (grants: readonly CapabilityGrant[]) => void;
-    const pending = new Promise<readonly CapabilityGrant[]>((resolve) => {
-      finish = resolve;
+    let finishFirst!: (grants: readonly CapabilityGrant[]) => void;
+    const slow = new Promise<readonly CapabilityGrant[]>((resolve) => {
+      finishFirst = resolve;
     });
-    const kernel = kernelWith(sourceOf(async () => pending));
+    // The first read waits and any later one answers at once, so a turn that
+    // went to whichever load finished first would go to the later open.
+    let reads = 0;
+    const kernel = kernelWith(sourceOf(async () => (reads++ === 0 ? slow : [grant()])));
     const racing = { ...context(), executionId: "execution-a" };
     const first = kernel.openTurnAuthority(racing);
     const second = kernel.openTurnAuthority(racing);
-    finish([grant()]);
 
+    // Refused at once and without a store read: the open called first holds
+    // the turn while it loads.
+    await expect(second).rejects.toMatchObject({ code: "execution_in_progress" });
+    expect(reads).toBe(1);
+    finishFirst([grant()]);
     const scope = await first;
     expect(scope.status).toBe("resolved");
-    await expect(second).rejects.toMatchObject({ code: "execution_in_progress" });
     await expect(kernel.authorize(racing, READ_REQUEST)).resolves.toMatchObject({ allowed: true });
+    scope.close();
+  });
+
+  it("frees a turn whose open was cancelled while it loaded", async () => {
+    let reads = 0;
+    const kernel = kernelWith(
+      sourceOf(async (_context, signal) => {
+        reads += 1;
+        if (reads > 1) {
+          return [grant()];
+        }
+        return new Promise<readonly CapabilityGrant[]>((_resolve, reject) => {
+          if (signal.aborted) {
+            reject(signal.reason);
+          }
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        });
+      }),
+    );
+    const racing = { ...context(), executionId: "execution-a" };
+    const controller = new AbortController();
+    const cancelled = kernel.openTurnAuthority(racing, { signal: controller.signal });
+    controller.abort(new Error("host cancelled"));
+
+    await expect(cancelled).rejects.toThrow("host cancelled");
+    const scope = await kernel.openTurnAuthority(racing);
+    expect(scope.status).toBe("resolved");
     scope.close();
   });
 

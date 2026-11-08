@@ -337,6 +337,8 @@ export class SharedOSKernel {
   readonly #authority: TrustedAuthorityResolver;
   readonly #policySource: PolicySource | undefined;
   readonly #leases = new Map<string, AuthorityLease>();
+  /** Turns named by an execution id whose open is still loading authority. */
+  readonly #opening = new Set<string>();
   /**
    * What a message transport answered when it refused a `messages.request`.
    *
@@ -432,9 +434,9 @@ export class SharedOSKernel {
    * store on every call and possibly changing its mind.
    *
    * A context that carries an `executionId` opens a turn of its own, and a
-   * second open while that turn is held rejects with an
-   * `ExecutionInProgressError`. One that carries none joins the lease its other
-   * fields already hold.
+   * second open while that turn is held, or still loading its authority,
+   * rejects with an `ExecutionInProgressError`. One that carries none joins
+   * the lease its other fields already hold.
    *
    * Callers must `close` the returned scope on every exit path. Hosts that call
    * kernel operations outside any turn need not open one: an operation with no
@@ -448,22 +450,30 @@ export class SharedOSKernel {
     context = structuredClone(context);
 
     const key = turnAuthorityKey(context);
-    // The lease table is the record of what is running. A context that names
-    // its execution may not join a lease: one execution id is one turn.
-    const held = (): AuthorityLease | undefined => {
-      const lease = this.#leases.get(key);
-      if (lease !== undefined && context.executionId !== undefined) {
+    if (context.executionId !== undefined) {
+      // One execution id is one turn. The lease table is the record of what
+      // is running, and an open still loading is running too, so the turn is
+      // claimed before the load: the open called first holds it, whichever
+      // load would have finished first.
+      if (this.#leases.has(key) || this.#opening.has(key)) {
         throw new ExecutionInProgressError(context.executionId);
       }
-      return lease;
-    };
+      this.#opening.add(key);
+      try {
+        const resolution = await this.#loadAuthority(context, options.signal);
+        this.#leases.set(key, { refs: 1, resolution });
+        return scopeFor(resolution, () => this.#releaseTurnAuthority(key));
+      } finally {
+        this.#opening.delete(key);
+      }
+    }
 
-    let lease = held();
+    let lease = this.#leases.get(key);
     if (lease === undefined) {
       const resolution = await this.#loadAuthority(context, options.signal);
       // Read again: another open of this turn may have installed its lease
       // while this one loaded, and replacing it would let its close drop ours.
-      lease = held();
+      lease = this.#leases.get(key);
       if (lease === undefined) {
         lease = { refs: 0, resolution };
         this.#leases.set(key, lease);
