@@ -10,6 +10,13 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **`OpenAiCompatibleModelClient` takes a `reasoningEffort`.** Sent as
+  OpenAI's `reasoning_effort` field, only when set, and recorded on each turn
+  through `settings` beside `thinking`. A vendor may refuse function tools on
+  a chat completion of a model that reasons by default unless the effort is
+  `"none"`; a host that runs such a model through the client now has the
+  field to say so. `REASONING_EFFORTS` names the values.
+
 - **A host can write files into the turn's workspace before the CLI starts.**
   `createMcpHarnessRuntime` takes `turnFiles`, a function of the turn request
   returning `{ filename, contents }` pairs, written beside the generated
