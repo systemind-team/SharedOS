@@ -10,6 +10,16 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **An MCP harness spec can read what its CLI says beside its frames.**
+  `McpHarnessSpec.readDiagnostic(text, stream, connection)` is called with
+  each line of stderr and each stdout line that is not a frame, and a step
+  it returns is taken as a frame's would be: a `failed` one is the turn's
+  outcome unless the turn already has one. It is for a condition the CLI's
+  frames never carry. `deepseekMcpEntryId` names the plugin entry
+  `deepseekMcpConfig` inserts. `HarnessProcess` now reads stderr by the
+  line, so `onDiagnostic` receives one stderr line per call rather than one
+  chunk, and a line the pipe split arrives whole.
+
 - **`probeHarness` takes an `AbortSignal`.** An optional third argument,
   also on `probeCodex`, `probeClaudeCode`, `probeDeepseek` and `probePi`.
   The version probe sets no time limit of its own, so a caller that wants
@@ -161,6 +171,16 @@ each entry calls out what a host has to update.
   `ProtocolVersionSchema` row in `docs/open-items.md` is closed.
 
 ### Fixed
+
+- **A DeepSeek Harness run that never reached the bridge fails
+  `harness_not_connected`.** From dsh 0.1.6 the overlay's
+  `failOnStartupError: true` no longer stops the run: dsh prints
+  `dsh: warning: 1 entry did not activate` and `mcp-sharedos
+(@deepseek-ai/dsh-mcp-client): Error: mcp-client(sharedos): initial
+connection or tool synchronization failed` on stderr and carries on with
+  only its own tools, which read as a harness that declined the catalogue.
+  `DEEPSEEK_MCP_HARNESS` reads that line and fails the turn with the new
+  code `harness_not_connected`, not retryable. Checked on dsh 0.2.2-rc.1.
 
 - **A DeepSeek Harness turn on the MCP path has its answer as output.**
   `DEEPSEEK_MCP_HARNESS` runs dsh's headless profile, which printed only its

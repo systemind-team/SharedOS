@@ -17,8 +17,10 @@ export interface HarnessProcessHandlers {
   readonly onFrame: (frame: HarnessFrame) => void;
   /**
    * What the harness said beside its protocol: a stdout line that is not JSON,
-   * or a chunk of stderr. Harnesses print banners next to their frames, so a
-   * line that is not a frame is not an error; it is kept for diagnosis only.
+   * or a line of stderr. Harnesses print banners next to their frames, so a
+   * line that is not a frame is not an error; it is kept for diagnosis. stderr
+   * is read by the line, as stdout is, so a reader looking for one line of it
+   * sees that line whole however the pipe split it.
    */
   readonly onDiagnostic?: (text: string, stream: "stdout" | "stderr") => void;
   /** The harness has closed its stdout: no further frame will arrive. */
@@ -49,6 +51,7 @@ export interface HarnessProcessExit {
 export class HarnessProcess {
   readonly #child: ChildProcessWithoutNullStreams;
   readonly #lines: Interface;
+  readonly #errors: Interface;
   readonly #signal: AbortSignal | undefined;
   readonly #onAbort = (): void => this.kill();
   /** Resolves once, when the process has closed or failed to start. */
@@ -98,9 +101,12 @@ export class HarnessProcess {
 
     this.#lines.on("close", () => handlers.onOutputEnd?.());
 
-    this.#child.stderr.setEncoding("utf8");
-    this.#child.stderr.on("data", (chunk: string) => {
-      handlers.onDiagnostic?.(chunk.trimEnd(), "stderr");
+    this.#errors = createInterface({ input: this.#child.stderr });
+    this.#errors.on("line", (line) => {
+      const trimmed = line.trimEnd();
+      if (trimmed.trim() !== "") {
+        handlers.onDiagnostic?.(trimmed, "stderr");
+      }
     });
   }
 
@@ -134,6 +140,7 @@ export class HarnessProcess {
   dispose(): void {
     this.#signal?.removeEventListener("abort", this.#onAbort);
     this.#lines.close();
+    this.#errors.close();
     this.endInput();
     this.kill();
   }

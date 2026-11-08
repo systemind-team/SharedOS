@@ -373,7 +373,11 @@ re-authorized by the kernel.
   printed as events, of which the turn's outcome is read from `final`. The
   overlay sets `failOnStartupError: true` for the reason Codex's server is
   `required`: a run that quietly continued with only the harness's own tools
-  would be a different finding.
+  would be a different finding. From dsh 0.1.6 that setting no longer stops
+  the run, so the spec reads dsh's stderr for the line naming the SharedOS
+  entry (`mcp-sharedos (@deepseek-ai/dsh-mcp-client): Error: ...`) and fails
+  the turn `harness_not_connected`. An MCP server of the owner's own that
+  fails to start is left alone.
 - **Pi.** `--mode rpc --no-session --no-builtin-tools`: a session-less RPC run
   with Pi's own tools off, so what the model reaches is the extension's proxy
   tool and nothing else.

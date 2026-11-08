@@ -34,6 +34,7 @@ import {
   claudeAgentSdkMcpOptions,
   claudeCodeMcpConfig,
   codexMcpConfig,
+  deepseekMcpEntryId,
   SHAREDOS_MCP_TOKEN_VARIABLE,
   declareToolPolicy,
   deepseekMcpConfig,
@@ -615,6 +616,9 @@ describe("harness configuration", () => {
     // A run that reached the model with no MCP client at all would read as a
     // harness that declined to use the catalogue rather than as a broken config.
     expect(overlay.startsWith("- insert:")).toBe(true);
+    // The id dsh names the entry by when it reports that it did not activate.
+    expect(overlay).toContain(`    - id: ${deepseekMcpEntryId(connection)}\n`);
+    expect(deepseekMcpEntryId({ name: "bridge" })).toBe("mcp-bridge");
     expect(overlay).toContain("@deepseek-ai/dsh-mcp-client");
     expect(overlay).toContain("transport: streamable-http");
     expect(overlay).not.toMatch(/^- id:/mu);
