@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { after, createTurnDeadlines } from "./internal.js";
+import { createTurnDeadlines } from "./internal.js";
 
 beforeEach(() => void vi.useFakeTimers());
 afterEach(() => void vi.useRealTimers());
@@ -123,32 +123,5 @@ describe("createTurnDeadlines", () => {
     await vi.advanceTimersByTimeAsync(5_000);
     expect(deadlines.signal.aborted).toBe(true);
     deadlines.dispose();
-  });
-});
-
-describe("after", () => {
-  it("waits out a delay longer than one timer can hold instead of firing early", async () => {
-    const fired = vi.fn();
-    const ceiling = 2_147_483_647;
-    const cancel = after(ceiling + 1_000, fired);
-
-    await vi.advanceTimersByTimeAsync(ceiling);
-    expect(fired).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(999);
-    expect(fired).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(1);
-    expect(fired).toHaveBeenCalledOnce();
-    cancel();
-  });
-
-  it("is cancelled part-way through a long wait", async () => {
-    const fired = vi.fn();
-    const cancel = after(2_147_483_647 * 2, fired);
-
-    await vi.advanceTimersByTimeAsync(2_147_483_647 + 10);
-    cancel();
-    expect(vi.getTimerCount()).toBe(0);
-    await vi.advanceTimersByTimeAsync(2_147_483_647);
-    expect(fired).not.toHaveBeenCalled();
   });
 });

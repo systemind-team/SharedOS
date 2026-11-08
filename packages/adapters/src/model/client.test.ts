@@ -310,6 +310,24 @@ describe("the chat-completions client", () => {
     expect(turn.signal.aborted).toBe(false);
   });
 
+  it("holds a request timeout longer than one timer can, instead of firing at once", async () => {
+    // Real time: the platform fires a timer asked for 2^31 ms or more after 1 ms.
+    const fetch = vi.fn<Fetch>(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        }),
+    );
+    const turn = new AbortController();
+
+    const call = client(fetch, { requestTimeoutMs: 2 ** 31 }).complete(REQUEST, turn.signal);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(requestInit(fetch).signal?.aborted).toBe(false);
+    turn.abort(new Error("turn ended"));
+    await expect(call).rejects.toThrow("turn ended");
+  });
+
   it("lets the turn's abort win over a pending retry", async () => {
     vi.useFakeTimers();
     const fetch = vi.fn<Fetch>(async () => respond("slow down", 429));

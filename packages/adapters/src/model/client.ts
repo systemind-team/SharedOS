@@ -1,4 +1,5 @@
 import type { JsonObject } from "@aicoo/sharedos-contracts";
+import { after } from "@aicoo/sharedos-core/internal";
 
 import { z } from "zod";
 
@@ -322,37 +323,39 @@ export class OpenAiCompatibleModelClient implements ModelClient {
     // Two deadlines, not one. The turn's signal ends the whole execution; the
     // host's request timeout, when it set one, ends a single hung request so a
     // stalled connection is a failed call rather than a failed run.
-    const deadline =
-      this.#requestTimeoutMs === undefined
-        ? signal
-        : AbortSignal.any([signal, AbortSignal.timeout(this.#requestTimeoutMs)]);
-    const fetch = this.#fetch ?? (await modelFetch());
-    const response = await fetch(`${this.#baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${this.#apiKey}`,
-      },
-      body,
-      signal: deadline,
-    });
+    const timeout =
+      this.#requestTimeoutMs === undefined ? undefined : timeoutSignal(this.#requestTimeoutMs);
+    try {
+      const fetch = this.#fetch ?? (await modelFetch());
+      const response = await fetch(`${this.#baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${this.#apiKey}`,
+        },
+        body,
+        signal: timeout === undefined ? signal : AbortSignal.any([signal, timeout.signal]),
+      });
 
-    if (!response.ok) {
-      // The body is read and discarded rather than surfaced. A provider error
-      // can quote the request back, and the request carries the turn's prompt
-      // and arguments; the status is what a caller can act on anyway.
-      await response.text().catch(() => "");
-      throw new ModelRequestError(
-        `the model provider answered ${String(response.status)}`,
-        response.status,
-      );
-    }
+      if (!response.ok) {
+        // The body is read and discarded rather than surfaced. A provider error
+        // can quote the request back, and the request carries the turn's prompt
+        // and arguments; the status is what a caller can act on anyway.
+        await response.text().catch(() => "");
+        throw new ModelRequestError(
+          `the model provider answered ${String(response.status)}`,
+          response.status,
+        );
+      }
 
-    const reply = decodeChatCompletion(await response.json());
-    if (reply === undefined) {
-      throw new ModelRequestError("the model provider returned an unreadable completion");
+      const reply = decodeChatCompletion(await response.json());
+      if (reply === undefined) {
+        throw new ModelRequestError("the model provider returned an unreadable completion");
+      }
+      return reply;
+    } finally {
+      timeout?.dispose();
     }
-    return reply;
   }
 }
 
@@ -421,6 +424,25 @@ export function encodeModelMessage(message: ModelMessage): JsonObject {
 
 function isRetryable(error: ModelRequestError): boolean {
   return error.status === undefined || error.status === 429 || error.status >= 500;
+}
+
+/**
+ * `AbortSignal.timeout(ms)` for any `ms`. The platform's own fires at once, or
+ * throws, past one timer's reach (about 24.8 days); a host's timeout is held
+ * as set.
+ * Like the platform's, the wait does not by itself keep a Node process running.
+ */
+function timeoutSignal(ms: number): { readonly signal: AbortSignal; dispose(): void } {
+  const controller = new AbortController();
+  const dispose = after(
+    ms,
+    () =>
+      controller.abort(
+        new DOMException("The operation was aborted due to timeout", "TimeoutError"),
+      ),
+    { unref: true },
+  );
+  return { signal: controller.signal, dispose };
 }
 
 function delay(ms: number, signal: AbortSignal): Promise<void> {

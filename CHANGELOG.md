@@ -196,6 +196,15 @@ each entry calls out what a host has to update.
   DeepSeek, whose calls arrive in a frame of their own, and Codex, which does
   not use the walk, never paid it.
 
+- **A host's timeout longer than about 24.8 days now waits that long.** One
+  timer holds at most 2^31 - 1 ms; asked for more, the platform fires it
+  almost at once, or refuses it. So `OpenAiCompatibleModelClient`'s
+  `requestTimeoutMs` failed every model call, retries included; an MCP
+  harness launch's `idleTimeoutMs` closed a session harness's input almost as
+  soon as it opened; and the kernel's `auditWriteTimeoutMs` treated any audit
+  write after an effect that took more than a millisecond as timed out. Each
+  is now waited out in steps, as a turn's deadline already was.
+
 ## 1.0.0-preview
 
 ### Changed — breaking

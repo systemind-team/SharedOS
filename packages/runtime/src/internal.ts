@@ -1,28 +1,4 @@
-/** The longest delay one `setTimeout` keeps; a longer one fires at once. */
-const TIMER_CEILING_MS = 2_147_483_647;
-
-/**
- * Run `fire` after `ms`, however long that is, and return what cancels it.
- *
- * A host may give a turn more time than one timer can hold (about 24.8 days),
- * and SharedOS sets no ceiling of its own, so a longer delay is waited out in
- * steps instead of being cut short.
- */
-export function after(ms: number, fire: () => void): () => void {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const arm = (remaining: number): void => {
-    const wait = Math.min(remaining, TIMER_CEILING_MS);
-    timer = setTimeout(() => {
-      if (remaining > wait) {
-        arm(remaining - wait);
-      } else {
-        fire();
-      }
-    }, wait);
-  };
-  arm(ms);
-  return (): void => clearTimeout(timer);
-}
+import { after } from "@aicoo/sharedos-core/internal";
 
 /**
  * One signal for a turn: the host's, if it gave one, with the turn's own

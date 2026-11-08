@@ -9,6 +9,7 @@ import type {
   ToolCall,
   ToolResult,
 } from "@aicoo/sharedos-contracts";
+import { after } from "@aicoo/sharedos-core/internal";
 import {
   McpToolServer,
   mcpServerName,
@@ -521,29 +522,28 @@ async function runHarness(
   // A session harness is shut down by closing its command channel, so the close
   // is deferred to the turn's terminal frame instead of happening at the write.
   const idleMs = launch.idleTimeoutMs;
-  let idleTimer: NodeJS.Timeout | undefined;
+  let cancelIdle: (() => void) | undefined;
   const closeStdin = (): void => {
-    if (idleTimer !== undefined) {
-      clearTimeout(idleTimer);
-      idleTimer = undefined;
-    }
+    cancelIdle?.();
+    cancelIdle = undefined;
     harness.endInput();
   };
   const touch = (): void => {
     if (idleMs === undefined || launch.keepStdinOpen !== true || harness.inputEnded) {
       return;
     }
-    if (idleTimer !== undefined) {
-      clearTimeout(idleTimer);
-    }
-    idleTimer = setTimeout(() => {
-      options.onDiagnostic?.(
-        spec.id,
-        `no output for ${String(idleMs)}ms; closing the harness session`,
-      );
-      closeStdin();
-    }, idleMs);
-    idleTimer.unref();
+    cancelIdle?.();
+    cancelIdle = after(
+      idleMs,
+      () => {
+        options.onDiagnostic?.(
+          spec.id,
+          `no output for ${String(idleMs)}ms; closing the harness session`,
+        );
+        closeStdin();
+      },
+      { unref: true },
+    );
   };
 
   // The turn's hard signal ends the process. A draining turn does not: the

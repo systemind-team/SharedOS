@@ -1,7 +1,7 @@
 import { JsonObjectSchema } from "@aicoo/sharedos-contracts";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { parseJsonObject, readJsonObject } from "./internal.js";
+import { after, parseJsonObject, readJsonObject } from "./internal.js";
 
 class Plain {
   readonly own = 1;
@@ -151,5 +151,54 @@ describe("parseJsonObject", () => {
     const read = parseJsonObject('{"kept":{"x":1},"changed":{"__proto__":{},"y":2}}');
     expect(read).toEqual({ kept: { x: 1 }, changed: { y: 2 } });
     expect(Object.getOwnPropertyNames(read?.["changed"])).toEqual(["y"]);
+  });
+});
+
+describe("after", () => {
+  beforeEach(() => void vi.useFakeTimers());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("waits out a delay longer than one timer can hold instead of firing early", async () => {
+    const fired = vi.fn();
+    const ceiling = 2_147_483_647;
+    const cancel = after(ceiling + 1_000, fired);
+
+    await vi.advanceTimersByTimeAsync(ceiling);
+    expect(fired).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(999);
+    expect(fired).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fired).toHaveBeenCalledOnce();
+    cancel();
+  });
+
+  it("is cancelled part-way through a long wait", async () => {
+    const fired = vi.fn();
+    const cancel = after(2_147_483_647 * 2, fired);
+
+    await vi.advanceTimersByTimeAsync(2_147_483_647 + 10);
+    cancel();
+    expect(vi.getTimerCount()).toBe(0);
+    await vi.advanceTimersByTimeAsync(2_147_483_647);
+    expect(fired).not.toHaveBeenCalled();
+  });
+
+  it("leaves every step of the wait unable to hold the process open when asked to", async () => {
+    const armed = vi.spyOn(globalThis, "setTimeout");
+    const timers = (): NodeJS.Timeout[] =>
+      armed.mock.results.map((result) => result.value as NodeJS.Timeout);
+
+    const held = after(10, vi.fn());
+    expect(timers().map((timer) => timer.hasRef())).toEqual([true]);
+    held();
+    armed.mockClear();
+
+    const cancel = after(2_147_483_647 + 1_000, vi.fn(), { unref: true });
+    await vi.advanceTimersByTimeAsync(2_147_483_647);
+    expect(timers().map((timer) => timer.hasRef())).toEqual([false, false]);
+    cancel();
   });
 });
