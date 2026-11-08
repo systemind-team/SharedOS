@@ -144,10 +144,19 @@ class HarnessSession implements AgentTurnSession {
     }
 
     const maxIgnoredFrames = this.#maxIgnoredFrames ?? Number.POSITIVE_INFINITY;
-    for (let frames = 0; frames <= maxIgnoredFrames; frames += 1) {
+    // Every frame read is interpreted before the count is checked, so the
+    // limit is on frames that produced nothing: N of them followed by an
+    // outcome is a turn with an outcome, and only the N+1th ends it.
+    for (let ignored = 0; ; ignored += 1) {
       const decision = this.#drainPending();
       if (decision !== undefined) {
         return decision;
+      }
+      if (ignored > maxIgnoredFrames) {
+        return failed(
+          "harness_frame_limit_exceeded",
+          "The harness emitted too many frames without producing an outcome.",
+        );
       }
 
       const frame = await this.#channel.read(signal);
@@ -159,11 +168,6 @@ class HarnessSession implements AgentTurnSession {
       }
       this.#pending.push(...this.#protocol.interpret(frame));
     }
-
-    return failed(
-      "harness_frame_limit_exceeded",
-      "The harness emitted too many frames without producing an outcome.",
-    );
   }
 
   #drainPending(): AgentTurnDecision | undefined {

@@ -133,6 +133,13 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **An outcome at the frame limit ends the turn.** With
+  `maxIgnoredFrames: N`, `EvalHarnessDriver` read the frame after the Nth
+  ignored one and never interpreted it, so N ignored frames followed by a
+  completion failed `harness_frame_limit_exceeded`. Every frame read is now
+  interpreted first: N ignored frames and then an outcome is that outcome,
+  and the N+1th ignored frame fails the turn as before.
+
 - **Two opens of one execution id give the turn to the one called first.**
   `openTurnAuthority` let both load authority and gave the turn to whichever
   load finished first, so now and then the later call held the turn and the
