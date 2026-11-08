@@ -541,35 +541,60 @@ describe("the Claude Code protocol", () => {
   });
 
   it("fails an API error with its terminal reason as the code, retryable only when it passes", () => {
-    const apiError = (result: string) =>
+    const apiError = (result: string, status: number | null = null) =>
       claudeCodeProtocol.interpret(
-        resultFrame({ subtype: "success", is_error: true, result, terminal_reason: "api_error" }),
+        resultFrame({
+          subtype: "success",
+          is_error: true,
+          result,
+          terminal_reason: "api_error",
+          api_error_status: status,
+        }),
       )[0];
-    const refused =
-      'API Error: 401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}';
-    const overloaded =
-      'API Error: 529 {"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}';
+    const rejected = "API Error: Request rejected (429) · this may be a temporary capacity issue.";
 
     // The code was the subtype, so an API error was reported as a failure
     // whose code is "success".
-    expect(apiError(refused)).toEqual({
+    expect(apiError(rejected)).toEqual({
       type: "failed",
-      error: { code: "api_error", message: refused, retryable: false },
+      error: { code: "api_error", message: rejected, retryable: true },
     });
-    expect(apiError(overloaded)).toMatchObject({
-      error: { code: "api_error", message: overloaded, retryable: true },
+    // Claude Code 2.1.319 states the status on the frame, and it is read first.
+    expect(apiError("Invalid API key · Fix external API key", 401)).toMatchObject({
+      error: { code: "api_error", retryable: false },
     });
-    expect(apiError("API Error: 429 rate limited")).toMatchObject({ error: { retryable: true } });
-    expect(apiError("API Error: Request timed out.")).toMatchObject({ error: { retryable: true } });
-    expect(apiError("API Error: Connection error.")).toMatchObject({ error: { retryable: true } });
-    expect(apiError("Credit balance is too low")).toMatchObject({ error: { retryable: false } });
-    expect(apiError("API Error: 400 prompt is too long")).toMatchObject({
-      error: { retryable: false },
+    expect(apiError("Repeated 529 Overloaded errors", 529)).toMatchObject({
+      error: { retryable: true },
     });
+    expect(apiError("Prompt is too long", 400)).toMatchObject({ error: { retryable: false } });
+    // Without one, the words Claude writes, as 2.1.319 writes them.
+    for (const transient of [
+      "API Error: Server is temporarily limiting requests (not your usage limit)",
+      "Request timed out",
+      "API Error: Connection to the API was lost (ECONNRESET). This is usually temporary; try again.",
+      "API Error: Connection to the API was lost (EPIPE). This is usually temporary; try again.",
+      "Opus is experiencing high load, please use /model to switch to Sonnet",
+      "Repeated 529 Overloaded errors",
+    ]) {
+      expect(apiError(transient), transient).toMatchObject({ error: { retryable: true } });
+    }
+    for (const lasting of [
+      "Credit balance is too low",
+      "Invalid API key · Fix external API key",
+      "Prompt is too long",
+      "API Error: Request was aborted.",
+    ]) {
+      expect(apiError(lasting), lasting).toMatchObject({ error: { retryable: false } });
+    }
     // No terminal reason, no subtype: the generic code, never "success".
     expect(
       claudeCodeProtocol.interpret(
-        resultFrame({ subtype: "success", is_error: true, result: "API Error: 500 boom" }),
+        resultFrame({
+          subtype: "success",
+          is_error: true,
+          result: "Request timed out",
+          api_error_status: null,
+        }),
       )[0],
     ).toMatchObject({ error: { code: "harness_failed", retryable: true } });
   });

@@ -237,9 +237,12 @@ connection or tool synchronization failed` on stderr and carries on with
 "success"` with `is_error: true`, failed with the code `success`; its code
   is now the frame's `terminal_reason` (`api_error`), or `harness_failed`
   when there is none. A Claude Code failure is no longer always
-  `retryable`: only a transient API error is (408, 429 or a 5xx status, a
-  timeout, a dropped connection, overload). A turn limit, a budget, a
-  refused credential or an exhausted balance is not.
+  `retryable`: only a transient API error is. The frame's
+  `api_error_status` (Claude Code 2.1.319) is read first, 408, 429 and 5xx
+  being transient; without one, a status written in the text, then the
+  words Claude writes for a timeout, a lost connection, request limiting,
+  high load or overload. A turn limit, a budget, a refused credential or an
+  exhausted balance is not retryable.
 
 - **An outcome at the frame limit ends the turn.** With
   `maxIgnoredFrames: N`, `EvalHarnessDriver` read the frame after the Nth

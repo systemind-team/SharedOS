@@ -87,7 +87,7 @@ function resultFailure(frame: ResultFrame): ProtocolError {
     message: text ?? failureMessage(frame.subtype, frame["num_turns"], errors),
     retryable:
       frame.subtype?.startsWith("error_max_") !== true &&
-      [text, ...errors].some((said) => said !== undefined && transientApiError(said)),
+      transientFailure(frame, [text, ...errors]),
   };
 }
 
@@ -133,28 +133,44 @@ function nonEmptyString(value: unknown): string | undefined {
 }
 
 /**
- * Whether Claude's text reports an API error worth asking again about.
+ * Whether the API error that ended the run is worth asking again about.
  *
- * The frame carries no status of its own; Claude writes the provider's into
- * the text, as `API Error: 529 {...}`, or names a transport failure, as
- * `API Error: Request timed out.` Rate limits, timeouts, overload and server
- * errors pass with time. Anything else, an authentication or billing refusal
- * among them, is the same answer next time.
+ * Claude Code 2.1.319 puts the provider's status on the result frame, as
+ * `api_error_status`, and that is read first. An earlier build, or a frame
+ * whose status is null, says it only in its text, so the text is read next:
+ * a status written in it (`API Error: 529 ...`, `Request rejected (429)`,
+ * `HTTP 503`), and otherwise the words Claude uses for a failure that passes
+ * with time ("Request timed out", "Connection to the API was lost",
+ * "Server is temporarily limiting requests", "is experiencing high load",
+ * overload). Rate limits, timeouts, overload and server errors pass. Anything
+ * else, an authentication or billing refusal among them, is the same answer
+ * next time.
  */
-function transientApiError(text: string): boolean {
-  const apiError = /^API Error\b[^:]*:\s*(.*)$/su.exec(text.trim());
-  if (apiError === null) {
-    return false;
+function transientFailure(frame: ResultFrame, said: readonly (string | undefined)[]): boolean {
+  const status = frame["api_error_status"];
+  if (typeof status === "number" && Number.isInteger(status)) {
+    return transientStatus(status);
   }
-  const detail = apiError[1] ?? "";
-  const status = /^(\d{3})\b/u.exec(detail)?.[1];
-  if (status !== undefined) {
-    const code = Number(status);
-    return code === 408 || code === 429 || code >= 500;
+  return said.some((text) => text !== undefined && transientText(text));
+}
+
+function transientStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
+
+const STATUS_IN_TEXT = [/^API Error\b[^:]*:\s*(\d{3})\b/u, /\((\d{3})\)/u, /\bHTTP (\d{3})\b/u];
+
+const TRANSIENT_WORDING =
+  /timed out|connection to the API was lost|temporarily limiting requests|experiencing high load|overloaded/iu;
+
+function transientText(text: string): boolean {
+  for (const pattern of STATUS_IN_TEXT) {
+    const status = pattern.exec(text.trim())?.[1];
+    if (status !== undefined) {
+      return transientStatus(Number(status));
+    }
   }
-  return /timed? ?out|connection error|overloaded|rate.?limit|ECONNRESET|socket hang up/iu.test(
-    detail,
-  );
+  return TRANSIENT_WORDING.test(text);
 }
 
 function toolUseStep(block: unknown): HarnessStep | undefined {
