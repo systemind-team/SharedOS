@@ -11,12 +11,15 @@
  * `not exercised`, never as a pass and never as a kernel failure -- an absent
  * harness is not evidence about SharedOS.
  *
- * The harness keeps its own tools. SharedOS decides the calls that reach it and
- * restricts nothing else, so a CLI run here can edit files and run commands on
- * the machine it runs on, as it can anywhere. A harness that reaches for its own
- * `bash` instead of the catalogue is a finding about the harness, recorded as
- * such. An operator who wants those tools off passes the CLI's own flags
- * through the configuration's `args`.
+ * This script turns the harness's own tools off where the CLI supports it.
+ * That is the conformance host's choice, made here, and not a restriction any
+ * adapter imposes: the specs a product runs restrict nothing of the harness's
+ * own. It is made because a CLI driven over its stdio runs its own tools
+ * itself, with no permission prompt, while the driver reads the same call as
+ * a request for an unpublished tool and records it denied. A Pi `bash` call
+ * would run on the conformance machine and appear in the record as refused.
+ * With the tools off the machine is untouched and the record says what
+ * happened.
  *
  * One column here is not a CLI. Given a model API key, the standard turn loop
  * runs with the model itself in the delegate seat -- no vendor binary, no stdio,
@@ -169,13 +172,11 @@ const harnessConfig = (id) => {
  * the turn's instructions (where its tools may operate) and then the prompt.
  * Both are in the column's prompt hash, so both are handed over.
  *
- * No entry restricts the harness's own tools: SharedOS decides the calls
- * that reach it and sets nothing on the rest. A CLI driven this way cannot be
- * handed the catalogue, so a harness that reaches for its own tool does so
- * here too, and the call it names is passed to the envelope and refused as
- * an unpublished tool: a finding about the harness, recorded as such. An
- * operator who wants the harness's tools off passes the CLI's own flags
- * through the configuration's `args`.
+ * Claude Code and Pi are launched with their own tools off, for the reason the
+ * header gives: the conformance host's choice, so the record stays honest and the
+ * machine running it untouched. Where a CLI has no such flag it is still
+ * launched, because a transport that cannot be exercised is a result worth
+ * recording too.
  */
 const HARNESSES = [
   {
@@ -185,10 +186,11 @@ const HARNESSES = [
     protocol: codexProtocol,
     requirements: CODEX_REQUIREMENTS,
     /**
-     * `-` is positional and means "read the prompt from stdin", so the
-     * operator's `-c` overrides have to be spliced in ahead of it rather than
-     * appended. Codex needs no `codex login` for a non-OpenAI provider: the
-     * provider block names the variable the key is read from.
+     * `-` is positional and means "read the prompt from stdin". The operator's
+     * `-c` overrides sit before it; Codex would apply them after it as well,
+     * since its parser takes options after the positional. Codex needs no
+     * `codex login` for a non-OpenAI provider: the provider block names the
+     * variable the key is read from.
      */
     launch: (extra = []) => ({
       command: CODEX_REQUIREMENTS.executable,
@@ -211,6 +213,11 @@ const HARNESSES = [
         "--output-format",
         "stream-json",
         "--verbose",
+        // The conformance host's choice, not the adapter's: Claude's own
+        // tools would run on this machine while the record called them
+        // denied. See the header.
+        "--disallowedTools",
+        "Bash,Edit,Write,Read,NotebookEdit,Task,WebFetch,WebSearch",
         "--max-turns",
         "6",
         ...extra,
@@ -276,7 +283,10 @@ const HARNESSES = [
     requirements: PI_REQUIREMENTS,
     launch: (extra = []) => ({
       command: PI_REQUIREMENTS.executable,
-      args: ["--mode", "rpc", "--no-session", ...extra],
+      // Pi runs its own tools with no permission prompt, so without this a
+      // `bash` call would run here and be recorded as refused. The
+      // conformance host's choice, as for Claude above.
+      args: ["--mode", "rpc", "--no-session", "--no-tools", ...extra],
       openingFrame: (request) => ({
         id: request.executionId,
         type: "prompt",
