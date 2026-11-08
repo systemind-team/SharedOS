@@ -634,26 +634,24 @@ async function runHarness(
 /**
  * Claude Code, connected to the SharedOS bridge.
  *
- * `--strict-mcp-config` is what makes a `strict` tool policy checkable rather
- * than merely declared: it drops every MCP server configured on the machine, so
- * the only brokered tools in the run are the ones SharedOS published. The
- * `--disallowedTools` list then removes the harness's own file and shell tools,
- * because a probe that can edit files on the machine it is measuring is
- * answering a different question -- and because a harness that reaches for its
- * own `Read` instead of `files.read` produces no evidence about the kernel.
+ * SharedOS decides the calls that reach it over MCP, and only those: it
+ * allows, denies or escalates each one. It sets nothing on the harness's own
+ * tools or on which other MCP servers the harness loads, so Claude keeps its
+ * own file and shell tools and every MCP server configured on the machine.
+ * A host that wants a restriction appends it through `args`
+ * (`--disallowedTools ...`, `--strict-mcp-config`). A harness that reaches
+ * for its own `Read` rather than the catalogue's `files.read` leaves no
+ * operation in the record, and that absence is a finding about the harness,
+ * not about SharedOS.
  *
  * `--allowedTools mcp__sharedos` auto-approves the server. That is a permission
  * *prompt* decision, not an authorization one: Claude separates the two, print
  * mode has no human to prompt, and what actually secures the run is that every
- * one of those calls is re-authorized by the kernel.
+ * one of those calls is re-authorized by the kernel. It allows and refuses
+ * nothing else.
  *
- * `Task`, Claude's in-process subagent, is not refused. A subagent runs inside
- * the same process, under the same identity and the same MCP configuration, so
- * every call it makes goes to the bridge and is re-authorized by the kernel
- * like the parent's; the deny list above applies to it as well, so it has no
- * native file or shell tool either. Refusing it would only make the harness
- * do in one context what it would otherwise split across several, with no
- * gain in evidence.
+ * `--verbose` is not optional: `--output-format stream-json` refuses to run
+ * in print mode without it.
  *
  * No `--max-turns` is set, as no other spec caps its CLI's turns: a turn ends
  * when the harness finishes, or when the host's own limits say so if it set
@@ -675,11 +673,8 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
       "--verbose",
       "--mcp-config",
       configPaths[".mcp.json"] ?? join(workspace, ".mcp.json"),
-      "--strict-mcp-config",
       "--allowedTools",
       `mcp__${mcpServerName(connection)}`,
-      "--disallowedTools",
-      "Bash,Edit,Write,Read,Glob,Grep,NotebookEdit,WebFetch,WebSearch,TodoWrite",
     ],
     cwd: workspace,
     stdin: prompt,

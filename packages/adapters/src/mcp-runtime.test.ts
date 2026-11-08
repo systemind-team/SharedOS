@@ -980,6 +980,25 @@ describe("the Codex spec", () => {
   });
 });
 
+describe("what a spec leaves the harness", () => {
+  const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
+
+  it("restricts none of the harness's own tools, and none of its other MCP servers", () => {
+    // SharedOS allows, denies or escalates the calls that reach it over MCP.
+    // What the harness does with its own tools, and which other servers it
+    // loads, is the harness's and the host's: a host that wants a restriction
+    // appends it through `args`.
+    const claude = launchOf(CLAUDE_CODE_MCP_HARNESS, connection);
+    expect(claude.args).not.toContain("--disallowedTools");
+    expect(claude.args).not.toContain("--strict-mcp-config");
+    // The one tool setting left only skips the approval prompt for the
+    // SharedOS server, which print mode has no human to answer.
+    const allowed = claude.args.indexOf("--allowedTools");
+    expect(claude.args[allowed + 1]).toBe("mcp__sharedos");
+    expect(claude.args).toContain("--verbose");
+  });
+});
+
 describe("the Claude Code spec", () => {
   it("sets no turn cap of its own, so the host's limits are the only ones", () => {
     const launch = launchOf(CLAUDE_CODE_MCP_HARNESS, {

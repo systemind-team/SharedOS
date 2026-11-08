@@ -96,7 +96,9 @@ const selected = flag("case", undefined)
  *         "env": { "VAR": "value" },
  *         "args": ["--extra", "flag"],
  *         "credentialVariables": ["VAR"],
- *         "mcpExtensionVersion": "2.27.0"
+ *         "mcpExtensionVersion": "2.27.0",
+ *         "externalDirect": ["github"],
+ *         "harnessLocal": ["Read", "Grep"]
  *       }
  *     }
  *   }
@@ -156,20 +158,39 @@ const {
 /**
  * What each harness keeps for itself, declared rather than assumed.
  *
- * Every entry is `strict`: the launch flags drop the machine's own MCP servers,
- * so the only brokered tools in the run are the ones SharedOS published. The
- * `harnessLocal` list is what the CLI will not give up, and it is named because a
- * run that claimed an empty local surface would be misdeclaring itself. Pi's is
- * empty and not misdeclared: `--no-builtin-tools` drops every tool of its own,
- * and the extension's `mcp` proxy is the catalogue's conduit rather than a local
- * effect -- every call through it reaches the bridge naming the canonical tool.
+ * Apart from Pi's, the launches restrict nothing of the harness's own:
+ * SharedOS decides the calls that reach it over MCP, and a harness keeps its
+ * built-in tools and whatever other MCP servers its machine configures.
+ * `harnessLocal` names the built-in tools each CLI starts with, because a run
+ * that claimed an empty local surface would be misdeclaring itself. The
+ * machine's own MCP servers are the operator's to name, as `externalDirect` in
+ * the run's configuration; a column that names any is `hybrid`, and one that
+ * names none is `strict`. An operator who wants a narrower surface passes the
+ * CLI's own flags through `args` and declares what is left as `harnessLocal`.
+ *
+ * A harness that reaches for one of its own tools instead of the catalogue
+ * leaves no operation behind, and the row is `not exercised`: a finding about
+ * the harness, never a pass and never a kernel failure.
  */
 const DECLARED_HARNESSES = [
   {
     spec: CLAUDE_CODE_MCP_HARNESS,
     label: "Claude Code",
     requirements: CLAUDE_CODE_REQUIREMENTS,
-    policy: declareToolPolicy({ harnessLocal: ["TodoWrite", "SlashCommand"] }),
+    harnessLocal: [
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "NotebookEdit",
+      "Read",
+      "SlashCommand",
+      "Task",
+      "TodoWrite",
+      "WebFetch",
+      "WebSearch",
+      "Write",
+    ],
     mcpSupport: "native",
     // A conformance case is a few calls. The spec sets no cap, so the probe
     // keeps its own and a run that loops is stopped by Claude, not the clock.
@@ -179,14 +200,14 @@ const DECLARED_HARNESSES = [
     spec: CODEX_MCP_HARNESS,
     label: "Codex",
     requirements: CODEX_REQUIREMENTS,
-    policy: declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] }),
+    harnessLocal: ["shell", "apply_patch"],
     mcpSupport: "native",
   },
   {
     spec: DEEPSEEK_MCP_HARNESS,
     label: "DeepSeek",
     requirements: DEEPSEEK_REQUIREMENTS,
-    policy: declareToolPolicy({ harnessLocal: ["shell", "apply_patch"] }),
+    harnessLocal: ["shell", "apply_patch"],
     mcpSupport: "native",
   },
   {
@@ -194,7 +215,7 @@ const DECLARED_HARNESSES = [
     label: "Pi",
     requirements: PI_REQUIREMENTS,
     /** `--no-builtin-tools` leaves only the extension's proxy, which is not local. */
-    policy: declareToolPolicy({ harnessLocal: [] }),
+    harnessLocal: [],
     /**
      * Pi ships no MCP client, so this column's MCP support came from an
      * extension the host chose to install. Recorded per column: a reader should
@@ -241,6 +262,13 @@ for (const harness of HARNESSES) {
           credentialsOptional: false,
         };
   const probe = await probeHarness(requirements);
+  // The operator's declaration where it made one: the machine's own MCP
+  // servers for this CLI, and what is left of its tools when the run's `args`
+  // narrowed them.
+  const policy = declareToolPolicy({
+    harnessLocal: host.harnessLocal ?? harness.harnessLocal,
+    externalDirect: host.externalDirect ?? [],
+  });
   availability.push({
     columnId: `${harness.spec.id}-mcp`,
     label: harness.label,
@@ -254,8 +282,8 @@ for (const harness of HARNESSES) {
     ...(host.mcpExtensionVersion === undefined
       ? {}
       : { mcpExtensionVersion: String(host.mcpExtensionVersion) }),
-    toolPolicy: harness.policy,
-    policyHash: await toolPolicyHash(harness.policy),
+    toolPolicy: policy,
+    policyHash: await toolPolicyHash(policy),
     ...(model === undefined ? {} : { model }),
     ...probe,
   });
@@ -270,7 +298,7 @@ for (const harness of HARNESSES) {
       // On every record the column produces, as well as in this script's own
       // availability report: a reader of one record has to be able to tell a
       // run whose only tools were SharedOS's from one that also had a shell.
-      toolPolicy: harness.policy,
+      toolPolicy: policy,
       createRuntime: ({ prompt, executionId, turn }) =>
         createMcpHarnessRuntime(harness.spec, {
           prompt,
