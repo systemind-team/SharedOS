@@ -20,7 +20,7 @@ opening a public issue.
 
 Requirements:
 
-- Node.js 20.11 or newer (22.5 or newer to run the reference host example);
+- Node.js 22.19 or newer;
 - pnpm 9.15.
 
 ```bash

@@ -66,5 +66,5 @@ vulnerability-reporting contact.
 - A dependency-ordered, `next`-tagged release script with package lint, dry-run,
   registry collision checks, canonical-content recovery, and a tag-triggered
   trusted-publishing workflow.
-- Apache-2.0 public prerelease metadata, Node 20/22 CI, type checks, tests,
+- Apache-2.0 public prerelease metadata, Node 22/24 CI, type checks, tests,
   build, and executable sender-to-receiver quickstart.

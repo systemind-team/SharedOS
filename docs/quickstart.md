@@ -8,7 +8,7 @@ in this page requires a clone of this repository.
 npm install @aicoo/sharedos
 ```
 
-Node.js 20.11 or newer. The packages are ESM-only. Every SharedOS package is a
+Node.js 22.19 or newer. The packages are ESM-only. Every SharedOS package is a
 `1.0.0` preview, so pin an exact version if you need reproducibility.
 
 ## What you have to bring
@@ -25,8 +25,7 @@ three things, and only the first is required to see anything work:
 
 The examples below use an in-memory provider so they run immediately.
 [`examples/reference-host`](https://github.com/systemind-team/SharedOS/tree/main/examples/reference-host)
-is the same shape backed by a real filesystem and SQLite; it needs Node.js 22.5
-or newer for `node:sqlite`, where the packages themselves need 20.11.
+is the same shape backed by a real filesystem and SQLite.
 
 ## Embedded: authorize one file read
 
@@ -322,7 +321,7 @@ const handler = createSharedOSHandler({
 mounts anywhere the Fetch API is available:
 
 ```ts
-// Node 20+, Bun, Deno
+// Node 22.19+, Bun, Deno
 Deno.serve(handler);
 // Next.js app router: app/api/sharedos/[...path]/route.ts
 export const GET = handler;

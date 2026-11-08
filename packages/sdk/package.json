@@ -27,7 +27,7 @@
     "directory": "packages/sdk"
   },
   "engines": {
-    "node": ">=20.11"
+    "node": ">=22.19"
   },
   "files": [
     "dist/**/*.js",

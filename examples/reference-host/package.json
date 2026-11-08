@@ -14,6 +14,6 @@
     "@aicoo/sharedos-runtime": "workspace:*"
   },
   "engines": {
-    "node": ">=22.5"
+    "node": ">=22.19"
   }
 }

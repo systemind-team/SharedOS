@@ -31,6 +31,12 @@ each entry calls out what a host has to update.
 
 ### Changed
 
+- **Breaking: Node.js 22.19 or newer is required (was 20.11).** Node 20 has
+  been end of life since April 2026, and newer dependencies such as `undici`
+  8 need Node 22.19. Every package's `engines.node` is `>=22.19`, and CI runs
+  on Node 22.19 and 24. A host on an older Node upgrades Node; nothing else
+  changes.
+
 - **Claude Code's in-process subagent is no longer refused.** `Task` leaves
   the `--disallowedTools` list of `CLAUDE_CODE_MCP_HARNESS`. A subagent runs in
   the same process under the same identity and MCP configuration, so its calls
