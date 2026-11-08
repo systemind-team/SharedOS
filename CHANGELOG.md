@@ -139,6 +139,17 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **Codex reaches a bridge that takes a token.** `codexMcpServerSettings`
+  and `codexMcpConfig` emitted `bearer_token`, which Codex refuses from 0.46
+  ("bearer_token is not supported for streamable_http") and which stops the
+  CLI before it starts. They now emit `bearer_token_env_var =
+"SHAREDOS_MCP_TOKEN"`, and the new export `SHAREDOS_MCP_TOKEN_VARIABLE`
+  names the variable. `CODEX_MCP_HARNESS` passes the setting as a `-c`
+  override, which it used to filter out, and sets the variable to the token
+  in the CLI's environment, so the token is on no command line. A host that
+  writes the emitted `config.toml` itself starts Codex with
+  `SHAREDOS_MCP_TOKEN` set to the token.
+
 - **A Codex turn that reconnected and then completed is no longer failed.**
   `codex exec --json` prints a top-level `{"type":"error","message":
 "Reconnecting... 2/5 ..."}` for each stream error it recovers from, and the

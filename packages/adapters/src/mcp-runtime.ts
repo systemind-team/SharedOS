@@ -17,6 +17,7 @@ import {
   codexMcpServerSettings,
   harnessMcpConfigFile,
   openToolBridge,
+  SHAREDOS_MCP_TOKEN_VARIABLE,
   type BridgeToolInvoker,
   type HarnessMcpConfigFile,
   type HarnessMcpConnection,
@@ -684,6 +685,12 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
  * by a conformance run. `required = true` means a run whose bridge failed to
  * start stops rather than continuing with only Codex's own tools, which would
  * look like a harness that declined to use the catalogue.
+ *
+ * A bridge that requires a token is reached through
+ * `bearer_token_env_var`: the override names
+ * {@link SHAREDOS_MCP_TOKEN_VARIABLE} and the token is set in the CLI's
+ * environment under it, which keeps it off the command line, where every
+ * local process can read it.
  */
 export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: CODEX_VENDOR.id,
@@ -704,21 +711,19 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
       "project_root_markers=[]",
       // One source with `codexMcpConfig`: the same settings, as overrides, so a
       // launch and an emitted `config.toml` cannot disagree. Why each setting is
-      // there -- `required`, and the approval mode that keeps a run with no
-      // human from refusing every write inside Codex -- is on
-      // `codexMcpServerSettings`. The bearer token is the one setting left to
-      // the file: a command line is readable by every local process, so a
-      // bridge that requires a token is reached through the `config.toml`
-      // `codexMcpConfig` emits, which this launch does not write.
-      ...codexMcpServerSettings(connection)
-        .filter(([key]) => key !== "bearer_token")
-        .flatMap(([key, value]) => [
-          "-c",
-          `mcp_servers.${mcpServerName(connection)}.${key}=${value}`,
-        ]),
+      // there is on `codexMcpServerSettings`: `required`, the approval mode
+      // that keeps a run with no human from refusing every write inside Codex,
+      // and the variable the token is read from.
+      ...codexMcpServerSettings(connection).flatMap(([key, value]) => [
+        "-c",
+        `mcp_servers.${mcpServerName(connection)}.${key}=${value}`,
+      ]),
       prompt,
     ],
     cwd: workspace,
+    ...(connection.token === undefined
+      ? {}
+      : { env: { [SHAREDOS_MCP_TOKEN_VARIABLE]: connection.token } }),
   }),
 });
 
