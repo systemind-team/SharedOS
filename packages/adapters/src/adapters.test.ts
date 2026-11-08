@@ -347,10 +347,13 @@ describe("the Codex protocol", () => {
       message:
         "Reconnecting... 2/5 (stream disconnected before completion: error sending request for url (https://api.openai.com/v1/responses))",
     };
-    expect(codexProtocol.interpret(reconnect)).toEqual([]);
+    expect(codexProtocol.interpret(reconnect)).toEqual([
+      { type: "notice", text: reconnect["message"] },
+    ]);
 
     const recovered = [cliTurn[0], cliTurn[1], reconnect, ...cliTurn.slice(2)] as HarnessFrame[];
     expect(recovered.flatMap((frame) => codexProtocol.interpret(frame))).toEqual([
+      { type: "notice", text: reconnect["message"] },
       { type: "message", text: "Hi! What can I help you with?" },
       { type: "complete" },
     ]);
@@ -364,7 +367,11 @@ describe("the Codex protocol", () => {
       { type: "error", message: refused },
       { type: "turn.failed", error: { message: refused } },
     ];
-    expect(failedTurn.flatMap((frame) => codexProtocol.interpret(frame))).toEqual([
+    expect(
+      failedTurn
+        .flatMap((frame) => codexProtocol.interpret(frame))
+        .filter(({ type }) => type !== "notice"),
+    ).toEqual([
       { type: "failed", error: { code: "harness_failed", message: refused, retryable: true } },
     ]);
   });
@@ -787,6 +794,22 @@ describe("a harness driven as a SharedOS turn", () => {
     const { result } = await runWith(createClaudeCodeDriver({ transport }));
 
     expect(result.status).toBe("failed");
+  });
+
+  it("names what the harness last reported when it stops without an outcome", async () => {
+    const transport = new TranscriptTransport({
+      batches: [[{ type: "turn.started" }, { type: "error", message: "stream disconnected" }]],
+    });
+    const { result } = await runWith(createCodexDriver({ transport }));
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: {
+        code: "harness_ended_without_outcome",
+        message:
+          "The harness stopped speaking without completing the turn. It last reported: stream disconnected",
+      },
+    });
   });
 
   it("reads the outcome that follows as many ignored frames as the limit allows", async () => {

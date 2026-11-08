@@ -120,6 +120,8 @@ class HarnessSession implements AgentTurnSession {
    */
   readonly #pending: HarnessStep[] = [];
   readonly #messages: string[] = [];
+  /** The last thing the harness reported that was not an outcome; see `HarnessStep`. */
+  #lastNotice: string | undefined;
   readonly #calls: SeatCalls;
   /** What the harness was told before it answered, hashed; the loop states it. */
   readonly promptHash: string;
@@ -163,7 +165,8 @@ class HarnessSession implements AgentTurnSession {
       if (frame === undefined) {
         return failed(
           "harness_ended_without_outcome",
-          "The harness stopped speaking without completing the turn.",
+          "The harness stopped speaking without completing the turn." +
+            (this.#lastNotice === undefined ? "" : ` It last reported: ${this.#lastNotice}`),
         );
       }
       this.#pending.push(...this.#protocol.interpret(frame));
@@ -175,6 +178,10 @@ class HarnessSession implements AgentTurnSession {
       const step = this.#pending.shift() as HarnessStep;
       if (step.type === "message") {
         this.#messages.push(step.text);
+        continue;
+      }
+      if (step.type === "notice") {
+        this.#lastNotice = step.text;
         continue;
       }
       if (step.type === "failed") {

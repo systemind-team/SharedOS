@@ -223,9 +223,13 @@ connection or tool synchronization failed` on stderr and carries on with
 "Reconnecting... 2/5 ..."}` for each stream error it recovers from, and the
   turn carries on. The protocol read it as a failure and the MCP runtime
   keeps the first outcome it reads, so the turn was reported failed. The
-  CLI's `error` event now yields nothing; the turn ends on `turn.failed`,
-  which carries the error that ended it, on `turn.completed`, or on the
-  exit code. A Responses `response.failed` is now read where the protocol
+  CLI's `error` event is now a `notice`, a new `HarnessStep` that is
+  neither output nor an outcome; the turn ends on `turn.failed`, which
+  carries the error that ended it, on `turn.completed`, or on the exit code.
+  A turn the CLI leaves with no outcome, an interrupted one, names the last
+  notice in its `harness_exited_without_outcome` or
+  `harness_ended_without_outcome` message. A consumer that switches on
+  `HarnessStep.type` sees the new kind. A Responses `response.failed` is now read where the protocol
   puts its error, on `response.error`, as well as at the top level, and the
   Responses stream's own `error` event, which carries `code`, still fails
   the turn.
