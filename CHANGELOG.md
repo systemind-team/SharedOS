@@ -19,13 +19,15 @@ each entry calls out what a host has to update.
 
 - **An MCP harness spec can read what its CLI says beside its frames.**
   `McpHarnessSpec.readDiagnostic(text, stream, connection)` is called with
-  each line of stderr and each stdout line that is not a frame, and a step
-  it returns is taken as a frame's would be: a `failed` one is the turn's
-  outcome unless the turn already has one. It is for a condition the CLI's
-  frames never carry. `deepseekMcpEntryId` names the plugin entry
-  `deepseekMcpConfig` inserts. `HarnessProcess` now reads stderr by the
-  line, so `onDiagnostic` receives one stderr line per call rather than one
-  chunk, and a line the pipe split arrives whole.
+  each line of stderr and each stdout line that is not a frame, until the
+  turn has an outcome. It returns a `ProtocolError` or nothing, so a line of
+  prose can never complete a turn. A failure it returns is the turn's
+  outcome, and the CLI's process is ended there and then: closing stdin does
+  not stop a one-shot CLI, which would otherwise run its task to the end
+  with its own tools while the turn waited. `deepseekMcpEntryId` names the
+  plugin entry `deepseekMcpConfig` inserts. `HarnessProcess` now reads
+  stderr by the line, so `onDiagnostic` receives one stderr line per call
+  rather than one chunk, and a line the pipe split arrives whole.
 
 - **`probeHarness` takes an `AbortSignal`.** An optional third argument,
   also on `probeCodex`, `probeClaudeCode`, `probeDeepseek` and `probePi`.
@@ -186,8 +188,9 @@ each entry calls out what a host has to update.
 (@deepseek-ai/dsh-mcp-client): Error: mcp-client(sharedos): initial
 connection or tool synchronization failed` on stderr and carries on with
   only its own tools, which read as a harness that declined the catalogue.
-  `DEEPSEEK_MCP_HARNESS` reads that line and fails the turn with the new
-  code `harness_not_connected`, not retryable. Checked on dsh 0.2.2-rc.1.
+  `DEEPSEEK_MCP_HARNESS` reads that line, fails the turn with the new code
+  `harness_not_connected`, not retryable, and ends dsh, so the run does not
+  go on to do the task with its own tools. Checked on dsh 0.2.2-rc.1.
 
 - **A DeepSeek Harness turn on the MCP path has its answer as output.**
   `DEEPSEEK_MCP_HARNESS` runs dsh's headless profile, which printed only its
