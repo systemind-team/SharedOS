@@ -81,7 +81,7 @@ Authenticated callers remain untrusted for authorization.
 | Bounded-use race         | Two workers consume the last use                                  | Durable atomic compare-and-set; deny when the usage store is unavailable                                                                                    |
 | SSRF / connector escape  | MCP tool fetches metadata endpoints                               | Destination allowlists, DNS/IP validation, redirects policy, egress controls                                                                                |
 | Secret disclosure        | Provider output or logs contain OAuth tokens                      | Never place secrets in contracts, model context, errors, or audit payloads                                                                                  |
-| Resource exhaustion      | Large schema, loop, payload, or tool call consumes resources      | Contract limits, timeouts, step budgets, rate limits, cancellation                                                                                          |
+| Resource exhaustion      | Large schema, loop, payload, or tool call consumes resources      | Host-set step, tool-call and time limits, rate limits, cancellation                                                                                         |
 | Audit tampering          | Operator removes denied calls                                     | Append-only/tamper-evident host storage, sequence checks, restricted access                                                                                 |
 | Evaluation leakage       | An evaluation runtime sees hidden gold labels                     | Separate execution and evaluation channels; fresh world per run                                                                                             |
 | Runtime escape           | A third-party harness bypasses the broker or keeps calling later  | Give plugins only the scoped broker; close it after the turn; isolate untrusted code                                                                        |
@@ -135,9 +135,10 @@ Executing the receiving agent is also a side effect: it requires a
 recipient-scoped `sharedos.execution` + `invoke` grant before the model driver is
 opened. The driver receives sanitized context without grants or issuer identity.
 
-Loops, fan-out, and recursive delegation can exhaust budgets. The one-turn
-runtime enforces a tool-call ceiling and a timeout on every turn, and a step
-ceiling where the runtime declares steps. `createStandardRuntime` does;
+Loops, fan-out, and recursive delegation can exhaust budgets. SharedOS sets
+no turn limit of its own. When the host sets them, the envelope enforces a
+tool-call ceiling and a timeout on the turn, and a step ceiling where the
+runtime declares steps. `createStandardRuntime` does;
 `createMcpHarnessRuntime` runs the vendor's own loop and declares none, so its
 count bound is `maxToolCalls`. The host scheduler limits cross-turn behavior.
 
@@ -215,8 +216,9 @@ kernel rejects duplicate tool names when merging static and dynamic handlers.
 Every registered tool supplies a runtime argument parser. The kernel validates
 once, freezes the parsed call, and uses that same call for authorization and
 invocation. Destructive or non-idempotent calls should require explicit actions
-and host confirmation policy where appropriate. Tool outputs are untrusted and
-size-limited.
+and host confirmation policy where appropriate. Tool outputs are untrusted;
+SharedOS does not limit their size, so a host that needs a bound sets it in the
+provider.
 
 For network-capable tools, use egress controls and protect link-local, loopback,
 private, metadata-service, and internal control-plane destinations unless a
@@ -284,13 +286,13 @@ pooled.
 
 ## Availability
 
-SharedOS limits schema sizes, tool catalogs, tool calls per turn,
-standard-runtime steps, and turn duration. Cancellation is propagated with `AbortSignal`, but JavaScript cannot
-forcibly stop arbitrary plugin or provider code; components in the trusted
-computing base must honor it before committing side effects. Hosts add request
-rate limits, concurrency limits, provider circuit breakers, and model or tool
-budgets. A timeout or provider outage is not an invitation to retry with
-broader authority.
+SharedOS sets no size, step, tool-call or time limit of its own; the host
+sets the ones it wants on the executor. Cancellation is propagated with
+`AbortSignal`, but JavaScript cannot forcibly stop arbitrary plugin or provider
+code; components in the trusted computing base must honor it before committing
+side effects. Hosts add request rate limits, concurrency limits, provider
+circuit breakers, and model or tool budgets. A timeout or provider outage is
+not an invitation to retry with broader authority.
 
 ## Non-goals
 

@@ -558,8 +558,8 @@ discovery, and re-authorizes every exact tool call through `RuntimeHost`. A turn
 ends when the runtime completes, escalates or fails, the deadline expires, the
 host cancels it, or the audit sink fails on a record that must precede an effect,
 which ends it `failed` with `audit_unavailable`. The standard runtime additionally
-enforces its driver step limit; a harness runtime declares no step and is bounded
-by `defaultMaxToolCalls`.
+enforces its driver step limit when one is set; a harness runtime declares no
+step, so only `defaultMaxToolCalls` and the deadline bound it, and only if set.
 
 Set `drainGraceMs` on the executor if your handlers have side effects. The turn
 then stops taking new calls that long before its deadline, so a handler already

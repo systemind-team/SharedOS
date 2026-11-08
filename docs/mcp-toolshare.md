@@ -252,10 +252,10 @@ try {
 }
 ```
 
-A turn served this way is bounded by calls. The harness keeps its own loop and
-declares no step, so the envelope's `maxSteps` does not apply and
-`step_limit_exceeded` cannot arise; `maxToolCalls` and `timeoutMs` are the
-limits, and a call past the budget comes back `denied` /
+The harness keeps its own loop and declares no step, so the envelope's
+`maxSteps` does not apply and `step_limit_exceeded` cannot arise.
+`maxToolCalls` and `timeoutMs` are the limits when the host sets them; neither
+has a default. A call past the budget comes back `denied` /
 `tool_call_limit_exceeded` as a result the harness reads.
 
 ### Outside a turn
@@ -338,8 +338,8 @@ what secures the run is that every call is re-authorized by the kernel.
   different question. `--allowedTools mcp__sharedos` auto-approves the server:
   Claude separates prompting from authorization, and print mode has no human to
   prompt. No `--max-turns` is set: like every other spec's, a Claude turn ends
-  at the host's step and time limits, and a host that wants Claude's own cap
-  passes it through `args`.
+  at the host's tool-call and time limits, if it set any, and a host that
+  wants Claude's own cap passes it through `args`.
 - **Codex.** `mcp_servers.sharedos.required=true` stops a run whose bridge
   failed to start rather than continuing with Codex's own tools, which would
   look like a harness that declined the catalogue.

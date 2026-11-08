@@ -58,8 +58,9 @@ const turns = new SharedOSExecutor(
 
 The CLI keeps its own loop and its own model, and the turn's catalogue is served
 to it over the Model Context Protocol for the length of the turn. It is
-documented in `docs/mcp-toolshare.md`. A turn served this way is bounded by
-`maxToolCalls` and `timeoutMs`; a harness declares no step.
+documented in `docs/mcp-toolshare.md`. A harness declares no step, so a turn
+served this way is bounded by `maxToolCalls` and `timeoutMs` when the host sets
+them, and by nothing SharedOS adds when it doesn't.
 
 ## What can occupy the seat
 

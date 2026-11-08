@@ -43,7 +43,8 @@ try {
 ```
 
 A harness declares no step, so a turn served this way is bounded by the
-envelope's `maxToolCalls` and `timeoutMs`, not by `maxSteps`.
+envelope's `maxToolCalls` and `timeoutMs` when the host sets them, not by
+`maxSteps`. Neither has a default.
 
 ## One name
 

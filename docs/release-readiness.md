@@ -57,8 +57,8 @@ vulnerability-reporting contact.
 - Sanitized model context without grants or issuing authority.
 - Fixed runtime security envelope, trusted runtime selection, wrapped plugin
   events, authoritative manifest provenance, and a closed per-turn broker.
-- Bounded one-turn execution with step/tool-call/deadline limits, cooperative
-  cancellation, and bounded cleanup.
+- One-turn execution with host-set step/tool-call/deadline limits (none by
+  default), cooperative cancellation, and an optional cleanup timeout.
 - Runtime-validated HTTP client responses and shared wire schemas.
 - Canonical resource path segments and explicit provider-facing owners.
 - Package-level READMEs, distributable source and source maps, exact packed
