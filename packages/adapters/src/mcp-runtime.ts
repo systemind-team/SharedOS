@@ -311,6 +311,9 @@ export function createMcpHarnessRuntime(
         const configPaths: Record<string, string> = {};
         for (const file of spec.configFiles?.(connection) ?? []) {
           const path = join(workspace, file.filename);
+          // A harness may read its configuration from a directory of its own,
+          // as Pi reads `.pi/mcp.json`, and the workspace starts empty.
+          await mkdir(dirname(path), { recursive: true });
           await writeFile(path, file.contents, "utf8");
           configPaths[file.filename] = path;
         }
@@ -891,22 +894,29 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
 });
 
 /**
- * Pi, connected to the SharedOS bridge through an MCP extension.
+ * Pi, connected to the SharedOS bridge through its own MCP client.
  *
- * Pi is the one harness here that ships no MCP client. An extension is
- * therefore *required* before Pi can reach an MCP server at all, and *which*
- * extension is a **choice** the host makes rather than something SharedOS
- * mandates: `pi-mcp-adapter` is what this repository is exercised against, and
- * anything with the same job would serve. The manifest records that the support
- * came from an extension, because a column whose MCP client is third-party is
- * making a slightly narrower claim than one whose harness ships its own.
+ * Pi has shipped a native MCP client since 0.99. It reads `.pi/mcp.json` from
+ * the directory it runs in, and only for a project it trusts, so the launch
+ * passes `--approve`: the file is the one SharedOS wrote for this turn into a
+ * scratch workspace it made, and RPC mode has no prompt that could ask. The
+ * trust lasts for this run, and it covers what else Pi treats as a project
+ * resource there too: the rest of `.pi/` in the workspace, which holds only what
+ * a host wrote with `turnFiles`, and `.agents/skills` in the workspace or a
+ * directory above it.
  *
- * That adapter registers a single `mcp` proxy tool and discovers the catalogue
- * behind it, so Pi's model calls `mcp({tool: "files.read", ...})` rather than
- * `files.read`. What reaches the bridge is still an ordinary `tools/call` naming
- * the canonical tool, authorized like any other.
+ * `piMcpConfig` gives the server `direct` exposure, so each tool is declared to
+ * the model as a tool of its own, named `mcp__<server>__<tool>` with every
+ * character outside `[A-Za-z0-9_]` made an underscore: `files.read` is
+ * `mcp__sharedos__files_read`. Pi runs the call itself, and what reaches the
+ * bridge is an ordinary `tools/call` naming the canonical tool, authorized like
+ * any other.
  *
- * `--no-builtin-tools` drops Pi's own file and shell tools while keeping
+ * An extension that replaces Pi's client, such as `pi-mcp-adapter`, remains a
+ * host's option, loaded with flags the host appends through `args`. What that
+ * extension reads and how it names tools are then its own.
+ *
+ * `--no-builtin-tools` drops Pi's own file and shell tools while keeping MCP and
  * extension tools, which is exactly the split a conformance run needs. The
  * prompt goes in as an RPC frame rather than as an argument, because RPC mode is
  * the one whose frames `piProtocol` reads.
@@ -918,7 +928,7 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   configFiles: (connection) => [harnessMcpConfigFile("pi", connection)],
   launch: ({ prompt, workspace, request }) => ({
     command: "pi",
-    args: ["--mode", "rpc", "--no-session", "--no-builtin-tools"],
+    args: ["--mode", "rpc", "--no-session", "--no-builtin-tools", "--approve"],
     cwd: workspace,
     stdin: `${JSON.stringify({ id: request.executionId, type: "prompt", message: prompt })}\n`,
     // `--mode rpc` is a session: EOF on stdin ends it. See `keepStdinOpen`.

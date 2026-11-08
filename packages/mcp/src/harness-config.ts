@@ -214,28 +214,30 @@ export function deepseekMcpEntryId(connection: HarnessMcpConnection): string {
 }
 
 /**
- * Pi's `.mcp.json`, read by an MCP extension.
+ * Pi's `.pi/mcp.json`, read by Pi's own MCP client.
  *
- * Pi ships no MCP client. Reaching an MCP server therefore requires an
- * extension, and *which* extension is a host choice rather than something
- * SharedOS mandates -- `pi-mcp-adapter` is the one this repository is exercised
- * against, and anything with the same job would serve. The file shape below is
- * that adapter's, which happens to be Claude Code's shape with its own
- * lifecycle and timeout keys.
+ * Pi has shipped a native MCP client since 0.99. It reads servers from the
+ * `mcp.json` in its agent directory and from `.pi/mcp.json` in the directory it
+ * runs in, the second only for a project it trusts, which is why the Pi launch
+ * passes `--approve`. A root `.mcp.json` is not read at all.
  *
- * The effect is not identical to a native client, and the difference is worth
- * knowing when reading a Pi column. The adapter registers a single `mcp` proxy
- * tool and discovers the catalogue behind it on demand, so Pi's model calls
- * `mcp({tool: "files.read", ...})` rather than `files.read`, and the
- * harness-facing surface is one tool wide.
+ * `exposure: "direct"` declares each tool to the model as a tool of its own,
+ * named `mcp__<server>__<tool>`. Pi's default exposure, `codemode`, hides a
+ * server's tools behind one scripting tool, so the model would write a script
+ * that calls the tool rather than call the tool itself. Either way what reaches
+ * the bridge is an ordinary `tools/call` naming the canonical tool, authorized
+ * like any other, which is the point of keeping the harness-facing alias out of
+ * authorization.
  *
- * None of that reaches SharedOS: what arrives at the bridge is an ordinary
- * `tools/call` naming the canonical tool, authorized exactly like any other.
- * Which is the point of keeping the harness-facing alias out of authorization.
+ * The bearer token goes in `headers.Authorization`, which is where Pi's schema
+ * takes it, and `timeout` is Pi's per-request limit in seconds, written only when
+ * the host set one. There is no lifecycle key. Pi connects every server in the
+ * background when the session starts, and its first prompt waits for servers
+ * with direct tools up to a limit that is Pi's own, not SharedOS's.
  *
- * `lifecycle: "eager"` connects at startup rather than on first use, so the
- * catalogue is fetched inside the turn that opened the bridge rather than at
- * some later moment the turn may already have closed.
+ * Before 0.99 Pi needed an extension to reach MCP, and this file was the shape
+ * `pi-mcp-adapter` reads. A host that still loads an extension in place of Pi's
+ * client chooses what that extension reads.
  */
 export function piMcpConfig(connection: HarnessMcpConnection): JsonObject {
   const name = mcpServerName(connection);
@@ -243,13 +245,11 @@ export function piMcpConfig(connection: HarnessMcpConnection): JsonObject {
     mcpServers: {
       [name]: {
         url: connection.url,
-        lifecycle: "eager",
-        ...(connection.timeoutSec === undefined
-          ? {}
-          : { requestTimeoutMs: connection.timeoutSec * 1_000 }),
         ...(connection.token === undefined
           ? {}
-          : { auth: "bearer", bearerToken: connection.token }),
+          : { headers: { Authorization: `Bearer ${connection.token}` } }),
+        ...(connection.timeoutSec === undefined ? {} : { timeout: connection.timeoutSec }),
+        exposure: "direct",
       },
     },
   };
@@ -278,9 +278,12 @@ export function harnessMcpConfigFile(
       // profile's composed tree, which is what `dsh --patch` takes.
       return { harness, filename: "cordis.patch.yml", contents: deepseekMcpConfig(connection) };
     case "pi":
+      // Under `.pi/`, the one project location Pi reads servers from, so
+      // whoever writes the file makes the directory first, as
+      // `createMcpHarnessRuntime` does.
       return {
         harness,
-        filename: ".mcp.json",
+        filename: ".pi/mcp.json",
         contents: `${JSON.stringify(piMcpConfig(connection), undefined, 2)}\n`,
       };
   }
@@ -289,11 +292,14 @@ export function harnessMcpConfigFile(
 /**
  * The harness-facing alias a tool is likely to appear under.
  *
- * `mcp__<serverName>__<rawName>` is the shape Claude Code, Codex, and DeepSeek
- * Harness all use, so it is the one assumed here. It is still only an
+ * `mcp__<serverName>__<rawName>` is the shape Claude Code, Codex, DeepSeek
+ * Harness and Pi all use, so it is the one assumed here. It is still only an
  * approximation: DeepSeek normalises the raw name to `[A-Za-z0-9_-]` and, when
  * that changes the name -- which it does for every dotted SharedOS name --
  * appends a deterministic hash so two tools can never collapse into one alias.
+ * Pi makes every character outside `[A-Za-z0-9_]` an underscore, as this does,
+ * but caps the name at 64 characters, and a name longer than that, or one two
+ * tools would share, ends in a hash instead.
  *
  * Which is exactly why nothing may authorize against this. The alias is recorded
  * so a vendor transcript can be read back to a canonical name, and SharedOS maps

@@ -12,8 +12,7 @@
  * and that column verifies a binding rather than an invariant.
  *
  * Here SharedOS serves the permission-filtered catalogue over MCP, which is the
- * one interface every harness here accepts a host-supplied tool set on -- Pi
- * through an extension. The CLI
+ * one interface every harness here accepts a host-supplied tool set on. The CLI
  * runs natively with its own loop and whatever model it is configured with,
  * discovers the catalogue with its own MCP client, and every call it makes
  * returns through
@@ -96,7 +95,8 @@ const selected = flag("case", undefined)
  *         "env": { "VAR": "value" },
  *         "args": ["--extra", "flag"],
  *         "credentialVariables": ["VAR"],
- *         "mcpExtensionVersion": "2.27.0",
+ *         "mcpExtension": "pi-mcp-adapter",
+ *         "mcpExtensionVersion": "7.0.1",
  *         "externalDirect": ["github"],
  *         "harnessLocal": ["Read", "Grep"]
  *       }
@@ -243,15 +243,10 @@ const DECLARED_HARNESSES = [
     spec: PI_MCP_HARNESS,
     label: "Pi",
     requirements: PI_REQUIREMENTS,
-    /** `--no-builtin-tools` leaves only the extension's proxy, which is not local. */
+    /** `--no-builtin-tools` leaves only the catalogue's tools, which are not local. */
     harnessLocal: [],
-    /**
-     * Pi ships no MCP client, so this column's MCP support came from an
-     * extension the host chose to install. Recorded per column: a reader should
-     * not have to know which harnesses have native clients to read the table.
-     */
-    mcpSupport: "extension",
-    mcpExtension: "pi-mcp-adapter",
+    /** Pi's own client since 0.99; before that this column needed an extension. */
+    mcpSupport: "native",
   },
 ];
 
@@ -300,19 +295,27 @@ for (const harness of HARNESSES) {
     harnessLocal: host.harnessLocal ?? harness.harnessLocal,
     externalDirect: host.externalDirect ?? [],
   });
+  // An extension that replaces the harness's own MCP client, as
+  // `pi-mcp-adapter` can replace Pi's, is loaded through the operator's `args`,
+  // so the operator is the one who can say it was and which build it is. Both
+  // are declared in the host configuration, recorded as declared, and absent
+  // when undeclared rather than guessed at from a lockfile this run never read.
+  const extension = host.mcpExtension === undefined ? undefined : String(host.mcpExtension);
+  const support =
+    extension === undefined
+      ? { mcpSupport: harness.mcpSupport }
+      : {
+          mcpSupport: "extension",
+          mcpExtension: extension,
+          ...(host.mcpExtensionVersion === undefined
+            ? {}
+            : { mcpExtensionVersion: String(host.mcpExtensionVersion) }),
+        };
   availability.push({
     columnId: `${harness.spec.id}-mcp`,
     label: harness.label,
     harness: harness.spec.id,
-    mcpSupport: harness.mcpSupport,
-    ...(harness.mcpExtension === undefined ? {} : { mcpExtension: harness.mcpExtension }),
-    // The one version no CLI can report: the extension is installed inside the
-    // harness's own plugin store, so the operator who installed it is the only
-    // one who can say which build it is. Declared, and absent when undeclared,
-    // rather than guessed at from a lockfile this run never read.
-    ...(host.mcpExtensionVersion === undefined
-      ? {}
-      : { mcpExtensionVersion: String(host.mcpExtensionVersion) }),
+    ...support,
     toolPolicy: policy,
     policyHash: await toolPolicyHash(policy),
     ...(model === undefined ? {} : { model }),
@@ -344,7 +347,15 @@ for (const harness of HARNESSES) {
           manifest: {
             ...harness.spec.manifest,
             id: `sharedos.conformance.${harness.spec.id}-mcp`,
-            metadata: { ...harness.spec.manifest.metadata, live: true, executionId, turn },
+            // A declared extension goes on every record as well, over the
+            // harness's own claim, so a record from such a column says so itself.
+            metadata: {
+              ...harness.spec.manifest.metadata,
+              ...(extension === undefined ? {} : support),
+              live: true,
+              executionId,
+              turn,
+            },
           },
           instructions:
             "SharedOS publishes the permission-filtered tool catalogue for this turn. " +

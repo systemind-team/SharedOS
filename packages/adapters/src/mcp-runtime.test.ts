@@ -1031,6 +1031,85 @@ describe("the Claude Code spec", () => {
   });
 });
 
+describe("the Pi spec", () => {
+  it("runs an RPC session that trusts the project, so Pi reads the turn's config", () => {
+    const { context, ...request } = executionRequest();
+    const launch = PI_MCP_HARNESS.launch({
+      prompt: "read both files",
+      connection: { url: "http://127.0.0.1:41234/mcp", name: "sharedos" },
+      workspace: "/tmp/sharedos-test",
+      configPaths: { ".pi/mcp.json": "/tmp/sharedos-test/.pi/mcp.json" },
+      request: {
+        ...request,
+        context: {
+          actor: context.actor,
+          owner: context.owner,
+          namespaceId: context.namespaceId,
+          purpose: context.purpose,
+          traceId: context.traceId,
+          now: context.now,
+          reach: { status: "computed", reach: [] },
+        },
+      },
+    });
+
+    // Pi reads `.pi/mcp.json` from where it runs, and only for a trusted
+    // project; RPC mode cannot ask, so without `--approve` the server is
+    // skipped and the turn reads as a harness that declined every tool.
+    expect(launch.command).toBe("pi");
+    expect(launch.args).toEqual([
+      "--mode",
+      "rpc",
+      "--no-session",
+      "--no-builtin-tools",
+      "--approve",
+    ]);
+    expect(launch.cwd).toBe("/tmp/sharedos-test");
+    expect(JSON.parse(launch.stdin ?? "")).toEqual({
+      id: "execution-1",
+      type: "prompt",
+      message: "read both files",
+    });
+    expect(launch.keepStdinOpen).toBe(true);
+  });
+
+  it("writes its config to .pi/mcp.json in the workspace, where the bridge is reached", async () => {
+    const seen: { workspace: string; path: string | undefined }[] = [];
+    const calls = [{ name: "files.read", arguments: { path: GRANTED } }];
+    const spec: McpHarnessSpec = {
+      ...fakeHarness(calls),
+      configFiles: (connection) => [
+        ...(PI_MCP_HARNESS.configFiles?.(connection) ?? []),
+        { harness: "fake", filename: "harness.mjs", contents: FAKE_HARNESS },
+      ],
+      // The stand-in reads the server's URL from the file Pi would read.
+      launch: ({ workspace, configPaths }) => {
+        seen.push({ workspace, path: configPaths[".pi/mcp.json"] });
+        return {
+          command: process.execPath,
+          args: [
+            configPaths["harness.mjs"] as string,
+            configPaths[".pi/mcp.json"] as string,
+            JSON.stringify(calls),
+          ],
+        };
+      },
+    };
+    const executor = new SharedOSExecutor(kernel(), createMcpHarnessRuntime(spec));
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    const [turn] = seen;
+    expect(turn?.path).toBe(join(turn?.workspace ?? "", ".pi", "mcp.json"));
+    const text = result.status === "succeeded" ? (result.output as { text: string }).text : "{}";
+    const output = JSON.parse(text) as Record<string, unknown>;
+    expect(output["discovered"]).toEqual(["files.read"]);
+    const [allowed] = output["calls"] as Record<string, unknown>[];
+    expect(allowed?.["isError"]).toBe(false);
+    expect(existsSync(turn?.workspace ?? "")).toBe(false);
+  }, 30_000);
+});
+
 /**
  * The prompt goes to the CLI on stdin, never as an argument.
  *
