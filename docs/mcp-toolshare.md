@@ -405,12 +405,9 @@ re-authorized by the kernel.
   and ends dsh. An MCP server of the owner's own that fails to start is left
   alone.
 - **Pi.** `--mode rpc --no-session --no-builtin-tools --approve`: a
-  session-less RPC run with Pi's own tools off, so what the model reaches is the
-  catalogue. `--approve` trusts the project for this run, which is what lets Pi
-  read the `.pi/mcp.json` written for the turn. It also trusts whatever else Pi
-  counts as a project resource there: the rest of `.pi/` in the workspace, which
-  holds only what a host wrote with `turnFiles`, and `.agents/skills` in the
-  workspace or a directory above it.
+  session-less RPC run with Pi's built-in tools off. `--approve` is what lets
+  Pi read the `.pi/mcp.json` written for the turn, and it trusts more than that
+  file; see [what `--approve` trusts](#what---approve-trusts).
 
 ### Versions
 
@@ -445,10 +442,16 @@ Pi reads servers from the `mcp.json` in its agent directory
 it runs in. It does not read a root `.mcp.json`, and it takes no flag naming a
 config file. `PI_MCP_HARNESS` writes `.pi/mcp.json` into the turn's scratch
 workspace, and since Pi reads a project file only for a project it trusts, the
-launch passes `--approve`. Nothing is written to the agent directory. Pi still
-connects any servers listed there, and no flag drops them for one run the way
-Claude Code's `--strict-mcp-config` does, so a host whose Pi should reach the
-catalogue alone keeps other servers out of that file.
+launch passes `--approve`. Nothing is written to the agent directory.
+
+SharedOS passes no flag that narrows what Pi offers its model beyond turning off
+its built-in tools. Unless the host restricts them, the model also sees the
+tools of any servers in the agent directory's `mcp.json`, which Pi connects as
+well, and Pi's `codemode` tool, which Pi turns on when a server it connects has
+`codemode` exposure, Pi's default. A host that wants Pi's model kept to the
+catalogue appends `--tools 'mcp__sharedos__*'` through `args` (with its own
+server name if it set one). Pi still connects the other servers, and declares
+only the catalogue's tools to the model.
 
 `piMcpConfig` gives the server `direct` exposure, so each tool is declared to
 the model as a tool of its own, named `mcp__<server>__<tool>` with every
@@ -460,9 +463,30 @@ scripting tool. Either way Pi runs the call itself, and what arrives at the
 bridge is an ordinary `tools/call` naming the canonical tool, authorized like
 any other. The manifest stamps `mcpSupport: "native"`.
 
+A bearer token goes in `headers.Authorization` with every `$` in it doubled.
+Pi reads `$NAME` and `${NAME}` in a header value as environment variables and
+`$$` as one `$`, so a token written as chosen could reach the bridge rewritten
+and be refused.
+
 Pi connects its servers in the background when the session starts, and the
 first prompt waits up to 10 seconds for servers with direct tools. That wait is
 Pi's own. SharedOS sets no limit there.
+
+### What `--approve` trusts
+
+`--approve` makes Pi trust the turn's workspace as a project for that one run.
+In the words of Pi's own trust prompt, that allows it to load `.pi` settings
+and resources, install missing project packages, and execute project
+extensions. In the workspace, that covers everything under `.pi/`: the
+`mcp.json` SharedOS wrote and anything a host writes there with `turnFiles`.
+A `.pi/settings.json` naming packages would have Pi install them, and a file
+under `.pi/extensions` would run as code. The trust also loads `.agents/skills`
+from the workspace and from every directory above it.
+
+So a host keeps its turn-file names fixed in its own code rather than taking
+them from a turn's input, and chooses a `workspaceRoot` with no `.agents/skills`
+in any directory above it. The default root is the operating system's
+temporary directory, which on a shared machine other users can write to.
 
 An extension that replaces Pi's client, such as `pi-mcp-adapter`, is still the
 host's choice. It is loaded with flags the host appends through `args`, and from

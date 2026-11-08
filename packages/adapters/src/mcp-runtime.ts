@@ -900,10 +900,11 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
  * the directory it runs in, and only for a project it trusts, so the launch
  * passes `--approve`: the file is the one SharedOS wrote for this turn into a
  * scratch workspace it made, and RPC mode has no prompt that could ask. The
- * trust lasts for this run, and it covers what else Pi treats as a project
- * resource there too: the rest of `.pi/` in the workspace, which holds only what
- * a host wrote with `turnFiles`, and `.agents/skills` in the workspace or a
- * directory above it.
+ * trust lasts for this run and is more than the file: in the words of Pi's own
+ * prompt it loads `.pi` settings and resources, installs missing project
+ * packages and executes project extensions, which in the workspace means
+ * whatever a host wrote under `.pi/` with `turnFiles`, and it loads
+ * `.agents/skills` from the workspace and every directory above it.
  *
  * `piMcpConfig` gives the server `direct` exposure, so each tool is declared to
  * the model as a tool of its own, named `mcp__<server>__<tool>` with every
@@ -912,9 +913,12 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
  * bridge is an ordinary `tools/call` naming the canonical tool, authorized like
  * any other.
  *
- * An extension that replaces Pi's client, such as `pi-mcp-adapter`, remains a
- * host's option, loaded with flags the host appends through `args`. What that
- * extension reads and how it names tools are then its own.
+ * Nothing else about what Pi offers its model is narrowed here. A host that
+ * wants it kept to the catalogue, without the tools of servers in Pi's own
+ * `mcp.json` or Pi's `codemode` tool, appends `--tools 'mcp__<server>__*'`
+ * through `args`. An extension that replaces Pi's client, such as
+ * `pi-mcp-adapter`, is likewise a host's option, loaded with flags appended
+ * through `args`, and what it reads and how it names tools are then its own.
  *
  * `--no-builtin-tools` drops Pi's own file and shell tools while keeping MCP and
  * extension tools, which is exactly the split a conformance run needs. The

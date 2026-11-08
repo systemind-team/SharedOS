@@ -250,9 +250,11 @@ any of them; `claudeAgentSdkMcpOptions` reuses the Claude Code server block for
 the Agent SDK; `harnessToolAlias` reproduces the display name a harness will
 show. Pi's file is the one its own MCP client reads, from Pi 0.99 on. It goes in
 `.pi/mcp.json` under the directory Pi runs in, which Pi reads only for a trusted
-project, so the Pi launch passes `--approve`. The server is given `direct`
-exposure, so Pi's model sees each tool by its own name, `files.read` as
-`mcp__sharedos__files_read`, rather than behind Pi's `codemode` tool.
+project, so the Pi launch passes `--approve`, which trusts more than that file
+([MCP toolshare](mcp-toolshare.md#what---approve-trusts) says what). The server
+is given `direct` exposure, so Pi's model sees each tool by its own name,
+`files.read` as `mcp__sharedos__files_read`, rather than behind Pi's `codemode`
+tool.
 
 The DeepSeek overlay names the connection and nothing else: it sets no
 `failOnStartupError`, and a host that wants it adds it to the overlay it writes
