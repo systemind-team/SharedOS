@@ -216,10 +216,10 @@ schema, rather than producing a run whose headline claim its own manifest
 contradicts. `harnessLocal` stays permitted under `strict`, since most CLIs keep
 tools of their own, but the entries must be named, and a launch that leaves the
 harness none of its own, as Pi's does with `--no-builtin-tools`, declares `[]`:
-the extension's `mcp` proxy is the catalogue's conduit, not a local tool. No
-spec drops the other MCP servers a CLI loads, so a column run on a machine that
-configures servers of its own for the CLI declares them as `externalDirect`, and
-is `hybrid`.
+what Pi's MCP client declares in their place is the catalogue, not a local tool.
+No spec drops the other MCP servers a CLI loads, so a column run on a machine
+that configures servers of its own for the CLI declares them as
+`externalDirect`, and is `hybrid`.
 
 A conformance column that declares a policy has it written to every execution
 record it produces, as `system.toolPolicy`, beside `catalogHash`. The policy is
@@ -342,7 +342,7 @@ nothing else:
 | Codex       | `-c` overrides     | `mcp_servers.sharedos.url`, `required=true`, and `bearer_token_env_var` when the bridge takes a token |
 | Claude Code | `.mcp.json`        | `{"type":"http","url":…}`                                                                             |
 | DeepSeek    | `cordis.patch.yml` | one `@deepseek-ai/dsh-mcp-client` plugin entry                                                        |
-| Pi          | `.mcp.json`        | `{"url":…,"lifecycle":"eager"}`                                                                       |
+| Pi          | `.pi/mcp.json`     | `{"url":…,"exposure":"direct"}`                                                                       |
 
 The DeepSeek overlay must use dsh's `insert:` form. A bare `id:` entry _overrides_
 a plugin already in the tree and does not add one; dsh warns `patch: entry "..."
@@ -404,9 +404,13 @@ re-authorized by the kernel.
   dsh prints regardless of that key, fails the turn `harness_not_connected`
   and ends dsh. An MCP server of the owner's own that fails to start is left
   alone.
-- **Pi.** `--mode rpc --no-session --no-builtin-tools`: a session-less RPC run
-  with Pi's own tools off, so what the model reaches is the extension's proxy
-  tool and nothing else.
+- **Pi.** `--mode rpc --no-session --no-builtin-tools --approve`: a
+  session-less RPC run with Pi's own tools off, so what the model reaches is the
+  catalogue. `--approve` trusts the project for this run, which is what lets Pi
+  read the `.pi/mcp.json` written for the turn. It also trusts whatever else Pi
+  counts as a project resource there: the rest of `.pi/` in the workspace, which
+  holds only what a host wrote with `turnFiles`, and `.agents/skills` in the
+  workspace or a directory above it.
 
 ### Versions
 
@@ -431,29 +435,40 @@ Where a CLI changed a shape the adapters read, both are read: a Claude Code
 carries the run's last turn reason from 0.2.2, with the exit code deciding
 before it.
 
-### Pi needs an extension, and which one is your choice
+### Pi's own MCP client
 
-Pi is the one harness here that ships **no MCP client**. Some extension is
-therefore **required** before Pi can reach an MCP server at all — but _which_
-extension is a **choice the host makes**, not something SharedOS mandates.
-`pi-mcp-adapter` is what this repository is exercised against:
+Pi has shipped a native MCP client since 0.99, so Pi 0.99 or later needs no
+extension to reach the catalogue.
 
-```sh
-pi install npm:pi-mcp-adapter
-```
+Pi reads servers from the `mcp.json` in its agent directory
+(`~/.pi/agent/mcp.json` by default) and from `.pi/mcp.json` under the directory
+it runs in. It does not read a root `.mcp.json`, and it takes no flag naming a
+config file. `PI_MCP_HARNESS` writes `.pi/mcp.json` into the turn's scratch
+workspace, and since Pi reads a project file only for a project it trusts, the
+launch passes `--approve`. Nothing is written to the agent directory. Pi still
+connects any servers listed there, and no flag drops them for one run the way
+Claude Code's `--strict-mcp-config` does, so a host whose Pi should reach the
+catalogue alone keeps other servers out of that file.
 
-Anything with the same job would serve, and `piMcpConfig` emits that adapter's
-file shape. A different extension may want a different one.
+`piMcpConfig` gives the server `direct` exposure, so each tool is declared to
+the model as a tool of its own, named `mcp__<server>__<tool>` with every
+character outside `[A-Za-z0-9_]` made an underscore: `files.read` reaches the
+model as `mcp__sharedos__files_read`. A name that would run past 64 characters,
+or one two tools would share, is cut to fit and ends in an 8-character hash.
+Pi's default exposure, `codemode`, would hide the catalogue behind a single
+scripting tool. Either way Pi runs the call itself, and what arrives at the
+bridge is an ordinary `tools/call` naming the canonical tool, authorized like
+any other. The manifest stamps `mcpSupport: "native"`.
 
-The effect is not identical to a native client, and it is worth knowing when
-reading a Pi column. The adapter registers a single `mcp` proxy tool and
-discovers the catalogue behind it on demand, so Pi's model calls
-`mcp({tool: "files.read", …})` rather than `files.read`, and the harness-facing
-surface is one tool wide. None of that reaches SharedOS: what arrives at the
-bridge is an ordinary `tools/call` naming the canonical tool, authorized like any
-other. The manifest stamps `mcpSupport: "extension"` and names the extension, so
-a record says how the catalogue reached the harness rather than implying Pi did
-it itself.
+Pi connects its servers in the background when the session starts, and the
+first prompt waits up to 10 seconds for servers with direct tools. That wait is
+Pi's own. SharedOS sets no limit there.
+
+An extension that replaces Pi's client, such as `pi-mcp-adapter`, is still the
+host's choice. It is loaded with flags the host appends through `args`, and from
+then on what it reads and how it names tools are its own.
+`scripts/mcp-conformance.mjs` records such a column as `mcpSupport: "extension"`
+only when the host configuration names the extension with `mcpExtension`.
 
 ### Sandboxed or remote harnesses
 

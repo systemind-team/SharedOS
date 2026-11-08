@@ -184,7 +184,7 @@ driven column can claim.
 | Codex       | `function` declarations, on the wire                       | The host          |
 | Claude Code | `input_schema` tools, on the wire                          | The host          |
 | DeepSeek    | Out of band — its `dsh-mcp-client` plugin, over MCP        | The host, via MCP |
-| Pi          | Out of band — an MCP extension, or `defineTool` in the SDK | The host, via MCP |
+| Pi          | Out of band, its own MCP client or `defineTool` in the SDK | The host, via MCP |
 
 Codex and Claude Code carry a tool catalogue in the protocol itself. DeepSeek
 Harness and Pi run their own tools and have no wire frame that means "here is

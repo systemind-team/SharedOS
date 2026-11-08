@@ -1,11 +1,10 @@
 # MCP API reference
 
 SharedOS presents its permission-filtered tool catalogue as an MCP server, so a
-harness that already speaks MCP — Codex, Claude Code, DeepSeek Harness — runs
-natively against it without a shim. Pi ships no MCP client and reaches it through
-an MCP extension. This page is the wire reference: transports,
-methods, status codes, and headers. Why this boundary exists, what crosses it,
-and what is deliberately never published are in
+harness that already speaks MCP runs natively against it without a shim: Codex,
+Claude Code, DeepSeek Harness, and Pi from 0.99 on. This page is the wire
+reference: transports, methods, status codes, and headers. Why this boundary
+exists, what crosses it, and what is deliberately never published are in
 [MCP toolshare](mcp-toolshare.md) and [ADR 0014](adr/0014-mcp-toolshare.md).
 
 This is the second network surface. The first is the
@@ -244,13 +243,16 @@ bridge URL becomes a working configuration without hand-editing.
 | `codex`        | `config.toml`      | `codexMcpConfig`      |
 | `claude-code`  | `.mcp.json`        | `claudeCodeMcpConfig` |
 | `deepseek`     | `cordis.patch.yml` | `deepseekMcpConfig`   |
-| `pi`           | `.mcp.json`        | `piMcpConfig`         |
+| `pi`           | `.pi/mcp.json`     | `piMcpConfig`         |
 
 `harnessMcpConfigFile(harness, connection)` returns the filename and contents for
 any of them; `claudeAgentSdkMcpOptions` reuses the Claude Code server block for
 the Agent SDK; `harnessToolAlias` reproduces the display name a harness will
-show. Pi's file is the shape `pi-mcp-adapter` reads, because Pi has no MCP client
-of its own; which extension a host installs is the host's choice.
+show. Pi's file is the one its own MCP client reads, from Pi 0.99 on. It goes in
+`.pi/mcp.json` under the directory Pi runs in, which Pi reads only for a trusted
+project, so the Pi launch passes `--approve`. The server is given `direct`
+exposure, so Pi's model sees each tool by its own name, `files.read` as
+`mcp__sharedos__files_read`, rather than behind Pi's `codemode` tool.
 
 The DeepSeek overlay names the connection and nothing else: it sets no
 `failOnStartupError`, and a host that wants it adds it to the overlay it writes

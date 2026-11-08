@@ -104,9 +104,9 @@ outside the figure for the same reason `describeTools` is.
 Adversary's `—` is the absence of a translation layer, not a pending measurement.
 
 The width is the catalogue SharedOS served. A harness that republishes it
-behind a proxy tool of its own -- Pi's installed extension does -- changes what
-the harness serializes, not what was served, and that is a property of the
-extension rather than a measurement this bench can take.
+behind a proxy tool of its own, as Pi's codemode exposure or an MCP extension
+does, changes what the harness serializes, not what was served, and that is a
+property of the harness rather than a measurement this bench can take.
 
 ## Structural footprint of this run
 

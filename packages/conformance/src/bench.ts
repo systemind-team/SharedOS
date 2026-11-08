@@ -1321,9 +1321,9 @@ export function renderSystemsCostReport(report: SystemsCostReport): string {
   );
   lines.push("");
   lines.push("The width is the catalogue SharedOS served. A harness that republishes it");
-  lines.push("behind a proxy tool of its own -- Pi's installed extension does -- changes what");
-  lines.push("the harness serializes, not what was served, and that is a property of the");
-  lines.push("extension rather than a measurement this bench can take.");
+  lines.push("behind a proxy tool of its own, as Pi's codemode exposure or an MCP extension");
+  lines.push("does, changes what the harness serializes, not what was served, and that is a");
+  lines.push("property of the harness rather than a measurement this bench can take.");
 
   lines.push("", "## Structural footprint of this run", "");
   lines.push("| Quantity | Value |");
