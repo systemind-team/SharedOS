@@ -574,6 +574,43 @@ coordination, adaptive routing, retries, budgets, and network-level stopping
 belong to the host scheduler, which may invoke another bounded turn after
 examining the result and events.
 
+#### What the model is told about its limits
+
+The limits a turn runs under reach the runtime twice: on `RuntimeHost.limits`,
+and on the request's `options`, each the request's own or the executor's
+default where the request set none, and absent where neither set it. The
+request carries them because a driver is handed the request and not the host.
+A limit nobody set is never written there.
+
+Every seat in `@aicoo/sharedos-adapters` tells its model those limits before
+the turn, after the reach, rendered by `describeLimits` from
+`@aicoo/sharedos-runtime`. It speaks only the limits that are set: the number of
+tool calls, the number of steps (each tool call is one, and so is the final
+answer), and the deadline as a length of time. It says that once a budget is
+used up every further tool call this turn is refused, so the model should
+finish with what it has. With none set it says nothing and nothing is
+appended. A vendor CLI over MCP is not told a step budget, since none binds it.
+For the defaults above the standard driver's model reads this, as one line:
+
+```text
+Limits the host set on this turn. You may make at most 16 tool calls. You may
+take at most 16 steps: each tool call you make is a step, and so is your final
+answer, so keep one for the answer. Once a budget is used up, every further
+tool call this turn is refused, so finish with what you have. The turn ends 2
+minutes after it began, whether or not you have answered, so answer before then.
+```
+
+A host writing its own driver calls `describeLimits(request.options)` to say the
+same thing. An `instructions` function on the seat replaces the whole
+composition, limits included.
+
+A call past a budget is refused in words that name the budget and say no later
+call will run either; the codes and messages are in
+[errors](errors.md#what-the-model-is-told). Telling the model changes nothing
+about when the turn ends. The standard loop keeps asking the model after a
+refusal, and the model decides when to finish; the turn still ends at
+`maxSteps` or the deadline when the host set them.
+
 ## Why namespace enablement is not permission
 
 Tool availability has three independent gates:

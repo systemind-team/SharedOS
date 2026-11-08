@@ -103,3 +103,8 @@ export function createTurnDeadlines(
     },
   };
 }
+
+/** A count with its noun, singular for one: "1 step", "20 tool calls". */
+export function counted(count: number, noun: string): string {
+  return `${String(count)} ${noun}${count === 1 ? "" : "s"}`;
+}

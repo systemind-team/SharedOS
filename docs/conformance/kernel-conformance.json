@@ -11,27 +11,27 @@
     {
       "id": "model-scripted",
       "label": "Standard",
-      "promptSetHash": "5ca34d3273889b3aaf1eb29cc6558b3953b26cde529f9243655b801d5fe5b5b9"
+      "promptSetHash": "20fbb7f9ec6f178fdef30150c329c5f3a4ed9d662100890f2f020de929aac5a4"
     },
     {
       "id": "codex-scripted",
       "label": "Codex",
-      "promptSetHash": "1e3fec432d7373a2c60dfc84de11efe92e89c4a68f2c73bd8d5aea11b1d27b5a"
+      "promptSetHash": "9b9be5714c02832a182a601dd40ac1eecdc3bb507812dd0ec0b7eac65b2784cc"
     },
     {
       "id": "claude-code-scripted",
       "label": "Claude Code",
-      "promptSetHash": "1e3fec432d7373a2c60dfc84de11efe92e89c4a68f2c73bd8d5aea11b1d27b5a"
+      "promptSetHash": "9b9be5714c02832a182a601dd40ac1eecdc3bb507812dd0ec0b7eac65b2784cc"
     },
     {
       "id": "deepseek-scripted",
       "label": "DeepSeek",
-      "promptSetHash": "1e3fec432d7373a2c60dfc84de11efe92e89c4a68f2c73bd8d5aea11b1d27b5a"
+      "promptSetHash": "9b9be5714c02832a182a601dd40ac1eecdc3bb507812dd0ec0b7eac65b2784cc"
     },
     {
       "id": "pi-scripted",
       "label": "Pi",
-      "promptSetHash": "1e3fec432d7373a2c60dfc84de11efe92e89c4a68f2c73bd8d5aea11b1d27b5a"
+      "promptSetHash": "9b9be5714c02832a182a601dd40ac1eecdc3bb507812dd0ec0b7eac65b2784cc"
     }
   ],
   "rows": [

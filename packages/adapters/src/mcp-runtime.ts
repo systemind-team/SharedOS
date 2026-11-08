@@ -274,8 +274,11 @@ export function createMcpHarnessRuntime(
       // a turn cancelled at any later point still records what it was told:
       // the envelope holds an annotation for every ending, where the outcome's
       // own metadata rides on an outcome a cancelled turn never returns. What
-      // the CLI adds of its own is not here.
-      const { instructions, prompt, promptHash } = await seatText(options, request);
+      // the CLI adds of its own is not here. The harness keeps its own loop and
+      // declares no step, so it is told no step budget: none binds it.
+      const { instructions, prompt, promptHash } = await seatText(options, request, {
+        declaresSteps: false,
+      });
       host.annotate(PROMPT_HASH_ANNOTATION, promptHash);
       const server = new McpToolServer({
         invoker: bridge,

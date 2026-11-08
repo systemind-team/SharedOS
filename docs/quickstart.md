@@ -194,6 +194,8 @@ const driver: AgentTurnDriver = {
           // request.context.reach says where those tools are worth pointing:
           // the paths some grant covers, with the grant itself left out.
           // describeReach(request.context.reach) renders it as words a model reads.
+          // describeLimits(request.options) does the same for the limits the
+          // host set on the turn, and returns undefined when it set none.
           return {
             type: "tool_call",
             call: {

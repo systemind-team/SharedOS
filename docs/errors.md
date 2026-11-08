@@ -294,6 +294,26 @@ when the loop's last step is spent fails the turn with `step_limit_exceeded`
 (see [turns](#turns)). Which boundary refused is `OperationRecord.source`, as
 for `tool_unavailable`.
 
+### What the model is told
+
+A refusal's `message` is what the model reads, so the three a limit causes say
+what follows as well as what happened. `N` is the limit, in the singular for
+one ("1 tool call", "1 step"):
+
+| Code                       | Message                                                                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tool_call_limit_exceeded` | This turn's budget of N tool calls is used up. No further tool call will run this turn; finish with what you have.                                                  |
+| `step_limit_exceeded`      | This turn's budget of N steps is used up. No further tool call will run this turn; finish with what you have.                                                       |
+| `turn_draining`            | The turn is ending at its deadline and takes no new tool calls; finish with what you have. When an audit outage is draining it, the same without "at its deadline". |
+
+The standard driver, the evaluation driver's harness codecs and the MCP bridge
+hand the code and message to the model as they are. The model is also told its limits before the turn, by
+`describeLimits` (see [host integration](host-integration.md#what-the-model-is-told-about-its-limits)).
+
+Being told changes nothing about when a turn ends. The standard loop keeps
+asking the model after a refusal, and the model decides when to finish. The
+turn still ends at `maxSteps` or the deadline when the host set them.
+
 ## Resources
 
 | Code                          | Status | Means                                                                                          |

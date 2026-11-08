@@ -116,6 +116,12 @@ export interface RuntimeVisibleContext {
 /**
  * A runtime sees task input and the effective tool catalog, but never grants,
  * issuing authority, or namespace-management state.
+ *
+ * `options` holds the limits the turn runs under: each the request's own, or
+ * the executor's default where the request set none, and absent where neither
+ * set it. They are the numbers in `RuntimeHost.limits`, carried here too
+ * because a driver is handed the request and not the host, and a seat tells
+ * its model the budget it is held to (see `describeLimits`).
  */
 export type RuntimeTurnRequest = Omit<ExecutionRequest, "context"> & {
   readonly context: RuntimeVisibleContext;

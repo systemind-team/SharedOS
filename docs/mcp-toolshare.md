@@ -159,10 +159,12 @@ promptHash = SHA-256(canonical JSON({ instructions, prompt }))
 ```
 
 The catalogue is one of two things the model reads; the other is what it is
-told. `instructions` is the seat's environment — the turn's reach rendered by
-`describeReach`, sent as the MCP server's initialize instructions here and as a
-system message by the model driver — and `prompt` is the task the harness was
-launched with. `instructions` is `null` when the host sent none.
+told. `instructions` is the seat's environment: the turn's reach rendered by
+`describeReach`, then the limits the host set rendered by `describeLimits`,
+sent as the MCP server's initialize instructions here and as a system message
+by the model driver. `prompt` is the task the harness was launched with.
+`instructions` is `null` when the host sent none. A turn told its limits is told
+something different from one that was not, so it carries a different hash.
 
 Both shipped runtimes compute it, in this one shape, before the seat is sent
 anything, and it lands in `SystemIdentity` beside `catalogHash`. The evaluation
@@ -263,7 +265,10 @@ The harness keeps its own loop and declares no step, so the envelope's
 `maxSteps` does not apply and `step_limit_exceeded` cannot arise.
 `maxToolCalls` and `timeoutMs` are the limits when the host sets them; neither
 has a default. A call past the budget comes back `denied` /
-`tool_call_limit_exceeded` as a result the harness reads.
+`tool_call_limit_exceeded` as a result the harness reads, and its message names
+the budget and says no later call this turn will run. `createMcpHarnessRuntime`
+tells the harness those two limits up front, in its initialize instructions,
+and does not tell it a step budget, since none binds it.
 
 ### Outside a turn
 
@@ -291,9 +296,11 @@ const runtime = createMcpHarnessRuntime(CLAUDE_CODE_MCP_HARNESS);
 Per turn, the server's initialize `instructions` carry where the turn may
 operate — `RuntimeVisibleContext.reach`, rendered by `describeReach` — so a
 harness that surfaces server instructions shows its model the granted paths
-rather than leaving it to search from the root. An `instructions` string on the
-options is the host's standing guidance and is placed before it; a function of
-the turn request replaces the composition, and returning `undefined` sends none.
+rather than leaving it to search from the root. After the reach come the call
+budget and deadline the host set, rendered by `describeLimits`, and nothing
+when it set neither. An `instructions` string on the options is the host's
+standing guidance and is placed before it; a function of the turn request
+replaces the composition, and returning `undefined` sends none.
 Whether the model sees the text is the harness's doing: Claude Code surfaces
 server instructions, and a harness that does not shows its model the catalogue
 alone, which is what it saw before.

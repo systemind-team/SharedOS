@@ -9,6 +9,7 @@ import {
   ToolResultSchema,
   type AccessContext,
   type ExecutionEvent,
+  type ExecutionOptions,
   type ExecutionRequest,
   type ExecutionResult,
   type JsonObject,
@@ -41,7 +42,7 @@ import {
 } from "@aicoo/sharedos-core/internal";
 
 import { escalationOffered } from "./escalation.js";
-import { createTurnDeadlines } from "./internal.js";
+import { counted, createTurnDeadlines } from "./internal.js";
 import {
   reportTurnError,
   type RuntimeHost,
@@ -472,6 +473,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
         reach.status === "computed"
           ? { status: "computed", reach: [...reachThroughTools(reach.reach, effectiveTools)] }
           : reach,
+        limits,
       );
 
       emit("turn.started", {
@@ -501,26 +503,34 @@ export class SharedOSExecutor implements TurnExecutionPort {
         if (abort.draining.aborted) {
           // The turn is ending and takes nothing new. Refused and recorded like
           // any call the envelope stops, so the trail shows a call that was
-          // asked for and did not run rather than nothing at all.
+          // asked for and did not run rather than nothing at all. A turn drains
+          // ahead of its deadline or on an audit outage, and the outage is
+          // noted before it drains, so with none noted the deadline is why.
           const result = refusedToolResult(
             parsedCall.data,
             "denied",
             this.#clock(),
             TURN_DRAINING,
-            "The turn is ending and takes no new tool calls.",
+            auditOutage === undefined
+              ? "The turn is ending at its deadline and takes no new tool calls; finish with what you have."
+              : "The turn is ending and takes no new tool calls; finish with what you have.",
           );
           emit("tool.completed", completedToolEventData(result, step));
           await this.#recordRefusedCall(executionContext, result);
           return result;
         }
 
-        if (step !== undefined && !stepIsWithinBudget(step, steps, limits.maxSteps)) {
+        if (
+          step !== undefined &&
+          limits.maxSteps !== undefined &&
+          !stepIsWithinBudget(step, steps, limits.maxSteps)
+        ) {
           const result = refusedToolResult(
             parsedCall.data,
             "denied",
             this.#clock(),
             "step_limit_exceeded",
-            "The runtime reached its maximum number of steps.",
+            spentBudget(counted(limits.maxSteps, "step")),
           );
           emit("tool.completed", completedToolEventData(result, step));
           await this.#recordRefusedCall(executionContext, result);
@@ -536,7 +546,7 @@ export class SharedOSExecutor implements TurnExecutionPort {
             "denied",
             this.#clock(),
             "tool_call_limit_exceeded",
-            "The runtime reached its maximum number of tool calls.",
+            spentBudget(counted(limits.maxToolCalls, "tool call")),
           );
           emit("tool.completed", completedToolEventData(result, step));
           await this.#recordRefusedCall(executionContext, result);
@@ -880,7 +890,14 @@ function toRuntimeTurnRequest(
   context: AccessContext,
   tools: readonly ToolDefinition[],
   reach: ReachResult,
+  limits: RuntimeLimits,
 ): RuntimeTurnRequest {
+  // The limits the envelope enforces, rather than the ones the request
+  // happened to carry: a driver is handed the request and not the host, and a
+  // limit set as an executor default would otherwise reach its model as none.
+  // Only a limit that is set is written, so the request still names no limit
+  // the host did not set, and it stays JSON.
+  const options = limitsAsOptions(limits);
   return deepFreeze(
     structuredClone({
       version: request.version,
@@ -898,10 +915,18 @@ function toRuntimeTurnRequest(
         reach,
       },
       ...(request.state === undefined ? {} : { state: request.state }),
-      ...(request.options === undefined ? {} : { options: request.options }),
+      ...(request.options === undefined && Object.keys(options).length === 0 ? {} : { options }),
       ...(request.metadata === undefined ? {} : { metadata: request.metadata }),
     }),
   );
+}
+
+function limitsAsOptions(limits: RuntimeLimits): ExecutionOptions {
+  return {
+    ...(limits.maxSteps === undefined ? {} : { maxSteps: limits.maxSteps }),
+    ...(limits.maxToolCalls === undefined ? {} : { maxToolCalls: limits.maxToolCalls }),
+    ...(limits.timeoutMs === undefined ? {} : { timeoutMs: limits.timeoutMs }),
+  };
 }
 
 /**
@@ -1057,6 +1082,19 @@ function cancelledResult(
 
 /** The code a new tool call is refused under once the turn takes nothing new. */
 export const TURN_DRAINING = "turn_draining";
+
+/**
+ * What a call refused for a spent budget tells the model.
+ *
+ * The refusal is how the model learns it has reached a limit, so it names the
+ * budget and says what follows: no later call this turn will run either, and
+ * there is no point asking again. It does not end the turn. The model is told
+ * and decides when to finish, and the turn still ends at `maxSteps` or the
+ * deadline when the host set them.
+ */
+function spentBudget(budget: string): string {
+  return `This turn's budget of ${budget} is used up. No further tool call will run this turn; finish with what you have.`;
+}
 
 /**
  * Whether a second run of the tool repeats nothing: a `read`, or a `write` its
