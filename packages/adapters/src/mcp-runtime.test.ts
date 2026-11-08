@@ -1529,3 +1529,109 @@ describe("the Codex CLI's own events, on the MCP toolshare path", () => {
     });
   }, 30_000);
 });
+
+/**
+ * A stand-in for `dsh --profile headless --json`: it prints the events it is
+ * given and exits as told. The events are the headless stream's, which is all
+ * the real CLI puts on stdout with `--json`.
+ */
+const DSH_CLI = `
+for (const event of JSON.parse(process.argv[2])) {
+  process.stdout.write(JSON.stringify(event) + "\\n");
+}
+process.exitCode = Number(process.argv[3]);
+`;
+
+function dshCli(events: readonly JsonObject[], exitCode: number): McpHarnessSpec {
+  return {
+    ...DEEPSEEK_MCP_HARNESS,
+    configFiles: () => [{ harness: "deepseek", filename: "dsh.mjs", contents: DSH_CLI }],
+    launch: ({ configPaths }) => ({
+      command: process.execPath,
+      args: [configPaths["dsh.mjs"] as string, JSON.stringify(events), String(exitCode)],
+    }),
+  };
+}
+
+describe("DeepSeek Harness's headless run, on the MCP toolshare path", () => {
+  const answer = "Both files read: Work/Public holds the notes.";
+  const run = (final: JsonObject): JsonObject[] => [
+    { type: "session", sessionId: "session-1", cwd: "/tmp/w" },
+    { type: "status", phase: "turn_start", turn: 1 },
+    { type: "text", text: "Both files", truncated: true },
+    { type: "status", phase: "turn_end", turn: 1, reason: { kind: "completed" } },
+    final,
+  ];
+
+  it("is launched with --json after its launcher flags, and its task on stdin", () => {
+    const launch = launchOf(DEEPSEEK_MCP_HARNESS, { url: "http://127.0.0.1:41234/mcp" });
+    expect(launch.args.slice(-2)).toEqual(["--json", "-"]);
+    expect(launch.args.indexOf("--json")).toBeGreaterThan(launch.args.indexOf("--patch"));
+  });
+
+  it("gives a completed run final.text as its output, whole", async () => {
+    // Before `--json` the headless profile printed only its answer, which no
+    // protocol here read, and the turn completed with empty output.
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(
+        dshCli(
+          run({
+            type: "final",
+            sessionId: "session-1",
+            reason: { kind: "completed" },
+            text: answer,
+          }),
+          0,
+        ),
+      ),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    expect(result.status === "succeeded" ? result.output : undefined).toEqual({ text: answer });
+  }, 30_000);
+
+  it("reads a dsh before 0.2.2, whose final has no reason, by its exit code", async () => {
+    const completed = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(dshCli(run({ type: "final", text: answer }), 0)),
+    ).execute(executionRequest());
+    expect(completed.status).toBe("succeeded");
+    expect(completed.status === "succeeded" ? completed.output : undefined).toEqual({
+      text: answer,
+    });
+
+    const failed = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(dshCli(run({ type: "final", text: "" }), 1)),
+    ).execute(executionRequest());
+    expect(failed).toMatchObject({
+      status: "failed",
+      error: { code: "harness_exited_without_outcome" },
+    });
+  }, 30_000);
+
+  it("fails a run whose last turn failed, with the harness's own code", async () => {
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(
+        dshCli(
+          run({
+            type: "final",
+            sessionId: "session-1",
+            reason: { kind: "error", error: { code: "MISSING_CREDENTIAL", message: "no API key" } },
+            text: "",
+          }),
+          1,
+        ),
+      ),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "MISSING_CREDENTIAL", message: "no API key", retryable: false },
+    });
+  }, 30_000);
+});

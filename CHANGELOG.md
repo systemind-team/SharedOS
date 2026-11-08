@@ -162,6 +162,19 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **A DeepSeek Harness turn on the MCP path has its answer as output.**
+  `DEEPSEEK_MCP_HARNESS` runs dsh's headless profile, which printed only its
+  final answer, and its protocol read the session-event vocabulary
+  (`tool/call`, `assistant/message`, `turn/end`) that profile never prints,
+  so every turn completed with empty output. The launch now passes `--json`,
+  and the new `deepseekHeadlessProtocol` (`deepseek.headless.jsonl`) reads
+  the headless event stream: the output is `final.text`, the one string dsh
+  never cuts at 8 KiB; `final.reason` decides the outcome from dsh 0.2.2,
+  and the exit code before it; an `error` event fails the turn
+  `harness_failed`. A headless failure is retryable only when it was
+  interrupted or its code is one dsh retries itself. `deepseekProtocol` is
+  unchanged and still serves the evaluation driver.
+
 - **Codex reaches a bridge that takes a token.** `codexMcpServerSettings`
   and `codexMcpConfig` emitted `bearer_token`, which Codex refuses from 0.46
   ("bearer_token is not supported for streamable_http") and which stops the

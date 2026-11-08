@@ -33,6 +33,7 @@ import {
   type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
 
+import { deepseekHeadlessProtocol } from "./deepseek/headless.js";
 import type { HarnessProtocol } from "./harness.js";
 import { failed } from "./internal.js";
 import { HarnessProcess } from "./process.js";
@@ -739,23 +740,32 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
  *
  * Its official MCP plugin performs `tools/list`, converts the schemas, and
  * registers them through `ctx.tools.register()`, so the generated overlay names
- * the endpoint and nothing else. The plugin must already be installed into the
- * profile -- `dsh plugin --profile <name> add @deepseek-ai/dsh-mcp-client` --
- * because a `--patch` overlay activates a plugin and does not fetch one.
+ * the endpoint and nothing else. The plugin is a dependency of the dsh CLI,
+ * and dsh 0.2.2-rc.1 loads it from there. A build that does not needs it
+ * installed into the profile first, with
+ * `dsh plugin --profile <name> add @deepseek-ai/dsh-mcp-client`, because a
+ * `--patch` overlay activates a plugin and does not fetch one.
  *
  * `DSH_COMMAND` and `DSH_PROFILE` are read from the environment because a dsh
  * profile is host state with its own plugin dependencies, not something a turn
- * should materialise for itself.
+ * should materialise for itself. The overlay is added on top of that profile
+ * and of the owner's own dsh configuration, and removes nothing from either.
+ *
+ * `--json` has the headless profile print its run as events rather than only
+ * the final answer, which is what `deepseekHeadlessProtocol` reads.
  */
 export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: DEEPSEEK_VENDOR.id,
   manifest: DEEPSEEK_VENDOR.mcpManifest,
-  protocol: DEEPSEEK_VENDOR.protocol,
+  // The headless profile's `--json` stream, not the session events the
+  // vendor's driven codec reads: that is what this launch prints.
+  protocol: deepseekHeadlessProtocol,
   configFiles: (connection) => [harnessMcpConfigFile("deepseek", connection)],
   launch: ({ prompt, workspace, configPaths }) => ({
     command: process.env["DSH_COMMAND"] ?? "dsh",
     // Launcher flags first, then the profile's own arguments: the first token
-    // dsh does not recognise starts the app's arguments. `-` as the only task
+    // dsh does not recognise starts the app's arguments, so `--json` goes
+    // after `--patch` and never before it. `-` as the only task
     // argument has the headless profile read the job from stdin, which it
     // does from dsh 0.1.6. It is passed rather than left out: with no task,
     // dsh reads stdin only when stdin is not a terminal, and a launch should
@@ -765,6 +775,7 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
       process.env["DSH_PROFILE"] ?? "headless",
       "--patch",
       configPaths["cordis.patch.yml"] ?? join(workspace, "cordis.patch.yml"),
+      "--json",
       "-",
     ],
     cwd: workspace,
