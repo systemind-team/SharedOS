@@ -12,7 +12,8 @@ pnpm example:reference-host
 
 Set `ANTHROPIC_API_KEY` to drive the same turn with a live model instead of the
 scripted driver; `ANTHROPIC_BASE_URL` overrides the endpoint. The example needs
-Node.js 22.5 or newer, because the stores use `node:sqlite`.
+Node.js 22.19 or newer, as SharedOS does; its stores use the built-in
+`node:sqlite`.
 
 ## What it implements
 

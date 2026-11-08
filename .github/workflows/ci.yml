@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20.11, 22]
+        node-version: [22.19, 24]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

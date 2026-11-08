@@ -114,7 +114,7 @@ Transport differences cannot alter grants or inject hidden authority.
 
 Each tick must include an explicit target-agent execution grant in its isolated
 world. PACT must also upgrade its runtime from Node 18 to the SharedOS minimum
-of Node 20.11 before integration.
+of Node 22.19 before integration.
 
 ## Failure handling
 

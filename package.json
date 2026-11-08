@@ -7,7 +7,7 @@
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "engines": {
-    "node": ">=20.11"
+    "node": ">=22.19"
   },
   "scripts": {
     "build": "node scripts/clean-generated.mjs && tsc -b --force && node scripts/check-generated.mjs",

@@ -67,14 +67,14 @@ The longer argument, with a worked request, is in
 npm install @aicoo/sharedos
 ```
 
-Node.js 20.11 or newer; the packages are ESM-only. The
+Node.js 22.19 or newer; the packages are ESM-only. The
 [quickstart](docs/quickstart.md) is two working programs, the kernel embedded in
 your process and the same kernel over HTTP, written against the published
 packages.
 
 ### Build from Source
 
-Requirements: Node.js 20.11 or newer and pnpm 9.15.
+Requirements: Node.js 22.19 or newer and pnpm 9.15.
 
 ```bash
 git clone https://github.com/systemind-team/SharedOS.git
@@ -92,7 +92,7 @@ integration writes those before anything runs. The
 [reference host](examples/reference-host/README.md) is a working one: a
 filesystem `files` provider covering all twelve actions, SQLite stores for
 bounded uses, revocation, namespace settings and audit, and a driver over a live
-model. It needs Node.js 22.5 or newer for `node:sqlite`.
+model.
 
 ## How a turn runs
 
