@@ -10,6 +10,13 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **The MCP toolshare docs record the CLI versions each launch was found to
+  need**, as information: Codex 0.44 for the `--json` event shape, 0.46 for
+  `bearer_token_env_var`, 0.99 for `required`; Claude Code 2.1.221 for MCP
+  servers connected before the first turn in `-p` mode; dsh 0.1.6 for a task
+  on stdin. SharedOS enforces no floor and records the version each CLI
+  reports.
+
 - **An MCP harness spec can read what its CLI says beside its frames.**
   `McpHarnessSpec.readDiagnostic(text, stream, connection)` is called with
   each line of stderr and each stdout line that is not a frame, and a step
