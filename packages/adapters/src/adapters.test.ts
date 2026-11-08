@@ -599,6 +599,35 @@ describe("a harness driven as a SharedOS turn", () => {
 
     expect(result.status).toBe("failed");
   });
+
+  it("reads the outcome that follows as many ignored frames as the limit allows", async () => {
+    const ignored: HarnessFrame = { type: "system", subtype: "init" };
+    const done: HarnessFrame = { type: "result", subtype: "success", result: "done" };
+
+    // The last frame read was never interpreted, so an outcome arriving right
+    // at the limit was reported as the limit being exceeded.
+    const atLimit = await runWith(
+      createClaudeCodeDriver({
+        transport: new TranscriptTransport({ batches: [[ignored, ignored, done]] }),
+        maxIgnoredFrames: 2,
+      }),
+    );
+    expect(atLimit.result.status).toBe("succeeded");
+    expect(atLimit.result.status === "succeeded" ? atLimit.result.output : undefined).toEqual({
+      text: "done",
+    });
+
+    const pastLimit = await runWith(
+      createClaudeCodeDriver({
+        transport: new TranscriptTransport({ batches: [[ignored, ignored, ignored, done]] }),
+        maxIgnoredFrames: 2,
+      }),
+    );
+    expect(pastLimit.result).toMatchObject({
+      status: "failed",
+      error: { code: "harness_frame_limit_exceeded" },
+    });
+  });
 });
 
 describe("a harness asking for a human", () => {
