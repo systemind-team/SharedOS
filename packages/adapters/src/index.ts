@@ -1,5 +1,6 @@
 export * from "./claude-code/protocol.js";
 export * from "./codex/protocol.js";
+export * from "./deepseek/headless.js";
 export * from "./deepseek/protocol.js";
 export * from "./driver.js";
 export * from "./harness.js";

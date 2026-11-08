@@ -367,9 +367,13 @@ re-authorized by the kernel.
   same decision as Claude's `--allowedTools`: Codex's default `auto` mode asks a
   human before any tool that is not read-only, `codex exec` has no human, and
   the refusal would happen inside Codex with the kernel never consulted.
-- **DeepSeek Harness.** The plugin overlay sets `failOnStartupError: true` for
-  the reason Codex's server is `required`: a run that quietly continued with
-  only the harness's own tools would be a different finding.
+- **DeepSeek Harness.** `--profile headless --patch <overlay> --json -`: the
+  overlay adds the MCP client entry on top of the profile and the owner's own
+  dsh configuration and removes nothing from either, and `--json` has the run
+  printed as events, of which the turn's outcome is read from `final`. The
+  overlay sets `failOnStartupError: true` for the reason Codex's server is
+  `required`: a run that quietly continued with only the harness's own tools
+  would be a different finding.
 - **Pi.** `--mode rpc --no-session --no-builtin-tools`: a session-less RPC run
   with Pi's own tools off, so what the model reaches is the extension's proxy
   tool and nothing else.

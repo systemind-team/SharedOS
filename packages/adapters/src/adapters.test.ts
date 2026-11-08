@@ -37,6 +37,7 @@ import {
 } from "./vendors.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
 import { codexProtocol } from "./codex/protocol.js";
+import { deepseekHeadlessProtocol } from "./deepseek/headless.js";
 import { deepseekProtocol } from "./deepseek/protocol.js";
 import { piProtocol } from "./pi/protocol.js";
 import { probeHarness } from "./node.js";
@@ -1126,6 +1127,165 @@ describe("the DeepSeek Harness protocol", () => {
   it("ignores frames that carry nothing relevant to the turn", () => {
     expect(deepseekProtocol.interpret(event("step/start", { turn: 1, step: 1 }))).toEqual([]);
     expect(deepseekProtocol.interpret({ jsonrpc: "2.0", id: 1, result: {} })).toEqual([]);
+  });
+});
+
+/**
+ * `dsh --profile headless --json`, as 0.2.2-rc.1 prints a run that read two
+ * files over MCP and answered. The text event is cut at 8 KiB by dsh and
+ * marked; `final.text` never is.
+ */
+const SESSION = "session-6f0e2b1c-0000-4000-8000-000000000000";
+const headlessRun: HarnessFrame[] = [
+  { type: "session", sessionId: SESSION, cwd: "/tmp/sharedos-mcp-a1b2c3" },
+  { type: "status", phase: "turn_start", turn: 1 },
+  { type: "status", phase: "step_start", turn: 1, step: 1 },
+  { type: "thinking", text: "Read both files through the catalogue." },
+  {
+    type: "tool_call",
+    callId: "call_00_x1",
+    tool: "mcp__sharedos__files_read_3f9a",
+    input: { path: ["Work", "Public"] },
+  },
+  {
+    type: "tool_result",
+    callId: "call_00_x1",
+    status: "completed",
+    result: '{"status":"succeeded"}',
+  },
+  {
+    type: "status",
+    phase: "step_end",
+    turn: 1,
+    step: 1,
+    usage: { inputTokens: 1_840, outputTokens: 52 },
+  },
+  { type: "status", phase: "step_start", turn: 1, step: 2 },
+  { type: "text", text: "Both files", truncated: true },
+  { type: "status", phase: "step_end", turn: 1, step: 2 },
+  { type: "status", phase: "turn_end", turn: 1, reason: { kind: "completed" } },
+  {
+    type: "final",
+    sessionId: SESSION,
+    reason: { kind: "completed" },
+    text: "Both files read: Work/Public holds the notes.",
+  },
+];
+
+describe("the DeepSeek Harness headless protocol", () => {
+  const final = (reason: JsonObject | null): HarnessFrame => ({
+    type: "final",
+    sessionId: SESSION,
+    reason,
+    text: "",
+  });
+
+  it("completes a run with final.text as its output, and reads nothing else as an outcome", () => {
+    expect(headlessRun.flatMap((frame) => deepseekHeadlessProtocol.interpret(frame))).toEqual([
+      { type: "complete", output: { text: "Both files read: Work/Public holds the notes." } },
+    ]);
+  });
+
+  it("reads a call dsh already made as a record, never as a call to make", () => {
+    expect(
+      deepseekHeadlessProtocol.interpret({
+        type: "tool_call",
+        callId: "c",
+        tool: "bash",
+        input: { command: "ls" },
+      }),
+    ).toEqual([]);
+  });
+
+  it("is decided by the run's last turn, not a failed one on the way", () => {
+    const recovered: HarnessFrame[] = [
+      {
+        type: "status",
+        phase: "turn_end",
+        turn: 1,
+        reason: { kind: "error", error: { code: "SERVER", message: "502 Bad Gateway" } },
+      },
+      { type: "status", phase: "turn_start", turn: 2 },
+      { type: "status", phase: "turn_end", turn: 2, reason: { kind: "completed" } },
+      { type: "final", sessionId: SESSION, reason: { kind: "completed" }, text: "done" },
+    ];
+    expect(recovered.flatMap((frame) => deepseekHeadlessProtocol.interpret(frame))).toEqual([
+      { type: "complete", output: { text: "done" } },
+    ]);
+  });
+
+  it("fails a run whose last turn did not complete, with the harness's code", () => {
+    const missingKey =
+      'llm-deepseek: no API key for provider route "deepseek-official"; store DEEPSEEK_API_KEY through the credentials service';
+    expect(
+      deepseekHeadlessProtocol.interpret(
+        final({ kind: "error", error: { message: missingKey, code: "MISSING_CREDENTIAL" } }),
+      ),
+    ).toEqual([
+      {
+        type: "failed",
+        error: { code: "MISSING_CREDENTIAL", message: missingKey, retryable: false },
+      },
+    ]);
+    expect(
+      deepseekHeadlessProtocol.interpret(
+        final({ kind: "error", error: { message: "429", code: "RATE_LIMIT", status: 429 } }),
+      )[0],
+    ).toMatchObject({ error: { code: "RATE_LIMIT", retryable: true } });
+    expect(deepseekHeadlessProtocol.interpret(final({ kind: "max-tokens" }))[0]).toMatchObject({
+      type: "failed",
+      error: { code: "harness_turn_max_tokens", retryable: false },
+    });
+    expect(
+      deepseekHeadlessProtocol.interpret(final({ kind: "aborted", reason: { kind: "signal" } }))[0],
+    ).toMatchObject({ error: { code: "harness_turn_aborted", retryable: false } });
+    expect(deepseekHeadlessProtocol.interpret(final({ kind: "interrupted" }))[0]).toMatchObject({
+      error: { code: "harness_turn_interrupted", retryable: true },
+    });
+    // dsh exits 0 only for `completed`, so a kind this adapter has not seen
+    // is a failure too.
+    expect(deepseekHeadlessProtocol.interpret(final({ kind: "forked" }))[0]).toMatchObject({
+      type: "failed",
+      error: { code: "harness_turn_forked" },
+    });
+    expect(deepseekHeadlessProtocol.interpret(final(null))[0]).toMatchObject({
+      type: "failed",
+      error: { code: "harness_ended_without_outcome" },
+    });
+  });
+
+  it("keeps a final without a reason as the answer, and leaves the outcome to the exit code", () => {
+    // Before 0.2.2 `final` carried only its text.
+    expect(deepseekHeadlessProtocol.interpret({ type: "final", text: "answered" })).toEqual([
+      { type: "message", text: "answered" },
+    ]);
+    expect(deepseekHeadlessProtocol.interpret({ type: "final", text: "" })).toEqual([]);
+  });
+
+  it("fails a run dsh could not drive", () => {
+    expect(
+      deepseekHeadlessProtocol.interpret({
+        type: "error",
+        message: "`-` must be the only task argument",
+      }),
+    ).toEqual([
+      {
+        type: "failed",
+        error: {
+          code: "harness_failed",
+          message: "`-` must be the only task argument",
+          retryable: false,
+        },
+      },
+    ]);
+  });
+
+  it("is a protocol of its own, beside the session-event one the driver reads", () => {
+    expect(deepseekHeadlessProtocol.id).toBe("deepseek.headless.jsonl");
+    expect(deepseekHeadlessProtocol.id).not.toBe(deepseekProtocol.id);
+    expect(deepseekHeadlessProtocol.describeTools([READ_TOOL])).toEqual(
+      deepseekProtocol.describeTools([READ_TOOL]),
+    );
   });
 });
 

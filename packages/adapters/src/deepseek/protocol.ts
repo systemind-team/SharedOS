@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
 import { parseToolArguments, toolResultBody } from "../internal.js";
 import { TextBlockSchema, UnknownBlockSchema, contentBlockSteps } from "../protocol-base.js";
+import { TURN_END_FAILURES, turnEndCode } from "./turn-end.js";
 
 /**
  * DeepSeek Harness speaks its own session-log vocabulary over a
@@ -84,21 +85,6 @@ const TurnEndEventSchema = z
   })
   .passthrough();
 
-/**
- * Turn endings that are not a completed turn.
- *
- * A turn the harness abandoned is reported as a failed turn rather than as a
- * quiet completion, so a harness that gave up cannot be mistaken for one that
- * answered. `completed` is the only ending that produces an outcome.
- */
-const TURN_END_FAILURES: Readonly<Record<string, string>> = Object.freeze({
-  aborted: "The DeepSeek Harness turn was cancelled before it completed.",
-  blocked: "The DeepSeek Harness turn was blocked before it completed.",
-  error: "The DeepSeek Harness turn ended in an error.",
-  "max-tokens": "The DeepSeek Harness turn reached its output-token ceiling.",
-  interrupted: "The DeepSeek Harness turn was interrupted and never completed.",
-});
-
 export const deepseekProtocol: HarnessProtocol = {
   id: DEEPSEEK_PROTOCOL_ID,
 
@@ -158,6 +144,9 @@ export const deepseekProtocol: HarnessProtocol = {
       if (!end.success) {
         return [];
       }
+      // A turn the harness abandoned is reported as a failed turn rather than
+      // as a quiet completion, so a harness that gave up cannot be mistaken
+      // for one that answered.
       const kind = end.data.reason.kind;
       const failure = TURN_END_FAILURES[kind];
       if (failure === undefined) {
@@ -167,7 +156,7 @@ export const deepseekProtocol: HarnessProtocol = {
         {
           type: "failed",
           error: {
-            code: end.data.reason.error?.code ?? `harness_turn_${kind.replaceAll("-", "_")}`,
+            code: end.data.reason.error?.code ?? turnEndCode(kind),
             message: end.data.reason.error?.message ?? failure,
             retryable: true,
           },
