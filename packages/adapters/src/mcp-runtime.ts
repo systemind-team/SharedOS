@@ -552,6 +552,7 @@ async function runHarness(
   options: McpHarnessRuntimeOptions,
 ): Promise<RuntimeTurnOutcome> {
   const messages: string[] = [];
+  let lastNotice: string | undefined;
   let terminal: RuntimeTurnOutcome | undefined;
 
   // A session harness is shut down by closing its command channel, so the close
@@ -587,6 +588,10 @@ async function runHarness(
     for (const step of steps) {
       if (step.type === "message") {
         messages.push(step.text);
+        continue;
+      }
+      if (step.type === "notice") {
+        lastNotice = step.text;
         continue;
       }
       if (step.type === "failed") {
@@ -669,7 +674,8 @@ async function runHarness(
   }
   return failed(
     "harness_exited_without_outcome",
-    `The ${spec.id} CLI exited with code ${String(exit.code)} without completing the turn.`,
+    `The ${spec.id} CLI exited with code ${String(exit.code)} without completing the turn.` +
+      (lastNotice === undefined ? "" : ` It last reported: ${lastNotice}`),
   );
 }
 

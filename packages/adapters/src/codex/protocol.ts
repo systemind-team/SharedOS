@@ -99,7 +99,9 @@ const NestedErrorSchema = z
  * error that ended it, on `turn.completed`, or, when the CLI printed
  * neither, on the process's exit. The runtime keeps the first outcome it is
  * given, so reading this event as a failure reported a turn that reconnected
- * once and then completed as failed.
+ * once and then completed as failed. It is read as a notice instead: a turn
+ * the CLI leaves with no `turn.failed`, an interrupted one, then fails with
+ * the last error the CLI printed rather than only its exit code.
  */
 const CliErrorSchema = z.object({ type: z.literal("error"), message: z.string() }).passthrough();
 
@@ -173,8 +175,10 @@ export const codexProtocol: HarnessProtocol = {
       return [failure(nestedError.data.error.code, nestedError.data.error.message)];
     }
 
-    if (CliErrorSchema.safeParse(frame).success) {
-      return [];
+    const cliError = CliErrorSchema.safeParse(frame);
+    if (cliError.success) {
+      const text = cliError.data.message;
+      return text.trim() === "" ? [] : [{ type: "notice", text }];
     }
 
     const completed = CompletedSchema.safeParse(frame);

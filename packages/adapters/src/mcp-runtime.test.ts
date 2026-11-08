@@ -1514,6 +1514,38 @@ describe("the Codex CLI's own events, on the MCP toolshare path", () => {
     expect(result.status === "succeeded" ? result.output : undefined).toEqual({ text: prose });
   }, 30_000);
 
+  it("names the CLI's last error when it exits with no turn.failed", async () => {
+    // An interrupted turn: Codex printed its error and exited 1 before it
+    // could print `turn.failed`. Its exit code alone says nothing of why.
+    const interrupted: JsonObject[] = [
+      { type: "thread.started", thread_id: "t" },
+      { type: "turn.started" },
+      {
+        type: "error",
+        message: "Reconnecting... 1/5 (stream disconnected before completion)",
+      },
+      {
+        type: "error",
+        message:
+          "stream disconnected before completion: Transport error: error decoding response body",
+      },
+    ];
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(codexCli(interrupted, 1)),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: {
+        code: "harness_exited_without_outcome",
+        message:
+          "The codex CLI exited with code 1 without completing the turn. It last reported: stream disconnected before completion: Transport error: error decoding response body",
+      },
+    });
+  }, 30_000);
+
   it("fails a turn the CLI failed, with the CLI's reason rather than its exit code", async () => {
     const failed: JsonObject[] = [
       { type: "thread.started", thread_id: "t" },

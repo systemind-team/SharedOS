@@ -15,6 +15,12 @@ export type HarnessFrame = JsonObject;
  *
  * `message` is assistant prose. It is kept rather than discarded so a harness
  * whose terminal frame carries no text still produces a turn output.
+ *
+ * `notice` is something the harness reported that is neither prose nor an
+ * ending: an error it recovered from, or one it had not yet acted on. It is
+ * never output and never an outcome. A turn the harness leaves without an
+ * outcome names the last one in its failure, since that may be the only
+ * reason the harness gave.
  */
 export type HarnessStep =
   | {
@@ -24,6 +30,7 @@ export type HarnessStep =
       readonly arguments: JsonObject;
     }
   | { readonly type: "message"; readonly text: string }
+  | { readonly type: "notice"; readonly text: string }
   | { readonly type: "complete"; readonly output?: JsonValue; readonly metadata?: JsonObject }
   | { readonly type: "failed"; readonly error: ProtocolError };
 
