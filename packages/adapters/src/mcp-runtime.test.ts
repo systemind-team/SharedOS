@@ -45,9 +45,13 @@ import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 import {
   CLAUDE_CODE_MCP_HARNESS,
   CODEX_MCP_HARNESS,
+  DEEPSEEK_MCP_HARNESS,
+  PI_MCP_HARNESS,
   createMcpHarnessRuntime,
+  type McpHarnessLaunch,
   type McpHarnessRuntimeOptions,
   type McpHarnessSpec,
+  type McpLaunchContext,
 } from "./mcp-runtime.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
 
@@ -894,28 +898,37 @@ describe("a harness runtime whose signal is aborted", () => {
   });
 });
 
+/** What a spec launches for one turn, outside a run: the request as the executor hands it over. */
+function launchOf(
+  spec: McpHarnessSpec,
+  connection: McpLaunchContext["connection"],
+  prompt = "read both files",
+): McpHarnessLaunch {
+  const { context, ...request } = executionRequest();
+  return spec.launch({
+    prompt,
+    connection,
+    workspace: "/tmp/sharedos-test",
+    configPaths: {},
+    request: {
+      ...request,
+      context: {
+        actor: context.actor,
+        owner: context.owner,
+        namespaceId: context.namespaceId,
+        purpose: context.purpose,
+        traceId: context.traceId,
+        now: context.now,
+        reach: { status: "computed", reach: [] },
+      },
+    },
+  });
+}
+
 describe("the Codex spec", () => {
   it("passes the same server settings codexMcpConfig emits, as overrides", () => {
     const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
-    const { context, ...request } = executionRequest();
-    const launch = CODEX_MCP_HARNESS.launch({
-      prompt: "read both files",
-      connection,
-      workspace: "/tmp/sharedos-test",
-      configPaths: {},
-      request: {
-        ...request,
-        context: {
-          actor: context.actor,
-          owner: context.owner,
-          namespaceId: context.namespaceId,
-          purpose: context.purpose,
-          traceId: context.traceId,
-          now: context.now,
-          reach: { status: "computed", reach: [] },
-        },
-      },
-    });
+    const launch = launchOf(CODEX_MCP_HARNESS, connection);
     const settings = codexMcpServerSettings(connection);
     const emitted = codexMcpConfig(connection);
 
@@ -937,25 +950,7 @@ describe("the Codex spec", () => {
 
   it("makes the scratch workspace the project root, so no checkout above it is read", () => {
     const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
-    const { context, ...request } = executionRequest();
-    const launch = CODEX_MCP_HARNESS.launch({
-      prompt: "read both files",
-      connection,
-      workspace: "/tmp/sharedos-test",
-      configPaths: {},
-      request: {
-        ...request,
-        context: {
-          actor: context.actor,
-          owner: context.owner,
-          namespaceId: context.namespaceId,
-          purpose: context.purpose,
-          traceId: context.traceId,
-          now: context.now,
-          reach: { status: "computed", reach: [] },
-        },
-      },
-    });
+    const launch = launchOf(CODEX_MCP_HARNESS, connection);
     const at = launch.args.indexOf("project_root_markers=[]");
     expect(at).toBeGreaterThan(0);
     expect(launch.args[at - 1]).toBe("-c");
@@ -964,25 +959,7 @@ describe("the Codex spec", () => {
 
   it("hands Codex a bridge token through its environment, not its command line", () => {
     const connection = { url: "http://127.0.0.1:41234/mcp", token: "secret-bridge-token" };
-    const { context, ...request } = executionRequest();
-    const launch = CODEX_MCP_HARNESS.launch({
-      prompt: "read both files",
-      connection,
-      workspace: "/tmp/sharedos-test",
-      configPaths: {},
-      request: {
-        ...request,
-        context: {
-          actor: context.actor,
-          owner: context.owner,
-          namespaceId: context.namespaceId,
-          purpose: context.purpose,
-          traceId: context.traceId,
-          now: context.now,
-          reach: { status: "computed", reach: [] },
-        },
-      },
-    });
+    const launch = launchOf(CODEX_MCP_HARNESS, connection);
 
     // The override names the variable and the environment carries the token,
     // which Codex from 0.46 requires and which keeps the token off a command
@@ -996,25 +973,7 @@ describe("the Codex spec", () => {
   });
 
   it("sets no token variable for a bridge that takes none", () => {
-    const { context, ...request } = executionRequest();
-    const launch = CODEX_MCP_HARNESS.launch({
-      prompt: "read both files",
-      connection: { url: "http://127.0.0.1:41234/mcp" },
-      workspace: "/tmp/sharedos-test",
-      configPaths: {},
-      request: {
-        ...request,
-        context: {
-          actor: context.actor,
-          owner: context.owner,
-          namespaceId: context.namespaceId,
-          purpose: context.purpose,
-          traceId: context.traceId,
-          now: context.now,
-          reach: { status: "computed", reach: [] },
-        },
-      },
-    });
+    const launch = launchOf(CODEX_MCP_HARNESS, { url: "http://127.0.0.1:41234/mcp" });
 
     expect(launch.env).toBeUndefined();
     expect(launch.args.some((arg) => arg.includes("bearer_token"))).toBe(false);
@@ -1023,29 +982,96 @@ describe("the Codex spec", () => {
 
 describe("the Claude Code spec", () => {
   it("sets no turn cap of its own, so the host's limits are the only ones", () => {
-    const { context, ...request } = executionRequest();
-    const launch = CLAUDE_CODE_MCP_HARNESS.launch({
-      prompt: "read both files",
-      connection: { url: "http://127.0.0.1:41234/mcp", name: "sharedos" },
-      workspace: "/tmp/sharedos-test",
-      configPaths: {},
-      request: {
-        ...request,
-        context: {
-          actor: context.actor,
-          owner: context.owner,
-          namespaceId: context.namespaceId,
-          purpose: context.purpose,
-          traceId: context.traceId,
-          now: context.now,
-          reach: { status: "computed", reach: [] },
-        },
-      },
+    const launch = launchOf(CLAUDE_CODE_MCP_HARNESS, {
+      url: "http://127.0.0.1:41234/mcp",
+      name: "sharedos",
     });
 
     expect(launch.args).not.toContain("--max-turns");
   });
 });
+
+/**
+ * The prompt goes to the CLI on stdin, never as an argument.
+ *
+ * One argument holds at most 128 KiB on Linux, past which the spawn itself
+ * fails with `E2BIG`, and a prompt that starts with `-` is read by the CLI as
+ * an option. Neither is a limit SharedOS meant to set.
+ */
+describe("a launch's prompt", () => {
+  const PROMPT = "--help me read both files";
+  const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
+
+  it("is written to stdin by every spec, and appears in no argument", () => {
+    for (const spec of [CLAUDE_CODE_MCP_HARNESS, CODEX_MCP_HARNESS, DEEPSEEK_MCP_HARNESS]) {
+      const launch = launchOf(spec, connection, PROMPT);
+      expect(launch.stdin, spec.id).toBe(PROMPT);
+      expect(launch.keepStdinOpen, spec.id).toBeUndefined();
+      expect(
+        launch.args.some((arg) => arg.includes(PROMPT)),
+        spec.id,
+      ).toBe(false);
+    }
+    // Pi's prompt is an RPC frame on the same channel, as it was.
+    const pi = launchOf(PI_MCP_HARNESS, connection, PROMPT);
+    expect(JSON.parse(pi.stdin ?? "{}")).toMatchObject({ type: "prompt", message: PROMPT });
+    expect(pi.args.some((arg) => arg.includes(PROMPT))).toBe(false);
+  });
+
+  it("is named on each command line the way that CLI reads stdin", () => {
+    // `claude -p` with no prompt argument reads stdin; `codex exec -` and
+    // dsh's headless `-` read it when named.
+    const claude = launchOf(CLAUDE_CODE_MCP_HARNESS, connection, PROMPT);
+    expect(claude.args[0]).toBe("-p");
+    expect(claude.args[1]).toBe("--output-format");
+
+    const codex = launchOf(CODEX_MCP_HARNESS, connection, PROMPT);
+    expect(codex.args.at(-1)).toBe("-");
+    expect(codex.args.filter((arg) => arg === "-")).toHaveLength(1);
+
+    const deepseek = launchOf(DEEPSEEK_MCP_HARNESS, connection, PROMPT);
+    expect(deepseek.args.at(-1)).toBe("-");
+  });
+
+  it("reaches the CLI whole, however long it is and however it starts", async () => {
+    const prompt = `-${"x".repeat(200 * 1024)}`;
+    const spec: McpHarnessSpec = {
+      ...fakeHarness([]),
+      configFiles: () => [{ harness: "fake", filename: "echo.mjs", contents: STDIN_CLI }],
+      launch: ({ prompt: given, configPaths }) => ({
+        command: process.execPath,
+        args: [configPaths["echo.mjs"] as string],
+        stdin: given,
+      }),
+    };
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(spec, { prompt: () => prompt }),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    const read = JSON.parse(
+      result.status === "succeeded" ? ((result.output as { text: string }).text ?? "{}") : "{}",
+    ) as { length?: number; head?: string };
+    expect(read).toEqual({ length: prompt.length, head: "-xxx" });
+  }, 30_000);
+});
+
+/** Reads stdin to EOF, as `claude -p` does, and says what arrived in a result frame. */
+const STDIN_CLI = `
+const chunks = [];
+for await (const chunk of process.stdin) chunks.push(chunk);
+const text = Buffer.concat(chunks).toString("utf8");
+process.stdout.write(
+  JSON.stringify({
+    type: "result",
+    subtype: "success",
+    is_error: false,
+    result: JSON.stringify({ length: text.length, head: text.slice(0, 4) }),
+  }) + "\\n",
+);
+`;
 
 /**
  * What the harness is told at initialize.

@@ -304,6 +304,14 @@ before launch, since a file under that name would point the CLI away from the
 bridge. Codex is launched with `project_root_markers=[]`, so the
 workspace is its project root and no checkout above it is read.
 
+Each spec writes the turn's prompt to its CLI's stdin and closes it: `claude -p`
+with no prompt argument, `codex exec -` and dsh's headless `-` each read the
+prompt from there, and Pi takes it as an RPC frame on the same channel. A prompt
+passed as an argument fails the launch with `E2BIG` once it is past the 128 KiB
+the kernel allows one argument, and one that starts with `-` is read as an
+option; on stdin neither happens. How much a CLI reads there is its own limit:
+Claude Code takes up to 10 MB.
+
 Each spec hands its CLI the connection in the one form that CLI takes, and
 nothing else:
 
