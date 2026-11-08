@@ -41,6 +41,7 @@ import {
   SHAREDOS_MCP_TOKEN_VARIABLE,
   codexMcpConfig,
   codexMcpServerSettings,
+  type HarnessMcpConnection,
 } from "@aicoo/sharedos-mcp";
 import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
@@ -253,8 +254,11 @@ function executionRequest(escalation = false): ExecutionRequest {
 /**
  * A subprocess that behaves like an MCP-connected harness and nothing else.
  *
- * It reads its endpoint from the generated `.mcp.json`, exactly as a real CLI
- * does, then speaks the protocol over the same HTTP transport. Its output is
+ * It reads its endpoint, and any headers the entry names, from the generated
+ * config, exactly as a real CLI does, then speaks the protocol over the same HTTP
+ * transport. Header values are read the way Pi reads them, which is the one
+ * harness here whose file carries a header. Every response's HTTP status is
+ * kept, so a turn the bridge refused still reports what it saw. Its output is
  * Claude Code's `stream-json` framing, so the adapter's real protocol translation
  * reads the turn's outcome rather than a shape invented for the test.
  */
@@ -262,15 +266,29 @@ const FAKE_HARNESS = `
 import { readFileSync } from "node:fs";
 
 const config = JSON.parse(readFileSync(process.argv[2], "utf8"));
-const url = config.mcpServers.sharedos.url;
+const server = config.mcpServers.sharedos;
+const url = server.url;
 const calls = JSON.parse(process.argv[3]);
+
+// As Pi reads a header value: \`$$\` is one dollar sign, and \`$NAME\` or
+// \`\${NAME}\` is the named environment variable.
+const headers = Object.fromEntries(
+  Object.entries(server.headers ?? {}).map(([name, value]) => [
+    name,
+    value.replace(/\\$(\\$|\\{([A-Za-z_]\\w*)\\}|([A-Za-z_]\\w*))/gu, (_, kind, braced, bare) =>
+      kind === "$" ? "$" : (process.env[braced ?? bare] ?? ""),
+    ),
+  ]),
+);
+const statuses = [];
 
 async function rpc(id, method, params) {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "content-type": "application/json", accept: "application/json" },
+    headers: { ...headers, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
   });
+  statuses.push(response.status);
   return response.json();
 }
 
@@ -302,11 +320,12 @@ process.stdout.write(
     is_error: false,
     result: JSON.stringify({
       url,
-      protocolVersion: initialized.result.protocolVersion,
-      serverInfo: initialized.result.serverInfo,
-      instructions: initialized.result.instructions ?? null,
-      discovered: listed.result.tools.map((tool) => tool.name),
-      catalogHash: listed.result._meta["sharedos/catalogHash"],
+      statuses,
+      protocolVersion: initialized.result?.protocolVersion,
+      serverInfo: initialized.result?.serverInfo,
+      instructions: initialized.result?.instructions ?? null,
+      discovered: (listed.result?.tools ?? []).map((tool) => tool.name),
+      catalogHash: listed.result?._meta?.["sharedos/catalogHash"],
       calls: seen,
     }),
   }) + "\\n",
@@ -349,6 +368,36 @@ function fakeHarness(calls: readonly unknown[]): McpHarnessSpec {
   };
 }
 
+/**
+ * The stand-in, given the configuration `PI_MCP_HARNESS` generates and pointed
+ * at `.pi/mcp.json`, the file Pi itself reads. `emit` changes the connection the
+ * file is written from, so a test can hand it a file naming the wrong token.
+ */
+function piStandIn(
+  calls: readonly unknown[],
+  emit: (connection: HarnessMcpConnection) => HarnessMcpConnection = (connection) => connection,
+  seen: { workspace: string; path: string | undefined }[] = [],
+): McpHarnessSpec {
+  return {
+    ...fakeHarness(calls),
+    configFiles: (connection) => [
+      ...(PI_MCP_HARNESS.configFiles?.(emit(connection)) ?? []),
+      { harness: "fake", filename: "harness.mjs", contents: FAKE_HARNESS },
+    ],
+    launch: ({ workspace, configPaths }) => {
+      seen.push({ workspace, path: configPaths[".pi/mcp.json"] });
+      return {
+        command: process.execPath,
+        args: [
+          configPaths["harness.mjs"] as string,
+          configPaths[".pi/mcp.json"] as string,
+          JSON.stringify(calls),
+        ],
+      };
+    },
+  };
+}
+
 async function runTurn(
   calls: readonly unknown[],
   options: McpHarnessRuntimeOptions = {},
@@ -357,17 +406,14 @@ async function runTurn(
     SharedOSExecutorOptions,
     "defaultMaxSteps" | "defaultMaxToolCalls" | "defaultTimeoutMs"
   > = {},
+  spec: McpHarnessSpec = fakeHarness(calls),
 ): Promise<{
   status: string;
   output: Record<string, unknown>;
   metadata: Record<string, unknown>;
   events: readonly { type: string; data: unknown }[];
 }> {
-  const executor = new SharedOSExecutor(
-    kernel(),
-    createMcpHarnessRuntime(fakeHarness(calls), options),
-    limits,
-  );
+  const executor = new SharedOSExecutor(kernel(), createMcpHarnessRuntime(spec, options), limits);
   const result = await executor.execute(executionRequest(), execute);
   const text =
     result.status === "succeeded" && typeof result.output === "object" && result.output !== null
@@ -872,6 +918,29 @@ describe("the files a host writes for the turn", () => {
     }
     expect(launched).toBe(0);
   });
+
+  it("refuses Pi's generated .pi/mcp.json as a turn file, before anything is launched", async () => {
+    let launched = 0;
+    const pi = piStandIn([]);
+    const spec: McpHarnessSpec = {
+      ...pi,
+      launch: (context) => {
+        launched += 1;
+        return pi.launch(context);
+      },
+    };
+    // A name with a directory in it is compared by the path it resolves to,
+    // so no spelling of it gets past.
+    for (const filename of [".pi/mcp.json", "./.pi/mcp.json", ".pi/../.pi/mcp.json"]) {
+      const runtime = createMcpHarnessRuntime(spec, {
+        turnFiles: () => [{ filename, contents: "{}" }],
+      });
+      await expect(runtime.run(visible(), host, new AbortController().signal)).rejects.toThrow(
+        /configuration generated for fake/,
+      );
+    }
+    expect(launched).toBe(0);
+  });
 });
 
 describe("a harness runtime whose signal is aborted", () => {
@@ -1073,40 +1142,58 @@ describe("the Pi spec", () => {
     expect(launch.keepStdinOpen).toBe(true);
   });
 
+  it("is stamped as Pi's own MCP client, with no extension named", () => {
+    expect(PI_MCP_HARNESS.manifest.metadata).toMatchObject({
+      toolshare: "mcp",
+      mcpSupport: "native",
+    });
+    expect(PI_MCP_HARNESS.manifest.metadata).not.toHaveProperty("mcpExtension");
+  });
+
   it("writes its config to .pi/mcp.json in the workspace, where the bridge is reached", async () => {
     const seen: { workspace: string; path: string | undefined }[] = [];
     const calls = [{ name: "files.read", arguments: { path: GRANTED } }];
-    const spec: McpHarnessSpec = {
-      ...fakeHarness(calls),
-      configFiles: (connection) => [
-        ...(PI_MCP_HARNESS.configFiles?.(connection) ?? []),
-        { harness: "fake", filename: "harness.mjs", contents: FAKE_HARNESS },
-      ],
-      // The stand-in reads the server's URL from the file Pi would read.
-      launch: ({ workspace, configPaths }) => {
-        seen.push({ workspace, path: configPaths[".pi/mcp.json"] });
-        return {
-          command: process.execPath,
-          args: [
-            configPaths["harness.mjs"] as string,
-            configPaths[".pi/mcp.json"] as string,
-            JSON.stringify(calls),
-          ],
-        };
-      },
-    };
-    const executor = new SharedOSExecutor(kernel(), createMcpHarnessRuntime(spec));
-    const result = await executor.execute(executionRequest());
+    const turn = await runTurn(calls, {}, {}, {}, piStandIn(calls, undefined, seen));
 
-    expect(result.status).toBe("succeeded");
-    const [turn] = seen;
-    expect(turn?.path).toBe(join(turn?.workspace ?? "", ".pi", "mcp.json"));
-    const text = result.status === "succeeded" ? (result.output as { text: string }).text : "{}";
-    const output = JSON.parse(text) as Record<string, unknown>;
-    expect(output["discovered"]).toEqual(["files.read"]);
-    const [allowed] = output["calls"] as Record<string, unknown>[];
+    expect(turn.status).toBe("succeeded");
+    const [launched] = seen;
+    expect(launched?.path).toBe(join(launched?.workspace ?? "", ".pi", "mcp.json"));
+    expect(turn.output["discovered"]).toEqual(["files.read"]);
+    const [allowed] = turn.output["calls"] as Record<string, unknown>[];
     expect(allowed?.["isError"]).toBe(false);
-    expect(existsSync(turn?.workspace ?? "")).toBe(false);
+    expect(existsSync(launched?.workspace ?? "")).toBe(false);
+  }, 30_000);
+
+  it("reaches a bridge that wants a token with the header its file names, $ and all", async () => {
+    const calls = [{ name: "files.read", arguments: { path: GRANTED } }];
+    const turn = await runTurn(calls, { token: "tok$HOME${PATH}$$x" }, {}, {}, piStandIn(calls));
+
+    // The stand-in reads the header as Pi does, so a token written without its
+    // dollar signs doubled would arrive with the variables filled in.
+    expect(turn.output["statuses"]).toEqual([200, 200, 200]);
+    expect(turn.output["discovered"]).toEqual(["files.read"]);
+    const [allowed] = turn.output["calls"] as Record<string, unknown>[];
+    expect(allowed?.["isError"]).toBe(false);
+  }, 30_000);
+
+  it("is refused by the bridge, catalogue and all, when the header is wrong or missing", async () => {
+    const calls = [{ name: "files.read", arguments: { path: GRANTED } }];
+    const wrong = (connection: HarnessMcpConnection): HarnessMcpConnection => ({
+      ...connection,
+      token: "not-the-token",
+    });
+    const missing = (connection: HarnessMcpConnection): HarnessMcpConnection => ({
+      url: connection.url,
+      name: "sharedos",
+    });
+
+    for (const emit of [wrong, missing]) {
+      const turn = await runTurn(calls, { token: "the-token" }, {}, {}, piStandIn(calls, emit));
+
+      expect(turn.output["statuses"]).toEqual([401, 401, 401]);
+      expect(turn.output["discovered"]).toEqual([]);
+      expect(turn.events.filter(({ type }) => type === "tool.requested")).toHaveLength(0);
+    }
   }, 30_000);
 });
 
