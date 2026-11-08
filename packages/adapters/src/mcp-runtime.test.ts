@@ -35,7 +35,11 @@ import {
   type RuntimeHost,
   type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
-import { codexMcpConfig, codexMcpServerSettings } from "@aicoo/sharedos-mcp";
+import {
+  SHAREDOS_MCP_TOKEN_VARIABLE,
+  codexMcpConfig,
+  codexMcpServerSettings,
+} from "@aicoo/sharedos-mcp";
 import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
 import {
@@ -958,7 +962,7 @@ describe("the Codex spec", () => {
     expect(launch.cwd).toBe("/tmp/sharedos-test");
   });
 
-  it("keeps a bearer token off the command line", () => {
+  it("hands Codex a bridge token through its environment, not its command line", () => {
     const connection = { url: "http://127.0.0.1:41234/mcp", token: "secret-bridge-token" };
     const { context, ...request } = executionRequest();
     const launch = CODEX_MCP_HARNESS.launch({
@@ -980,9 +984,39 @@ describe("the Codex spec", () => {
       },
     });
 
-    expect(codexMcpServerSettings(connection).map(([key]) => key)).toContain("bearer_token");
-    expect(codexMcpConfig(connection)).toContain('bearer_token = "secret-bridge-token"');
+    // The override names the variable and the environment carries the token,
+    // which Codex from 0.46 requires and which keeps the token off a command
+    // line every local process can read.
+    expect(launch.args).toContain(
+      `mcp_servers.sharedos.bearer_token_env_var=${JSON.stringify(SHAREDOS_MCP_TOKEN_VARIABLE)}`,
+    );
+    expect(launch.env).toEqual({ [SHAREDOS_MCP_TOKEN_VARIABLE]: "secret-bridge-token" });
     expect(launch.args.some((arg) => arg.includes("secret-bridge-token"))).toBe(false);
+    expect(codexMcpConfig(connection)).not.toContain("secret-bridge-token");
+  });
+
+  it("sets no token variable for a bridge that takes none", () => {
+    const { context, ...request } = executionRequest();
+    const launch = CODEX_MCP_HARNESS.launch({
+      prompt: "read both files",
+      connection: { url: "http://127.0.0.1:41234/mcp" },
+      workspace: "/tmp/sharedos-test",
+      configPaths: {},
+      request: {
+        ...request,
+        context: {
+          actor: context.actor,
+          owner: context.owner,
+          namespaceId: context.namespaceId,
+          purpose: context.purpose,
+          traceId: context.traceId,
+          now: context.now,
+          reach: { status: "computed", reach: [] },
+        },
+      },
+    });
+
+    expect(launch.env).toBeUndefined();
     expect(launch.args.some((arg) => arg.includes("bearer_token"))).toBe(false);
   });
 });

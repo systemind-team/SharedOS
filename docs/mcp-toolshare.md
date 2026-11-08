@@ -307,12 +307,12 @@ workspace is its project root and no checkout above it is read.
 Each spec hands its CLI the connection in the one form that CLI takes, and
 nothing else:
 
-| Harness     | Form               | Shape                                          |
-| ----------- | ------------------ | ---------------------------------------------- |
-| Codex       | `-c` overrides     | `mcp_servers.sharedos.url`, `required=true`    |
-| Claude Code | `.mcp.json`        | `{"type":"http","url":…}`                      |
-| DeepSeek    | `cordis.patch.yml` | one `@deepseek-ai/dsh-mcp-client` plugin entry |
-| Pi          | `.mcp.json`        | `{"url":…,"lifecycle":"eager"}`                |
+| Harness     | Form               | Shape                                                                                                 |
+| ----------- | ------------------ | ----------------------------------------------------------------------------------------------------- |
+| Codex       | `-c` overrides     | `mcp_servers.sharedos.url`, `required=true`, and `bearer_token_env_var` when the bridge takes a token |
+| Claude Code | `.mcp.json`        | `{"type":"http","url":…}`                                                                             |
+| DeepSeek    | `cordis.patch.yml` | one `@deepseek-ai/dsh-mcp-client` plugin entry                                                        |
+| Pi          | `.mcp.json`        | `{"url":…,"lifecycle":"eager"}`                                                                       |
 
 The DeepSeek overlay must use dsh's `insert:` form. A bare `id:` entry _overrides_
 a plugin already in the tree and does not add one; dsh warns `patch: entry "..."
@@ -395,6 +395,12 @@ const http = await createStreamableHttpMcpServer({
     (await verifyExecutionToken(presented, hostSecret, { now, expect: { executionId } })).valid,
 });
 ```
+
+Pass the token as `McpHarnessRuntimeOptions.token` and each spec hands it to its
+CLI in the form that CLI takes: a header in Claude Code's and DeepSeek's
+configuration, Pi's `bearerToken`, and for Codex the environment variable
+`SHAREDOS_MCP_TOKEN` (`SHAREDOS_MCP_TOKEN_VARIABLE`), which the Codex override
+names as `bearer_token_env_var`.
 
 `canonicalActor` renders an `Address` as `<kind>:<id>` — `agent:agent-bob` —
 which is the one string form a token's `actor` takes; it is compared by

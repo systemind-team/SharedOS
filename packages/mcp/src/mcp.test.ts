@@ -34,6 +34,7 @@ import {
   claudeAgentSdkMcpOptions,
   claudeCodeMcpConfig,
   codexMcpConfig,
+  SHAREDOS_MCP_TOKEN_VARIABLE,
   declareToolPolicy,
   deepseekMcpConfig,
   harnessMcpConfigFile,
@@ -593,6 +594,17 @@ describe("harness configuration", () => {
     expect(harnessMcpConfigFile("pi", connection).filename).toBe(".mcp.json");
     expect(codexMcpConfig(connection)).toContain("required = true");
     expect(claudeAgentSdkMcpOptions(connection)["allowedTools"]).toEqual(["mcp__sharedos__*"]);
+  });
+
+  it("names the variable Codex reads a bridge token from, and never the token", () => {
+    // From Codex 0.46 an inline `bearer_token` stops the CLI before it starts.
+    const emitted = codexMcpConfig({ ...connection, token: "secret-bridge-token" });
+
+    expect(SHAREDOS_MCP_TOKEN_VARIABLE).toBe("SHAREDOS_MCP_TOKEN");
+    expect(emitted).toContain('bearer_token_env_var = "SHAREDOS_MCP_TOKEN"');
+    expect(emitted).not.toContain("secret-bridge-token");
+    expect(emitted).not.toMatch(/^bearer_token =/mu);
+    expect(codexMcpConfig(connection)).not.toContain("bearer_token");
   });
 
   it("adds the dsh plugin with `insert`, because a bare id only overrides one", () => {

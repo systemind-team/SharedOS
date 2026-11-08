@@ -252,6 +252,24 @@ the Agent SDK; `harnessToolAlias` reproduces the display name a harness will
 show. Pi's file is the shape `pi-mcp-adapter` reads, because Pi has no MCP client
 of its own; which extension a host installs is the host's choice.
 
+For a connection that carries a token, Codex's table names the variable the
+token is read from rather than the token:
+
+```toml
+[mcp_servers.sharedos]
+url = "http://127.0.0.1:53124/mcp"
+required = true
+default_tools_approval_mode = "approve"
+bearer_token_env_var = "SHAREDOS_MCP_TOKEN"
+```
+
+Start Codex with `SHAREDOS_MCP_TOKEN` set to the token; the name is exported
+as `SHAREDOS_MCP_TOKEN_VARIABLE`. Codex refuses an inline `bearer_token` from
+0.46 ("bearer_token is not supported for streamable_http") and does not start,
+and a token named by variable is on no command line and in no file.
+`CODEX_MCP_HARNESS` passes the same settings as `-c` overrides and sets the
+variable in the CLI's environment.
+
 ## Escalation over MCP
 
 A turn driven over MCP can end by asking a human to decide, the same as one

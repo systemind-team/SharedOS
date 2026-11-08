@@ -52,13 +52,27 @@ export interface HarnessMcpConfigFile {
 }
 
 /**
+ * The environment variable Codex reads the bridge's bearer token from.
+ *
+ * Codex takes an MCP server's token by naming a variable, as
+ * `bearer_token_env_var`, and never as a value: from Codex 0.46 an inline
+ * `bearer_token` is refused ("bearer_token is not supported for
+ * streamable_http") and the CLI does not start. Named once here so the
+ * emitted configuration, the launch that sets the variable and the docs
+ * cannot name different ones.
+ */
+export const SHAREDOS_MCP_TOKEN_VARIABLE = "SHAREDOS_MCP_TOKEN";
+
+/**
  * The settings a Codex MCP server entry carries, as key and TOML value.
  *
- * One list serves both forms Codex accepts -- the `[mcp_servers.<name>]` table
+ * One list serves both forms Codex accepts: the `[mcp_servers.<name>]` table
  * {@link codexMcpConfig} emits, and the `-c mcp_servers.<name>.<key>=<value>`
- * overrides a launch passes -- so the two cannot disagree. `bearer_token`,
- * present only when the connection carries one, belongs to the file alone: a
- * launch keeps it off the command line.
+ * overrides a launch passes, so the two cannot disagree. When the connection
+ * carries a token the entry names {@link SHAREDOS_MCP_TOKEN_VARIABLE} as
+ * `bearer_token_env_var`, and whoever starts Codex sets that variable to the
+ * token. The token itself is in neither form, so it is on no command line and
+ * in no file.
  *
  * `required = true` is deliberate. A Codex run whose SharedOS server failed to
  * start should not quietly continue with only its own tools -- that run would
@@ -86,12 +100,16 @@ export function codexMcpServerSettings(
     ["default_tools_approval_mode", JSON.stringify("approve")],
   ];
   if (connection.token !== undefined) {
-    settings.push(["bearer_token", JSON.stringify(connection.token)]);
+    settings.push(["bearer_token_env_var", JSON.stringify(SHAREDOS_MCP_TOKEN_VARIABLE)]);
   }
   return settings;
 }
 
-/** Codex's `config.toml` fragment: {@link codexMcpServerSettings} as a table. */
+/**
+ * Codex's `config.toml` fragment: {@link codexMcpServerSettings} as a table.
+ * For a connection with a token, Codex is started with
+ * {@link SHAREDOS_MCP_TOKEN_VARIABLE} set to it.
+ */
 export function codexMcpConfig(connection: HarnessMcpConnection): string {
   const name = mcpServerName(connection);
   const lines = [
