@@ -2075,7 +2075,7 @@ Defined in: [packages/core/src/tool-registry.ts:46](https://github.com/systemind
 
 ### TrustedAuthorityResolver
 
-Defined in: [packages/core/src/authority.ts:217](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L217)
+Defined in: [packages/core/src/authority.ts:211](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L211)
 
 Loads and validates authority for one access context.
 
@@ -2088,7 +2088,7 @@ against a partially trusted authority set.
 
 > **new TrustedAuthorityResolver**(`source`): [`TrustedAuthorityResolver`](#trustedauthorityresolver)
 
-Defined in: [packages/core/src/authority.ts:222](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L222)
+Defined in: [packages/core/src/authority.ts:216](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L216)
 
 ###### Parameters
 
@@ -2106,7 +2106,7 @@ Defined in: [packages/core/src/authority.ts:222](https://github.com/systemind-te
 
 > **resolve**(`context`, `signal`): `Promise`\<[`AuthorityResolution`](#authorityresolution)>\>
 
-Defined in: [packages/core/src/authority.ts:229](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L229)
+Defined in: [packages/core/src/authority.ts:223](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L223)
 
 ###### Parameters
 
@@ -2295,7 +2295,7 @@ Defined in: [packages/core/src/audit.ts:12](https://github.com/systemind-team/Sh
 
 ### AuthoritySnapshot
 
-Defined in: [packages/core/src/authority.ts:159](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L159)
+Defined in: [packages/core/src/authority.ts:153](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L153)
 
 A content identifier for exactly the authority one decision was made against.
 
@@ -2310,23 +2310,23 @@ resolves its own.
 
 | Property                                      | Modifier   | Type                | Description                                                          | Defined in                                                                                                                     |
 | --------------------------------------------- | ---------- | ------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-grantcount"></a> `grantCount` | `readonly` | `number`            | -                                                                    | [packages/core/src/authority.ts:163](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L163) |
-| <a id="property-grantids"></a> `grantIds`     | `readonly` | readonly `string`[] | -                                                                    | [packages/core/src/authority.ts:162](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L162) |
-| <a id="property-hash"></a> `hash`             | `readonly` | `string`            | SHA-256 over the canonical, order-independent form of the grant set. | [packages/core/src/authority.ts:161](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L161) |
-| <a id="property-loadedat"></a> `loadedAt`     | `readonly` | `string`            | -                                                                    | [packages/core/src/authority.ts:164](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L164) |
+| <a id="property-grantcount"></a> `grantCount` | `readonly` | `number`            | -                                                                    | [packages/core/src/authority.ts:157](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L157) |
+| <a id="property-grantids"></a> `grantIds`     | `readonly` | readonly `string`[] | -                                                                    | [packages/core/src/authority.ts:156](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L156) |
+| <a id="property-hash"></a> `hash`             | `readonly` | `string`            | SHA-256 over the canonical, order-independent form of the grant set. | [packages/core/src/authority.ts:155](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L155) |
+| <a id="property-loadedat"></a> `loadedAt`     | `readonly` | `string`            | -                                                                    | [packages/core/src/authority.ts:158](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L158) |
 
 ---
 
 ### AuthorityUnavailableDetail
 
-Defined in: [packages/core/src/authority.ts:198](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L198)
+Defined in: [packages/core/src/authority.ts:192](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L192)
 
 #### Properties
 
 | Property                                | Modifier   | Type                                        | Defined in                                                                                                                     |
 | --------------------------------------- | ---------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-grantid"></a> `grantId` | `readonly` | `string`                                    | [packages/core/src/authority.ts:199](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L199) |
-| <a id="property-reason"></a> `reason`   | `readonly` | [`GrantScopeMismatch`](#grantscopemismatch) | [packages/core/src/authority.ts:200](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L200) |
+| <a id="property-grantid"></a> `grantId` | `readonly` | `string`                                    | [packages/core/src/authority.ts:193](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L193) |
+| <a id="property-reason"></a> `reason`   | `readonly` | [`GrantScopeMismatch`](#grantscopemismatch) | [packages/core/src/authority.ts:194](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L194) |
 
 ---
 
@@ -2537,7 +2537,7 @@ Defined in: [packages/core/src/tool-registry.ts:40](https://github.com/systemind
 
 ### DelegationChainResolver
 
-Defined in: [packages/core/src/delegation.ts:30](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L30)
+Defined in: [packages/core/src/delegation.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L27)
 
 The trusted lookup for ancestors of a derived grant.
 
@@ -2552,7 +2552,7 @@ throw rather than return a partial or stale ancestor.
 
 > **resolve**(`namespaceId`, `grantId`): `Promise`\<\{ `capabilities`: `object`[]; `constraints`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `issuedAt`: `string`; `issuer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `parentGrantId?`: `string`; `revokedAt?`: `string`; `subject`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \} \| `undefined`>\>
 
-Defined in: [packages/core/src/delegation.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L31)
+Defined in: [packages/core/src/delegation.ts:28](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L28)
 
 ###### Parameters
 
@@ -2569,32 +2569,32 @@ Defined in: [packages/core/src/delegation.ts:31](https://github.com/systemind-te
 
 ### DelegationValidationOptions
 
-Defined in: [packages/core/src/delegation.ts:66](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L66)
+Defined in: [packages/core/src/delegation.ts:63](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L63)
 
 #### Properties
 
 | Property                                               | Modifier   | Type                                                  | Description                                                                                                                                                                                                                                                                                       | Defined in                                                                                                                     |
 | ------------------------------------------------------ | ---------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-admittedat"></a> `admittedAt?`         | `readonly` | `number`                                              | The instant the turn's authority was resolved, when it is not `now`. An ancestor is subject to the same split as the grant that names it: its expiry is observed at `now`, everything else at the instant the turn was admitted. Defaults to `now`, which decides the whole chain at one instant. | [packages/core/src/delegation.ts:76](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L76) |
-| <a id="property-maxchainlength"></a> `maxChainLength?` | `readonly` | `number`                                              | -                                                                                                                                                                                                                                                                                                 | [packages/core/src/delegation.ts:68](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L68) |
-| <a id="property-resolver"></a> `resolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | -                                                                                                                                                                                                                                                                                                 | [packages/core/src/delegation.ts:67](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L67) |
+| <a id="property-admittedat"></a> `admittedAt?`         | `readonly` | `number`                                              | The instant the turn's authority was resolved, when it is not `now`. An ancestor is subject to the same split as the grant that names it: its expiry is observed at `now`, everything else at the instant the turn was admitted. Defaults to `now`, which decides the whole chain at one instant. | [packages/core/src/delegation.ts:77](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L77) |
+| <a id="property-maxchainlength"></a> `maxChainLength?` | `readonly` | `number`                                              | The longest ancestor chain walked before failing closed. Unset unless the host sets it, and unset is no limit; a cycle still fails as `chain_cycle`.                                                                                                                                              | [packages/core/src/delegation.ts:69](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L69) |
+| <a id="property-resolver"></a> `resolver?`             | `readonly` | [`DelegationChainResolver`](#delegationchainresolver) | -                                                                                                                                                                                                                                                                                                 | [packages/core/src/delegation.ts:64](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L64) |
 
 ---
 
 ### DeriveGrantRequest
 
-Defined in: [packages/core/src/delegation.ts:292](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L292)
+Defined in: [packages/core/src/delegation.ts:293](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L293)
 
 #### Properties
 
 | Property                                          | Modifier   | Type                                                                                                                                                                                                       | Description                                                                      | Defined in                                                                                                                       |
 | ------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-capabilities"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The subset being passed on. Must be within the parent, capability by capability. | [packages/core/src/delegation.ts:298](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L298) |
-| <a id="property-constraints"></a> `constraints?`  | `readonly` | `Omit`\<\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, `"delegationDepth"`\> & `object`                               | -                                                                                | [packages/core/src/delegation.ts:299](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L299) |
-| <a id="property-id-1"></a> `id`                   | `readonly` | `string`                                                                                                                                                                                                   | Identifier for the derived grant. Must be unique within the namespace.           | [packages/core/src/delegation.ts:294](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L294) |
-| <a id="property-issuedat"></a> `issuedAt`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                | [packages/core/src/delegation.ts:302](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L302) |
-| <a id="property-metadata-1"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                | [packages/core/src/delegation.ts:303](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L303) |
-| <a id="property-subject"></a> `subject`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who receives the derived authority.                                              | [packages/core/src/delegation.ts:296](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L296) |
+| <a id="property-capabilities"></a> `capabilities` | `readonly` | readonly `object`[]                                                                                                                                                                                        | The subset being passed on. Must be within the parent, capability by capability. | [packages/core/src/delegation.ts:299](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L299) |
+| <a id="property-constraints"></a> `constraints?`  | `readonly` | `Omit`\<\{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}, `"delegationDepth"`\> & `object`                               | -                                                                                | [packages/core/src/delegation.ts:300](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L300) |
+| <a id="property-id-1"></a> `id`                   | `readonly` | `string`                                                                                                                                                                                                   | Identifier for the derived grant. Must be unique within the namespace.           | [packages/core/src/delegation.ts:295](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L295) |
+| <a id="property-issuedat"></a> `issuedAt`         | `readonly` | `string`                                                                                                                                                                                                   | -                                                                                | [packages/core/src/delegation.ts:303](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L303) |
+| <a id="property-metadata-1"></a> `metadata?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                                                                                                                                                           | -                                                                                | [packages/core/src/delegation.ts:304](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L304) |
+| <a id="property-subject"></a> `subject`           | `readonly` | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | Who receives the derived authority.                                              | [packages/core/src/delegation.ts:297](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L297) |
 
 ---
 
@@ -2659,7 +2659,7 @@ Defined in: [packages/core/src/authorization.ts:85](https://github.com/systemind
 
 ### GrantSource
 
-Defined in: [packages/core/src/authority.ts:68](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L68)
+Defined in: [packages/core/src/authority.ts:65](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L65)
 
 The trusted boundary that loads authoritative grants.
 
@@ -2679,7 +2679,7 @@ fail-closed denial; it never falls back to a cached or caller-supplied set.
 
 > **load**(`context`, `signal`): `Promise`\<readonly `object`[]\>
 
-Defined in: [packages/core/src/authority.ts:69](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L69)
+Defined in: [packages/core/src/authority.ts:66](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L66)
 
 ###### Parameters
 
@@ -2914,7 +2914,7 @@ Defined in: [packages/core/src/kernel.ts:189](https://github.com/systemind-team/
 
 ### LoadedPolicy
 
-Defined in: [packages/core/src/authority.ts:124](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L124)
+Defined in: [packages/core/src/authority.ts:121](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L121)
 
 What a [PolicySource](#policysource) loaded: the policy, and the source's name for it.
 
@@ -2938,8 +2938,8 @@ it was decided against, the way `authorityHash` pins it to the grant set.
 
 | Property                                | Modifier   | Type     | Defined in                                                                                                                     |
 | --------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-policy"></a> `policy`   | `readonly` | `Policy` | [packages/core/src/authority.ts:125](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L125) |
-| <a id="property-version"></a> `version` | `readonly` | `string` | [packages/core/src/authority.ts:126](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L126) |
+| <a id="property-policy"></a> `policy`   | `readonly` | `Policy` | [packages/core/src/authority.ts:122](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L122) |
+| <a id="property-version"></a> `version` | `readonly` | `string` | [packages/core/src/authority.ts:123](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L123) |
 
 ---
 
@@ -3112,7 +3112,7 @@ Defined in: [packages/core/src/message-service.ts:27](https://github.com/systemi
 
 ### PolicySource
 
-Defined in: [packages/core/src/authority.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L107)
+Defined in: [packages/core/src/authority.ts:104](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L104)
 
 The trusted boundary that loads host policy, once per turn, beside the grant
 set.
@@ -3146,7 +3146,7 @@ the same way.
 
 > **load**(`context`, `signal`): `Promise`\<[`LoadedPolicy`](#loadedpolicy)\<`Policy`>>\>\>
 
-Defined in: [packages/core/src/authority.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L108)
+Defined in: [packages/core/src/authority.ts:105](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L105)
 
 ###### Parameters
 
@@ -3318,7 +3318,7 @@ One call an enforcement boundary refused without invoking anything.
 
 ### ResolvedAuthority
 
-Defined in: [packages/core/src/authority.ts:175](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L175)
+Defined in: [packages/core/src/authority.ts:169](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L169)
 
 An access context together with the authority a trusted source produced for
 it.
@@ -3331,7 +3331,7 @@ message transport, or runtime that expects an `AccessContext`.
 
 | Property                                       | Modifier   | Type                                                                                                                                                                                                       | Description                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                                     |
 | ---------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-context"></a> `context`        | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                           | [packages/core/src/authority.ts:176](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L176) |
+| <a id="property-context"></a> `context`        | `readonly` | `object`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                           | [packages/core/src/authority.ts:170](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L170) |
 | `context.actor`                                | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                           | packages/contracts/dist/access.d.ts:151                                                                                        |
 | `context.authority`                            | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                           | packages/contracts/dist/access.d.ts:164                                                                                        |
 | `context.enabledToolNamespaces`                | `public`   | `string`[]                                                                                                                                                                                                 | -                                                                                                                                                                                                                                                                                                                           | packages/contracts/dist/access.d.ts:177                                                                                        |
@@ -3341,9 +3341,9 @@ message transport, or runtime that expects an `AccessContext`.
 | `context.owner`                                | `public`   | \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \} | -                                                                                                                                                                                                                                                                                                                           | packages/contracts/dist/access.d.ts:135                                                                                        |
 | `context.purpose`                              | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                           | packages/contracts/dist/access.d.ts:149                                                                                        |
 | `context.traceId`                              | `public`   | `string`                                                                                                                                                                                                   | -                                                                                                                                                                                                                                                                                                                           | packages/contracts/dist/access.d.ts:150                                                                                        |
-| <a id="property-grants"></a> `grants`          | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                                                                                                                                                                                                                                                                           | [packages/core/src/authority.ts:177](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L177) |
-| <a id="property-hostpolicy"></a> `hostPolicy?` | `readonly` | [`PolicyResolution`](#policyresolution)\<`unknown`\>                                                                                                                                                       | The host policy loaded for this turn, when a [PolicySource](#policysource) is installed. Absent when none is, and the ceiling -- if one is installed -- decides over state it closes over. Not part of [AuthoritySnapshot](#authoritysnapshot): policy is not authority, and an opaque value has no canonical form to hash. | [packages/core/src/authority.ts:185](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L185) |
-| <a id="property-snapshot"></a> `snapshot`      | `readonly` | [`AuthoritySnapshot`](#authoritysnapshot)                                                                                                                                                                  | -                                                                                                                                                                                                                                                                                                                           | [packages/core/src/authority.ts:178](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L178) |
+| <a id="property-grants"></a> `grants`          | `readonly` | readonly `object`[]                                                                                                                                                                                        | -                                                                                                                                                                                                                                                                                                                           | [packages/core/src/authority.ts:171](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L171) |
+| <a id="property-hostpolicy"></a> `hostPolicy?` | `readonly` | [`PolicyResolution`](#policyresolution)\<`unknown`\>                                                                                                                                                       | The host policy loaded for this turn, when a [PolicySource](#policysource) is installed. Absent when none is, and the ceiling -- if one is installed -- decides over state it closes over. Not part of [AuthoritySnapshot](#authoritysnapshot): policy is not authority, and an opaque value has no canonical form to hash. | [packages/core/src/authority.ts:179](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L179) |
+| <a id="property-snapshot"></a> `snapshot`      | `readonly` | [`AuthoritySnapshot`](#authoritysnapshot)                                                                                                                                                                  | -                                                                                                                                                                                                                                                                                                                           | [packages/core/src/authority.ts:172](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L172) |
 
 ---
 
@@ -3714,15 +3714,15 @@ Defined in: packages/contracts/dist/audit.d.ts:30
 
 > **AuthorityResolution** = \{ `authority`: [`ResolvedAuthority`](#resolvedauthority); `status`: `"resolved"`; \} \| \{ `code`: [`AuthorityUnavailableCode`](#authorityunavailablecode); `detail?`: [`AuthorityUnavailableDetail`](#authorityunavailabledetail); `status`: `"unavailable"`; \}
 
-Defined in: [packages/core/src/authority.ts:203](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L203)
+Defined in: [packages/core/src/authority.ts:197](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L197)
 
 ---
 
 ### AuthorityUnavailableCode
 
-> **AuthorityUnavailableCode** = `"grant_source_failed"` \| `"invalid_grant_material"` \| `"grant_scope_mismatch"` \| `"grant_limit_exceeded"`
+> **AuthorityUnavailableCode** = `"grant_source_failed"` \| `"invalid_grant_material"` \| `"grant_scope_mismatch"`
 
-Defined in: [packages/core/src/authority.ts:143](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L143)
+Defined in: [packages/core/src/authority.ts:140](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L140)
 
 Why authority could not be established for one decision.
 
@@ -3773,7 +3773,7 @@ containment check has nothing to say about them.
 
 > **DelegationRefusal** = `"empty_capabilities"` \| `"id_collides_with_parent"` \| `"bounded_parent_not_delegable"` \| `"parent_not_delegable"` \| `"depth_exhausted"` \| `"capability_not_within_parent"` \| `"purpose_not_within_parent"` \| `"window_not_within_parent"` \| `"issued_before_parent"`
 
-Defined in: [packages/core/src/delegation.ts:277](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L277)
+Defined in: [packages/core/src/delegation.ts:278](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L278)
 
 Why a delegation was refused at the point it was issued.
 
@@ -3783,7 +3783,7 @@ Why a delegation was refused at the point it was issued.
 
 > **DelegationUnverifiedCode** = `"resolver_unavailable"` \| `"parent_not_found"` \| `"resolver_failed"`
 
-Defined in: [packages/core/src/delegation.ts:48](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L48)
+Defined in: [packages/core/src/delegation.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L45)
 
 The chain could not be established, which is never treated as valid.
 
@@ -3793,7 +3793,7 @@ The chain could not be established, which is never treated as valid.
 
 > **DelegationValidation** = \{ `chain`: readonly `string`[]; `status`: `"valid"`; \} \| \{ `chain`: readonly `string`[]; `code`: [`DelegationViolationCode`](#delegationviolationcode); `grantId`: `string`; `status`: `"invalid"`; \} \| \{ `chain`: readonly `string`[]; `code`: [`DelegationUnverifiedCode`](#delegationunverifiedcode); `grantId`: `string`; `status`: `"unverified"`; \}
 
-Defined in: [packages/core/src/delegation.ts:51](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L51)
+Defined in: [packages/core/src/delegation.ts:48](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L48)
 
 ---
 
@@ -3801,7 +3801,7 @@ Defined in: [packages/core/src/delegation.ts:51](https://github.com/systemind-te
 
 > **DelegationViolationCode** = `"delegation_not_permitted"` \| `"delegation_depth_exceeded"` \| `"bounded_parent_not_delegable"` \| `"issuer_not_parent_subject"` \| `"namespace_mismatch"` \| `"parent_inactive"` \| `"capability_widened"` \| `"constraints_widened"` \| `"chain_cycle"` \| `"chain_too_long"`
 
-Defined in: [packages/core/src/delegation.ts:35](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L35)
+Defined in: [packages/core/src/delegation.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L32)
 
 A structural rule the presented chain broke.
 
@@ -3811,7 +3811,7 @@ A structural rule the presented chain broke.
 
 > **DeriveGrantResult** = \{ `grant`: [`CapabilityGrant`](sharedos-contracts.md#capabilitygrant); `ok`: `true`; \} \| \{ `ok`: `false`; `reason`: [`DelegationRefusal`](#delegationrefusal); \}
 
-Defined in: [packages/core/src/delegation.ts:288](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L288)
+Defined in: [packages/core/src/delegation.ts:289](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L289)
 
 ---
 
@@ -3833,7 +3833,7 @@ which of its grants nearly matched, and how, is the host's to see.
 
 > **GrantScopeMismatch** = `"namespace"` \| `"subject"` \| `"issuer"`
 
-Defined in: [packages/core/src/authority.ts:196](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L196)
+Defined in: [packages/core/src/authority.ts:190](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L190)
 
 Which of the three scope conditions a loaded grant failed.
 
@@ -3867,7 +3867,7 @@ carried.
 
 > **HostPolicy** = `unknown`
 
-Defined in: [packages/core/src/authority.ts:84](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L84)
+Defined in: [packages/core/src/authority.ts:81](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L81)
 
 What a turn's host policy is, to SharedOS: nothing it reads.
 
@@ -3886,7 +3886,7 @@ what audit records -- never the policy.
 
 > **PolicyResolution**\<`Policy`> \> = \{ `policy`: `Policy`; `status`: `"loaded"`; `version`: `string`; \} \| \{ `status`: `"unavailable"`; \}
 
-Defined in: [packages/core/src/authority.ts:138](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L138)
+Defined in: [packages/core/src/authority.ts:135](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L135)
 
 The policy one turn decides against, or the fact that it could not be
 loaded.
@@ -4025,7 +4025,7 @@ Defined in: [packages/core/src/spans.ts:166](https://github.com/systemind-team/S
 
 > **TurnAuthorityScope** = `object`
 
-Defined in: [packages/core/src/authority.ts:46](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L46)
+Defined in: [packages/core/src/authority.ts:43](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L43)
 
 A handle on one turn's frozen authority.
 
@@ -4045,7 +4045,7 @@ any later operation that presents the same turn identity.
 
 > `readonly` `optional` **code?**: [`AuthorityUnavailableCode`](#authorityunavailablecode)
 
-Defined in: [packages/core/src/authority.ts:51](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L51)
+Defined in: [packages/core/src/authority.ts:48](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L48)
 
 Present when it was not.
 
@@ -4053,7 +4053,7 @@ Present when it was not.
 
 > `readonly` `optional` **snapshot?**: [`AuthoritySnapshot`](#authoritysnapshot)
 
-Defined in: [packages/core/src/authority.ts:49](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L49)
+Defined in: [packages/core/src/authority.ts:46](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L46)
 
 Present when authority was established.
 
@@ -4061,7 +4061,7 @@ Present when authority was established.
 
 > `readonly` **status**: `"resolved"` \| `"unavailable"`
 
-Defined in: [packages/core/src/authority.ts:47](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L47)
+Defined in: [packages/core/src/authority.ts:44](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L44)
 
 #### Methods
 
@@ -4069,7 +4069,7 @@ Defined in: [packages/core/src/authority.ts:47](https://github.com/systemind-tea
 
 > **close**(): `void`
 
-Defined in: [packages/core/src/authority.ts:52](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L52)
+Defined in: [packages/core/src/authority.ts:49](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L49)
 
 ###### Returns
 
@@ -4123,16 +4123,6 @@ was delivered rather than _what_ it contains: `executionId`, the harness-side
 alias, the runtime name, the transport. Two harnesses handed the same tools
 must hash identically, or the hash cannot be used to prove they were compared
 on equal terms -- which is the only reason it exists.
-
----
-
-### DEFAULT\_MAX\_DELEGATION\_CHAIN\_LENGTH
-
-> `const` **DEFAULT\_MAX\_DELEGATION\_CHAIN\_LENGTH**: `16` = `16`
-
-Defined in: [packages/core/src/delegation.ts:20](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L20)
-
-The longest ancestor chain SharedOS will walk before failing closed.
 
 ---
 
@@ -4194,16 +4184,6 @@ Fail-closed behaviour makes these look like denials at the call site. An
 experiment must separate them from expected permission denials before
 computing any rate, so they are named once here and marked `failClosed` in
 the audit record.
-
----
-
-### MAX\_RESOLVED\_GRANTS
-
-> `const` **MAX\_RESOLVED\_GRANTS**: `256` = `256`
-
-Defined in: [packages/core/src/authority.ts:8](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L8)
-
-The largest authority set SharedOS will evaluate for one decision.
 
 ---
 
@@ -4792,7 +4772,7 @@ Defined in: [packages/core/src/authorization.ts:973](https://github.com/systemin
 
 > **capabilityIsWithin**(`capability`, `ancestor`, `context`): `boolean`
 
-Defined in: [packages/core/src/delegation.ts:212](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L212)
+Defined in: [packages/core/src/delegation.ts:213](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L213)
 
 True when every access `capability` permits is also permitted by `ancestor`.
 
@@ -5110,7 +5090,7 @@ to report about which field failed.
 
 > **deriveGrant**(`parent`, `request`): [`DeriveGrantResult`](#derivegrantresult)
 
-Defined in: [packages/core/src/delegation.ts:371](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L371)
+Defined in: [packages/core/src/delegation.ts:372](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L372)
 
 Derive a narrower grant from one the delegator already holds.
 
@@ -5974,7 +5954,7 @@ Defined in: [packages/core/src/resource-registry.ts:50](https://github.com/syste
 
 > **turnAuthorityKey**(`context`): `string`
 
-Defined in: [packages/core/src/authority.ts:21](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L21)
+Defined in: [packages/core/src/authority.ts:18](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/authority.ts#L18)
 
 The identity a turn's frozen authority is held against.
 
@@ -6011,7 +5991,7 @@ shares those fields.
 
 > **validateDelegationChain**(`grant`, `context`, `now`, `options?`): `Promise`\<[`DelegationValidation`](#delegationvalidation)>\>
 
-Defined in: [packages/core/src/delegation.ts:103](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L103)
+Defined in: [packages/core/src/delegation.ts:104](https://github.com/systemind-team/SharedOS/blob/main/packages/core/src/delegation.ts#L104)
 
 Validate the complete ancestor chain of one grant.
 

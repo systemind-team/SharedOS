@@ -29,14 +29,14 @@ SharedOS is currently a `1.0.0` preview.
 
 ### StandardOsProviders
 
-Defined in: [index.ts:211](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L211)
+Defined in: [index.ts:210](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L210)
 
 #### Properties
 
 | Property                             | Modifier   | Type                                                    | Defined in                                                                                         |
 | ------------------------------------ | ---------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:212](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L212) |
-| <a id="property-repo"></a> `repo?`   | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:213](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L213) |
+| <a id="property-files"></a> `files?` | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:211](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L211) |
+| <a id="property-repo"></a> `repo?`   | `readonly` | [`ResourceProvider`](sharedos-core.md#resourceprovider) | [index.ts:212](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L212) |
 
 ## Type Aliases
 
@@ -132,7 +132,7 @@ Defined in: [index.ts:140](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoCommitArguments** = `z.infer`\<_typeof_ [`RepoCommitArgumentsSchema`](#repocommitargumentsschema)>\>
 
-Defined in: [index.ts:199](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L199)
+Defined in: [index.ts:198](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L198)
 
 ---
 
@@ -140,7 +140,7 @@ Defined in: [index.ts:199](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoDiffArguments** = `z.infer`\<_typeof_ [`RepoDiffArgumentsSchema`](#repodiffargumentsschema)>\>
 
-Defined in: [index.ts:181](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L181)
+Defined in: [index.ts:180](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L180)
 
 ---
 
@@ -148,7 +148,7 @@ Defined in: [index.ts:181](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoLogArguments** = `z.infer`\<_typeof_ [`RepoLogArgumentsSchema`](#repologargumentsschema)>\>
 
-Defined in: [index.ts:189](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L189)
+Defined in: [index.ts:188](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L188)
 
 ---
 
@@ -164,7 +164,7 @@ Defined in: [index.ts:153](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoStageArguments** = `z.infer`\<_typeof_ [`RepoStageArgumentsSchema`](#repostageargumentsschema)>\>
 
-Defined in: [index.ts:194](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L194)
+Defined in: [index.ts:193](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L193)
 
 ---
 
@@ -172,7 +172,7 @@ Defined in: [index.ts:194](https://github.com/systemind-team/SharedOS/blob/main/
 
 > **RepoStatusArguments** = `z.infer`\<_typeof_ [`RepoStatusArgumentsSchema`](#repostatusargumentsschema)>\>
 
-Defined in: [index.ts:172](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L172)
+Defined in: [index.ts:171](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L171)
 
 ## Variables
 
@@ -296,7 +296,7 @@ ADR 0024.
 
 > `const` **RepoCommitArgumentsSchema**: `ZodObject`\<\{ `message`: `ZodEffects`\<`ZodString`, `string`, `string`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `message`: `string`; `path`: `string`[]; \}, \{ `message`: `string`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:196](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L196)
+Defined in: [index.ts:195](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L195)
 
 ---
 
@@ -304,7 +304,7 @@ Defined in: [index.ts:196](https://github.com/systemind-team/SharedOS/blob/main/
 
 > `const` **RepoDiffArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `pathspec`: `ZodOptional`\<`ZodArray`\<`ZodArray`\<`ZodString`, `"many"`>\>, `"many"`>>\>\>; `staged`: `ZodDefault`\<`ZodBoolean`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; `pathspec?`: `string`[][]; `staged`: `boolean`; \}, \{ `path`: `string`[]; `pathspec?`: `string`[][]; `staged?`: `boolean`; \}\>
 
-Defined in: [index.ts:174](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L174)
+Defined in: [index.ts:173](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L173)
 
 ---
 
@@ -312,7 +312,7 @@ Defined in: [index.ts:174](https://github.com/systemind-team/SharedOS/blob/main/
 
 > `const` **RepoLogArgumentsSchema**: `ZodObject`\<\{ `maxCount`: `ZodOptional`\<`ZodNumber`>\>; `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `maxCount?`: `number`; `path`: `string`[]; \}, \{ `maxCount?`: `number`; `path`: `string`[]; \}\>
 
-Defined in: [index.ts:183](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L183)
+Defined in: [index.ts:182](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L182)
 
 ---
 
@@ -337,7 +337,7 @@ authorization boundary. See ADR 0024.
 
 > `const` **RepoStageArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; `pathspec`: `ZodArray`\<`ZodArray`\<`ZodString`, `"many"`>\>, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; `pathspec`: `string`[][]; \}, \{ `path`: `string`[]; `pathspec`: `string`[][]; \}\>
 
-Defined in: [index.ts:191](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L191)
+Defined in: [index.ts:190](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L190)
 
 ---
 
@@ -345,7 +345,7 @@ Defined in: [index.ts:191](https://github.com/systemind-team/SharedOS/blob/main/
 
 > `const` **RepoStatusArgumentsSchema**: `ZodObject`\<\{ `path`: `ZodArray`\<`ZodString`, `"many"`>\>; \}, `"strict"`, `ZodTypeAny`, \{ `path`: `string`[]; \}, \{ `path`: `string`[]; \}\>
 
-Defined in: [index.ts:171](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L171)
+Defined in: [index.ts:170](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L170)
 
 ---
 
@@ -361,7 +361,7 @@ Defined in: [index.ts:34](https://github.com/systemind-team/SharedOS/blob/main/p
 
 > **createFileTools**(`provider`): readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
-Defined in: [index.ts:239](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L239)
+Defined in: [index.ts:238](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L238)
 
 Portable file tools over one host-owned provider.
 
@@ -385,7 +385,7 @@ readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
 > **createRepoTools**(`provider`): readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
-Defined in: [index.ts:473](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L473)
+Defined in: [index.ts:472](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L472)
 
 The vetted Git subset over one host-owned provider, beside the file tools.
 
@@ -419,7 +419,7 @@ readonly [`ToolHandler`](sharedos-core.md#toolhandler)[]
 
 > **registerStandardOsTools**(`kernel`, `providers`): `void`
 
-Defined in: [index.ts:216](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L216)
+Defined in: [index.ts:215](https://github.com/systemind-team/SharedOS/blob/main/packages/os/src/index.ts#L215)
 
 #### Parameters
 

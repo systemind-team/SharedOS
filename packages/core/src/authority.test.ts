@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AccessContext, CapabilityGrant, ResourceRef } from "@aicoo/sharedos-contracts";
 
 import type { AuditEvent } from "./audit.js";
-import { type GrantSource, MAX_RESOLVED_GRANTS, TrustedAuthorityResolver } from "./authority.js";
+import { type GrantSource, TrustedAuthorityResolver } from "./authority.js";
 import { isInfrastructureDenial } from "./authorization.js";
 import { ExecutionInProgressError } from "./errors.js";
 import { SharedOSKernel } from "./kernel.js";
@@ -133,15 +133,10 @@ describe("TrustedAuthorityResolver", () => {
     }
   });
 
-  it("fails closed when a source answers with an unbounded set", async () => {
-    const oversized = Array.from({ length: MAX_RESOLVED_GRANTS + 1 }, (_value, index) =>
-      grant({ id: `grant-${index}` }),
-    );
+  it("evaluates however many grants a source answers with", async () => {
+    const many = Array.from({ length: 1_000 }, (_value, index) => grant({ id: `grant-${index}` }));
 
-    await expect(resolve(staticSource(oversized))).resolves.toEqual({
-      status: "unavailable",
-      code: "grant_limit_exceeded",
-    });
+    await expect(resolve(staticSource(many))).resolves.toMatchObject({ status: "resolved" });
   });
 
   it("does not hand the source a mutable view of the caller's context", async () => {

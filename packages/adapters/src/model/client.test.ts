@@ -126,7 +126,6 @@ describe("the chat-completions client", () => {
         },
       ],
       tool_choice: "auto",
-      max_completion_tokens: 4_096,
       temperature: 0,
     });
   });

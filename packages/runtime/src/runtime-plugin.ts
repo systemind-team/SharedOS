@@ -121,20 +121,25 @@ export type RuntimeTurnRequest = Omit<ExecutionRequest, "context"> & {
   readonly context: RuntimeVisibleContext;
 };
 
+/**
+ * The turn's limits as the host set them. `undefined` is no limit: SharedOS
+ * sets none of its own, so a runtime must not assume one.
+ */
 export interface RuntimeLimits {
-  readonly maxSteps: number;
-  readonly maxToolCalls: number;
-  readonly timeoutMs: number;
+  readonly maxSteps: number | undefined;
+  readonly maxToolCalls: number | undefined;
+  readonly timeoutMs: number | undefined;
 }
 
 export interface RuntimeToolInvocationOptions {
   /**
    * Position within the runtime's own loop.
    *
-   * Optional, and enforced when present: the execution envelope refuses a call
-   * declaring a step at or past `RuntimeLimits.maxSteps`, and refuses a new
-   * step once that many distinct ones have been seen. A plugin that omits it is
-   * bounded by `maxToolCalls` alone.
+   * Optional, and enforced when present and the host set `maxSteps`: the
+   * execution envelope refuses a call declaring a step at or past
+   * `RuntimeLimits.maxSteps`, and refuses a new step once that many distinct
+   * ones have been seen. A plugin that omits it is bounded by `maxToolCalls`
+   * alone, when the host set that.
    */
   readonly step?: number;
 }

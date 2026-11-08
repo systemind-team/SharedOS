@@ -101,14 +101,13 @@ export interface StandardTurnDriverOptions extends SeatTextOptions {
    * A call whose arguments do not parse is refused by the driver and answered
    * back to the model, which costs the turn no step; a model that kept
    * producing them would otherwise be spoken to until the turn timed out. Past
-   * this many in one turn, the turn fails instead.
+   * this many in one turn, the turn fails instead. Unset unless the host sets
+   * it, and unset is no limit.
    */
   readonly maxMalformedCalls?: number;
   /** See {@link DeclareStep}. */
   readonly declareStep?: DeclareStep;
 }
-
-const DEFAULT_MAX_MALFORMED_CALLS = 8;
 
 /**
  * The SharedOS driver for the standard loop: a model API in the seat.
@@ -136,7 +135,7 @@ export class StandardTurnDriver implements AgentTurnDriver {
   readonly manifest: RuntimeManifest;
   readonly #client: ModelClient;
   readonly #text: SeatTextOptions;
-  readonly #maxMalformedCalls: number;
+  readonly #maxMalformedCalls: number | undefined;
   readonly #declareStep: DeclareStep | undefined;
 
   constructor(options: StandardTurnDriverOptions) {
@@ -146,8 +145,11 @@ export class StandardTurnDriver implements AgentTurnDriver {
       ...(options.prompt === undefined ? {} : { prompt: options.prompt }),
       ...(options.instructions === undefined ? {} : { instructions: options.instructions }),
     };
-    this.#maxMalformedCalls = options.maxMalformedCalls ?? DEFAULT_MAX_MALFORMED_CALLS;
-    if (!Number.isInteger(this.#maxMalformedCalls) || this.#maxMalformedCalls <= 0) {
+    this.#maxMalformedCalls = options.maxMalformedCalls;
+    if (
+      this.#maxMalformedCalls !== undefined &&
+      (!Number.isInteger(this.#maxMalformedCalls) || this.#maxMalformedCalls <= 0)
+    ) {
       throw new TypeError("maxMalformedCalls must be a positive integer");
     }
     this.#declareStep = options.declareStep;
@@ -189,7 +191,7 @@ class ModelSession implements AgentTurnSession {
    * audit trail in an order that never happened.
    */
   readonly #pending: ModelToolCall[] = [];
-  readonly #maxMalformedCalls: number;
+  readonly #maxMalformedCalls: number | undefined;
   readonly #calls: SeatCalls;
   /** What the model was told before it answered: the system message and the prompt, hashed. */
   readonly #promptHash: string;
@@ -209,7 +211,7 @@ class ModelSession implements AgentTurnSession {
     tools: readonly ModelTool[],
     text: SeatText,
     calls: SeatCalls,
-    maxMalformedCalls: number,
+    maxMalformedCalls: number | undefined,
   ) {
     this.#client = client;
     this.#request = request;
@@ -331,8 +333,9 @@ class ModelSession implements AgentTurnSession {
    * `callsAfterEscalation` is carried on the MCP path.
    *
    * Refusing here costs the turn no step, so a model that never forms a
-   * readable call is bounded separately: past `maxMalformedCalls` in one turn
-   * the turn fails, rather than being spoken to until it times out.
+   * readable call is bounded separately when the host sets `maxMalformedCalls`:
+   * past that many in one turn the turn fails, rather than being spoken to
+   * until it times out.
    */
   #release(): AgentTurnDecision | undefined {
     for (;;) {
@@ -356,7 +359,7 @@ class ModelSession implements AgentTurnSession {
         return this.#calls.release(reading.call);
       }
       this.#malformed += 1;
-      if (this.#malformed > this.#maxMalformedCalls) {
+      if (this.#maxMalformedCalls !== undefined && this.#malformed > this.#maxMalformedCalls) {
         this.#pending.length = 0;
         return failed(
           "model_malformed_call_limit_exceeded",

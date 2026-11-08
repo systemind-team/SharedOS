@@ -361,13 +361,13 @@ export function toCallToolResult(
 }
 
 /** Optional, host-neutral presentation hints. Output remains the structured
- * result. Only bounded inline images are recognized: no URLs are fetched and
- * arbitrary metadata cannot introduce executable or remote resources.
+ * result. Only inline images are recognized, at any count or size: no URLs are
+ * fetched and arbitrary metadata cannot introduce executable or remote
+ * resources.
  */
 function imageContent(value: unknown): JsonObject[] {
-  if (!Array.isArray(value) || value.length > 4) return [];
+  if (!Array.isArray(value)) return [];
   const images: JsonObject[] = [];
-  let bytes = 0;
   for (const raw of value) {
     if (!raw || typeof raw !== "object") continue;
     const { type, data, mimeType } = raw as Record<string, unknown>;
@@ -380,8 +380,6 @@ function imageContent(value: unknown): JsonObject[] {
       !/^[A-Za-z0-9+/]*={0,2}$/.test(data)
     )
       continue;
-    bytes += data.length;
-    if (bytes > 4 * 1024 * 1024) return [];
     images.push({ type: "image", data, mimeType: String(mimeType) });
   }
   return images;

@@ -902,16 +902,20 @@ describe("the Codex spec", () => {
     const settings = codexMcpServerSettings(connection);
     const emitted = codexMcpConfig(connection);
 
+    // No per-call timeout unless the host sets one: Codex's own default applies.
     expect(settings.map(([key]) => key)).toEqual([
       "url",
       "required",
-      "tool_timeout_sec",
       "default_tools_approval_mode",
     ]);
     for (const [key, value] of settings) {
       expect(launch.args).toContain(`mcp_servers.sharedos.${key}=${value}`);
       expect(emitted).toContain(`${key} = ${value}`);
     }
+    expect(codexMcpServerSettings({ ...connection, timeoutSec: 300 })).toContainEqual([
+      "tool_timeout_sec",
+      "300",
+    ]);
   });
 
   it("makes the scratch workspace the project root, so no checkout above it is read", () => {

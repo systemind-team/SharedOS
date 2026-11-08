@@ -105,7 +105,7 @@ statically through `registerTool`, or per context through a
 `ContextToolProvider`, which is what keeps one user's reload out of another
 user's registry. They are then subject to the identical three gates, because a
 tool is not trusted merely because it was registered. A published catalog holds
-at most 512 tools.
+any number of tools.
 
 `@aicoo/sharedos-conformance` also defines tools — a sealed one, an escaping one,
 a mismatched one, a brokered `notion.search`. Those are adversarial fixtures for

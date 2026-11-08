@@ -33,7 +33,7 @@ export const FILES_NAMESPACE = "files";
 export const REPO_NAMESPACE = "repo";
 export const SHAREDOS_TOOL_SOURCE = "sharedos";
 
-export const FilePathSchema = z.array(PathSegmentSchema).max(64);
+export const FilePathSchema = z.array(PathSegmentSchema);
 export type FilePath = z.infer<typeof FilePathSchema>;
 
 export const FilesPathArgumentsSchema = z.object({ path: FilePathSchema }).strict();
@@ -43,7 +43,7 @@ export const FilesSearchArgumentsSchema = z
   .object({
     path: FilePathSchema,
     query: z.string().trim().min(1).max(8_192),
-    limit: z.number().int().positive().max(100).optional(),
+    limit: z.number().int().positive().optional(),
   })
   .strict();
 export type FilesSearchArguments = z.infer<typeof FilesSearchArgumentsSchema>;
@@ -54,8 +54,8 @@ export const FilesGrepArgumentsSchema = z
     pattern: z.string().min(1).max(8_192),
     mode: z.enum(["literal", "regex"]).default("literal"),
     caseSensitive: z.boolean().default(false),
-    contextBefore: z.number().int().nonnegative().max(100).default(0),
-    contextAfter: z.number().int().nonnegative().max(100).default(0),
+    contextBefore: z.number().int().nonnegative().default(0),
+    contextAfter: z.number().int().nonnegative().default(0),
   })
   .strict();
 export type FilesGrepArguments = z.infer<typeof FilesGrepArgumentsSchema>;
@@ -125,7 +125,7 @@ export type FilesSnapshotCreateArguments = z.infer<typeof FilesSnapshotCreateArg
 export const FilesSnapshotListArgumentsSchema = z
   .object({
     path: FilePathSchema,
-    limit: z.number().int().positive().max(100).optional(),
+    limit: z.number().int().positive().optional(),
   })
   .strict();
 export type FilesSnapshotListArguments = z.infer<typeof FilesSnapshotListArgumentsSchema>;
@@ -149,24 +149,23 @@ export type FilesSnapshotRestoreArguments = z.infer<typeof FilesSnapshotRestoreA
  * refused before the provider is reached -- a vocabulary constraint, not the
  * authorization boundary. See ADR 0024.
  */
-export const RepoPathspecSchema = z.array(FilePathSchema.min(1)).min(1).max(64);
+export const RepoPathspecSchema = z.array(FilePathSchema.min(1)).min(1);
 export type RepoPathspec = z.infer<typeof RepoPathspecSchema>;
 
 /**
- * A single-line commit subject and body, bounded as the vetted Git subset
- * bounds it. Control characters are refused so a message cannot smuggle a
- * second argument past a provider that builds a command line.
+ * A single-line commit subject and body, at any length. Control characters are
+ * refused so a message cannot smuggle a second argument past a provider that
+ * builds a command line.
  */
 const CommitMessageSchema = z
   .string()
   .trim()
   .min(1)
-  .max(500)
   .refine((value) => !/[\u0000-\u0008\u000a-\u001f\u007f]/u.test(value), {
     message: "commit messages must not contain line breaks or control characters",
   });
 
-const commitMessageJsonSchema = { type: "string", minLength: 1, maxLength: 500 } as const;
+const commitMessageJsonSchema = { type: "string", minLength: 1 } as const;
 
 export const RepoStatusArgumentsSchema = z.object({ path: FilePathSchema }).strict();
 export type RepoStatusArguments = z.infer<typeof RepoStatusArgumentsSchema>;
@@ -183,7 +182,7 @@ export type RepoDiffArguments = z.infer<typeof RepoDiffArgumentsSchema>;
 export const RepoLogArgumentsSchema = z
   .object({
     path: FilePathSchema,
-    maxCount: z.number().int().positive().max(100).optional(),
+    maxCount: z.number().int().positive().optional(),
   })
   .strict();
 export type RepoLogArguments = z.infer<typeof RepoLogArgumentsSchema>;
@@ -255,7 +254,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
           properties: {
             path: pathJsonSchema(),
             query: { type: "string" },
-            limit: { type: "integer", minimum: 1, maximum: 100 },
+            limit: { type: "integer", minimum: 1 },
           },
         },
         readOnly: true,
@@ -283,8 +282,8 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
             pattern: { type: "string" },
             mode: { enum: ["literal", "regex"] },
             caseSensitive: { type: "boolean" },
-            contextBefore: { type: "integer", minimum: 0, maximum: 100 },
-            contextAfter: { type: "integer", minimum: 0, maximum: 100 },
+            contextBefore: { type: "integer", minimum: 0 },
+            contextAfter: { type: "integer", minimum: 0 },
           },
         },
         readOnly: true,
@@ -416,7 +415,7 @@ export function createFileTools(provider: ResourceProvider): readonly ToolHandle
           required: ["path"],
           properties: {
             path: pathJsonSchema(),
-            limit: { type: "integer", minimum: 1, maximum: 100 },
+            limit: { type: "integer", minimum: 1 },
           },
         },
         readOnly: true,
@@ -524,7 +523,7 @@ export function createRepoTools(provider: ResourceProvider): readonly ToolHandle
           required: ["path"],
           properties: {
             path: pathJsonSchema(),
-            maxCount: { type: "integer", minimum: 1, maximum: 100 },
+            maxCount: { type: "integer", minimum: 1 },
           },
         },
         readOnly: true,
@@ -717,12 +716,11 @@ function pathJsonSchema(minItems = 0): JsonObject {
     type: "array",
     items: { type: "string" },
     minItems,
-    maxItems: 64,
   };
 }
 
 function pathspecJsonSchema(): JsonObject {
-  return { type: "array", items: pathJsonSchema(1), minItems: 1, maxItems: 64 };
+  return { type: "array", items: pathJsonSchema(1), minItems: 1 };
 }
 
 function requireProviderNamespace(provider: ResourceProvider, expected: string): void {

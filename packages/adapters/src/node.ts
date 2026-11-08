@@ -201,9 +201,6 @@ export async function probeHarness(
   };
 }
 
-/** How long a harness gets to answer `--version` before the answer is dropped. */
-const VERSION_TIMEOUT_MS = 10_000;
-
 /**
  * Ask the executable what build it is, and record what it said.
  *
@@ -211,14 +208,16 @@ const VERSION_TIMEOUT_MS = 10_000;
  * and until this ran the version was recorded nowhere: a reader had to take it
  * from whatever a runbook said had been installed, which is a claim about an
  * intention rather than about the binary that answered. Only the harness can
- * answer this -- SharedOS neither installs nor pins it.
+ * answer this: SharedOS neither installs nor pins it.
  *
  * Fails open in every direction. A CLI that has no version flag, prints
- * something unrecognisable, exits non-zero, or hangs leaves the field absent and
- * the harness available: not knowing which build ran is worse evidence, never a
- * reason to refuse to run. Both halves are kept -- the parsed token because a
- * table wants one, the line it came from because a token nobody can check
- * against the output is the same unverifiable claim in a new place.
+ * something unrecognisable, or exits non-zero leaves the field absent and the
+ * harness available: not knowing which build ran is worse evidence, never a
+ * reason to refuse to run. SharedOS sets no time limit on the answer, so a CLI
+ * that never answers holds the probe until it does. Both halves are kept: the
+ * parsed token because a table wants one, the line it came from because a token
+ * nobody can check against the output is the same unverifiable claim in a new
+ * place.
  *
  * stdout is read before stderr: Codex warns on stderr ahead of its answer.
  */
@@ -240,11 +239,6 @@ async function reportedVersion(
 
     let stdout = "";
     let stderr = "";
-    const timer = setTimeout(() => {
-      child.kill();
-      resolve(undefined);
-    }, VERSION_TIMEOUT_MS);
-    timer.unref?.();
 
     child.stdout.on("data", (chunk: Buffer) => {
       stdout += chunk.toString("utf8");
@@ -253,11 +247,9 @@ async function reportedVersion(
       stderr += chunk.toString("utf8");
     });
     child.on("error", () => {
-      clearTimeout(timer);
       resolve(undefined);
     });
     child.on("close", (code) => {
-      clearTimeout(timer);
       resolve(code === 0 ? { stdout, stderr } : undefined);
     });
   });

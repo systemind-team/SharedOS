@@ -4,9 +4,6 @@ import { CapabilityGrantSchema } from "@aicoo/sharedos-contracts";
 import { sha256Hex } from "./hashing.js";
 import { addressesEqual, canonicalJson } from "./internal.js";
 
-/** The largest authority set SharedOS will evaluate for one decision. */
-export const MAX_RESOLVED_GRANTS = 256;
-
 /**
  * The identity a turn's frozen authority is held against.
  *
@@ -141,10 +138,7 @@ export type PolicyResolution<Policy = HostPolicy> =
 
 /** Why authority could not be established for one decision. */
 export type AuthorityUnavailableCode =
-  | "grant_source_failed"
-  | "invalid_grant_material"
-  | "grant_scope_mismatch"
-  | "grant_limit_exceeded";
+  "grant_source_failed" | "invalid_grant_material" | "grant_scope_mismatch";
 
 /**
  * A content identifier for exactly the authority one decision was made against.
@@ -238,10 +232,6 @@ export class TrustedAuthorityResolver {
     if (!Array.isArray(loaded)) {
       return { status: "unavailable", code: "invalid_grant_material" };
     }
-    if (loaded.length > MAX_RESOLVED_GRANTS) {
-      return { status: "unavailable", code: "grant_limit_exceeded" };
-    }
-
     const grants: CapabilityGrant[] = [];
     for (const candidate of loaded) {
       const parsed = CapabilityGrantSchema.safeParse(candidate);

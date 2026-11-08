@@ -31,6 +31,43 @@ each entry calls out what a host has to update.
 
 ### Changed
 
+- **Breaking: SharedOS sets no limits of its own.** Every turn and harness
+  limit is now unset unless the host sets it, and an unset limit is no limit.
+  What a host has to update:
+  - `SharedOSExecutor`: `defaultMaxSteps` (was 16), `defaultTimeoutMs` (was
+    120 000) and `defaultMaxToolCalls` have no default, and the tool-call limit
+    no longer falls back to the step limit. A host that set only
+    `defaultMaxSteps` and relied on it to cap tool calls sets
+    `defaultMaxToolCalls` as well. `RuntimeLimits` fields are
+    `number | undefined`.
+  - `ExecutionOptions`: no ceiling on `maxSteps` (was 1,000), `maxToolCalls`
+    (was 10,000) or `timeoutMs` (was two hours). `MAX_EXECUTION_TIMEOUT_MS` and
+    `MAX_EXECUTION_TOOL_CALLS` are removed. A deadline longer than one timer
+    can hold (about 24.8 days) is waited out rather than firing early.
+  - `createStandardRuntime`: `closeTimeoutMs` (was 1 s) has no default.
+  - `OpenAiCompatibleModelClient`: `maxOutputTokens` (was 4,096) has no
+    default and, unset, sends no `max_completion_tokens`, so the provider's own
+    ceiling applies. `requestTimeoutMs` (was 120 s) has no default. Retries are
+    unchanged.
+  - `StandardTurnDriver`'s `maxMalformedCalls` (was 8), `EvalHarnessDriver`'s
+    `maxIgnoredFrames` (was 512) and an MCP harness launch's `idleTimeoutMs`
+    (was 120 s) have no default. The harness `--version` probe no longer gives
+    up after 10 s.
+  - `HarnessMcpConnection.timeoutSec` (was 120) has no default. Unset, no
+    per-call timeout is written into the Codex, DeepSeek or Pi configuration,
+    and each harness's own default applies.
+  - Delegation chains have no default maximum (was 16;
+    `DEFAULT_MAX_DELEGATION_CHAIN_LENGTH` is removed). `maxDelegationChainLength`
+    still sets one, and a cycle still fails `chain_cycle`.
+  - Removed outright: the 256-grant cap on one decision (`MAX_RESOLVED_GRANTS`,
+    and the `grant_limit_exceeded` code with it); the 512-tool cap on a turn's
+    request and its published catalogue; the 512-character cap on an
+    escalation reason, which is no longer cut (`ESCALATION_REASON_MAX_LENGTH`);
+    the four-image and 4 MiB caps on MCP image results; and the file tools'
+    caps on results (100), grep context (100 lines), path segments (64) and
+    commit messages (500 characters). A file path is still held to 64 segments
+    by the contract's resource path.
+
 - **Breaking: Node.js 22.19 or newer is required (was 20.11).** Node 20 has
   been end of life since April 2026, and newer dependencies such as `undici`
   8 need Node 22.19. Every package's `engines.node` is `>=22.19`, and CI runs

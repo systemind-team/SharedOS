@@ -10,7 +10,6 @@ import { SPAN, SharedOSKernel, type Span, type SpanSink } from "@aicoo/sharedos-
 import type { CapabilityGrant } from "@aicoo/sharedos-contracts";
 
 import {
-  ESCALATION_REASON_MAX_LENGTH,
   ESCALATION_TOOL_DEFINITION,
   ESCALATION_TOOL_NAME,
   ESCALATION_TOOL_NAMESPACE,
@@ -335,11 +334,11 @@ describe("the standard composition", () => {
     );
   });
 
-  it("refuses an escalate decision whose reason runs past the outcome's bound", async () => {
+  it("refuses an escalate decision whose reason is empty", async () => {
     const session: AgentTurnSession = {
       next: vi.fn<AgentTurnSession["next"]>(async () => ({
         type: "escalate",
-        reason: "x".repeat(ESCALATION_REASON_MAX_LENGTH + 1),
+        reason: "   ",
       })),
     };
     const driver: AgentTurnDriver = { open: async () => session };
@@ -349,9 +348,9 @@ describe("the standard composition", () => {
       createId: () => "event-1",
     }).execute(request());
 
-    // A decision is code, not input. A driver handing the loop more than the
-    // outcome carries has a bug, and refusing the decision is how it is found;
-    // the recogniser a driver reads model output through is what cuts.
+    // A decision is code, not input. A driver handing the loop a reason the
+    // outcome cannot carry has a bug, and refusing the decision is how it is
+    // found.
     expect(result.status).toBe("failed");
     expect(result.status === "failed" ? result.error.code : undefined).toBe(
       "invalid_driver_decision",
@@ -973,23 +972,12 @@ describe("turn-scoped authority", () => {
 });
 
 describe("recognising an escalation in a call", () => {
-  it("keeps the reason as given, cut to the bound rather than replaced", () => {
-    const given = "needs an owner: " + "y".repeat(ESCALATION_REASON_MAX_LENGTH * 2);
+  it("keeps the reason whole, at any length", () => {
+    const given = "needs an owner: " + "y".repeat(10_000) + "\u{1F600}";
     const recognised = escalationRequest(ESCALATION_TOOL_NAME, { reason: given });
 
-    // The occupant's own words, and the first 512 of them: replacing the whole
-    // reason with the canned fallback would record that nothing was said.
-    expect(recognised).toBe(given.slice(0, ESCALATION_REASON_MAX_LENGTH));
-    expect(recognised).toHaveLength(ESCALATION_REASON_MAX_LENGTH);
+    expect(recognised).toBe(given);
     expect(escalationRequest(ESCALATION_TOOL_NAME, { reason: "  short  " })).toBe("short");
-  });
-
-  it("does not cut through a surrogate pair at the bound", () => {
-    const reason = "z".repeat(ESCALATION_REASON_MAX_LENGTH - 1) + "\u{1F600}" + "tail";
-    const recognised = escalationRequest(ESCALATION_TOOL_NAME, { reason });
-
-    expect(recognised).toBe("z".repeat(ESCALATION_REASON_MAX_LENGTH - 1));
-    expect(recognised).not.toMatch(/[\uD800-\uDBFF]$/u);
   });
 
   it("escalates under a reason of its own when the call carries none it can read", () => {
@@ -1007,11 +995,8 @@ describe("recognising an escalation in a call", () => {
     expect(escalationRequest("sharedos.escalate.now", { reason: "please" })).toBeUndefined();
   });
 
-  it("bounds a decision's reason strictly, as the outcome does", () => {
-    expect(escalationReason("x".repeat(ESCALATION_REASON_MAX_LENGTH))).toHaveLength(
-      ESCALATION_REASON_MAX_LENGTH,
-    );
-    expect(escalationReason("x".repeat(ESCALATION_REASON_MAX_LENGTH + 1))).toBeUndefined();
+  it("reads a decision's reason as the outcome does, at any length", () => {
+    expect(escalationReason("x".repeat(10_000))).toHaveLength(10_000);
     expect(escalationReason("   ")).toBeUndefined();
     expect(escalationReason(7)).toBeUndefined();
   });

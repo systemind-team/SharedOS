@@ -16,9 +16,6 @@ import {
 } from "./internal.js";
 import { constraintEnvelopeViolation, constraintsAreWithin } from "./constraints.js";
 
-/** The longest ancestor chain SharedOS will walk before failing closed. */
-export const DEFAULT_MAX_DELEGATION_CHAIN_LENGTH = 16;
-
 /**
  * The trusted lookup for ancestors of a derived grant.
  *
@@ -65,6 +62,10 @@ export type DelegationValidation =
 
 export interface DelegationValidationOptions {
   readonly resolver?: DelegationChainResolver;
+  /**
+   * The longest ancestor chain walked before failing closed. Unset unless the
+   * host sets it, and unset is no limit; a cycle still fails as `chain_cycle`.
+   */
   readonly maxChainLength?: number;
   /**
    * The instant the turn's authority was resolved, when it is not `now`.
@@ -111,7 +112,7 @@ export async function validateDelegationChain(
     return { status: "valid", chain };
   }
 
-  const maxChainLength = options.maxChainLength ?? DEFAULT_MAX_DELEGATION_CHAIN_LENGTH;
+  const maxChainLength = options.maxChainLength;
   const at: GrantInstants = { admittedAt: options.admittedAt ?? now, now };
   const seen = new Set<string>([grant.id]);
   let child = grant;
@@ -120,7 +121,7 @@ export async function validateDelegationChain(
     if (options.resolver === undefined) {
       return unverified(chain, "resolver_unavailable", child.id);
     }
-    if (chain.length >= maxChainLength) {
+    if (maxChainLength !== undefined && chain.length >= maxChainLength) {
       return invalid(chain, "chain_too_long", child.id);
     }
 

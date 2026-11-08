@@ -25,13 +25,14 @@ export interface EvalHarnessDriverOptions extends SeatTextOptions {
   readonly manifest: RuntimeManifest;
   readonly protocol: HarnessProtocol;
   readonly transport: HarnessTransport;
-  /** Guard against a harness that streams unrelated frames without end. */
+  /**
+   * Guard against a harness that streams unrelated frames without end. Unset
+   * unless the host sets it, and unset is no limit.
+   */
   readonly maxIgnoredFrames?: number;
   /** See {@link DeclareStep}. */
   readonly declareStep?: DeclareStep;
 }
-
-const DEFAULT_MAX_IGNORED_FRAMES = 512;
 
 /**
  * One vendor's wire format, seated in the standard loop for evaluation.
@@ -61,7 +62,7 @@ export class EvalHarnessDriver implements AgentTurnDriver {
   readonly #protocol: HarnessProtocol;
   readonly #transport: HarnessTransport;
   readonly #text: SeatTextOptions;
-  readonly #maxIgnoredFrames: number;
+  readonly #maxIgnoredFrames: number | undefined;
   readonly #declareStep: EvalHarnessDriverOptions["declareStep"];
 
   constructor(options: EvalHarnessDriverOptions) {
@@ -72,9 +73,12 @@ export class EvalHarnessDriver implements AgentTurnDriver {
       ...(options.prompt === undefined ? {} : { prompt: options.prompt }),
       ...(options.instructions === undefined ? {} : { instructions: options.instructions }),
     };
-    this.#maxIgnoredFrames = options.maxIgnoredFrames ?? DEFAULT_MAX_IGNORED_FRAMES;
+    this.#maxIgnoredFrames = options.maxIgnoredFrames;
     this.#declareStep = options.declareStep;
-    if (!Number.isInteger(this.#maxIgnoredFrames) || this.#maxIgnoredFrames <= 0) {
+    if (
+      this.#maxIgnoredFrames !== undefined &&
+      (!Number.isInteger(this.#maxIgnoredFrames) || this.#maxIgnoredFrames <= 0)
+    ) {
       throw new TypeError("maxIgnoredFrames must be a positive integer");
     }
   }
@@ -105,7 +109,7 @@ export class EvalHarnessDriver implements AgentTurnDriver {
 class HarnessSession implements AgentTurnSession {
   readonly #channel: HarnessChannel;
   readonly #protocol: HarnessProtocol;
-  readonly #maxIgnoredFrames: number;
+  readonly #maxIgnoredFrames: number | undefined;
   /**
    * Steps a single frame produced but the turn has not consumed yet.
    *
@@ -123,7 +127,7 @@ class HarnessSession implements AgentTurnSession {
   constructor(
     channel: HarnessChannel,
     protocol: HarnessProtocol,
-    maxIgnoredFrames: number,
+    maxIgnoredFrames: number | undefined,
     calls: SeatCalls,
     promptHash: string,
   ) {
@@ -139,7 +143,8 @@ class HarnessSession implements AgentTurnSession {
       await this.#channel.write(this.#protocol.encodeToolResult(input.result), signal);
     }
 
-    for (let frames = 0; frames <= this.#maxIgnoredFrames; frames += 1) {
+    const maxIgnoredFrames = this.#maxIgnoredFrames ?? Number.POSITIVE_INFINITY;
+    for (let frames = 0; frames <= maxIgnoredFrames; frames += 1) {
       const decision = this.#drainPending();
       if (decision !== undefined) {
         return decision;

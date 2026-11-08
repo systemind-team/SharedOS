@@ -39,6 +39,10 @@ const turns = new SharedOSExecutor(kernel, runtime, {
 const result = await turns.execute(executionRequest);
 ```
 
+The limits above are the host's choice. Each is unset unless the host sets it,
+and an unset limit is no limit: SharedOS sets no step, tool-call or time limit
+of its own.
+
 ## Escalation
 
 A turn may end by asking a human to decide (ADR 0011, ADR 0017). The ask is a
@@ -155,7 +159,7 @@ SharedOS is currently a `1.0.0` preview.
 
 ### RuntimeNotFoundError
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:209](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L209)
+Defined in: [packages/runtime/src/runtime-plugin.ts:214](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L214)
 
 #### Extends
 
@@ -167,7 +171,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:209](https://github.com/syst
 
 > **new RuntimeNotFoundError**(`runtimeId`): [`RuntimeNotFoundError`](#runtimenotfounderror)
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:210](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L210)
+Defined in: [packages/runtime/src/runtime-plugin.ts:215](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L215)
 
 ###### Parameters
 
@@ -289,7 +293,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ### RuntimeRegistry
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:220](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L220)
+Defined in: [packages/runtime/src/runtime-plugin.ts:225](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L225)
 
 An instance-scoped registry populated by trusted host configuration. Runtime
 selection is intentionally absent from model-visible execution requests.
@@ -300,7 +304,7 @@ selection is intentionally absent from model-visible execution requests.
 
 > **new RuntimeRegistry**(`runtimes?`): [`RuntimeRegistry`](#runtimeregistry)
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:223](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L223)
+Defined in: [packages/runtime/src/runtime-plugin.ts:228](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L228)
 
 ###### Parameters
 
@@ -318,7 +322,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:223](https://github.com/syst
 
 > **has**(`runtimeId`): `boolean`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:250](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L250)
+Defined in: [packages/runtime/src/runtime-plugin.ts:255](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L255)
 
 ###### Parameters
 
@@ -334,7 +338,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:250](https://github.com/syst
 
 > **list**(): readonly `object`[]
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:262](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L262)
+Defined in: [packages/runtime/src/runtime-plugin.ts:267](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L267)
 
 ###### Returns
 
@@ -344,7 +348,7 @@ readonly `object`[]
 
 > **register**(`runtime`): `void`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:229](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L229)
+Defined in: [packages/runtime/src/runtime-plugin.ts:234](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L234)
 
 ###### Parameters
 
@@ -360,7 +364,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:229](https://github.com/syst
 
 > **resolve**(`runtimeId`): [`RuntimePlugin`](#runtimeplugin)
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:254](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L254)
+Defined in: [packages/runtime/src/runtime-plugin.ts:259](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L259)
 
 ###### Parameters
 
@@ -376,7 +380,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:254](https://github.com/syst
 
 ### SharedOSExecutor
 
-Defined in: [packages/runtime/src/executor.ts:144](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L144)
+Defined in: [packages/runtime/src/executor.ts:148](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L148)
 
 The non-replaceable security envelope around one replaceable RuntimePlugin.
 Scheduling, retries, and network-level stopping remain host responsibilities.
@@ -391,7 +395,7 @@ Scheduling, retries, and network-level stopping remain host responsibilities.
 
 > **new SharedOSExecutor**(`kernel`, `runtime`, `options?`): [`SharedOSExecutor`](#sharedosexecutor)
 
-Defined in: [packages/runtime/src/executor.ts:157](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L157)
+Defined in: [packages/runtime/src/executor.ts:161](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L161)
 
 ###### Parameters
 
@@ -413,7 +417,7 @@ Defined in: [packages/runtime/src/executor.ts:157](https://github.com/systemind-
 
 > **get** **runtimeManifest**(): `object`
 
-Defined in: [packages/runtime/src/executor.ts:208](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L208)
+Defined in: [packages/runtime/src/executor.ts:199](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L199)
 
 ###### Returns
 
@@ -441,7 +445,7 @@ Defined in: [packages/runtime/src/executor.ts:208](https://github.com/systemind-
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:212](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L212)
+Defined in: [packages/runtime/src/executor.ts:203](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L203)
 
 ###### Parameters
 
@@ -498,7 +502,7 @@ Defined in: [packages/runtime/src/executor.ts:212](https://github.com/systemind-
 
 ### AgentTurnDriver
 
-Defined in: [packages/runtime/src/standard-runtime.ts:118](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L118)
+Defined in: [packages/runtime/src/standard-runtime.ts:116](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L116)
 
 What sits in the standard loop's driver slot.
 
@@ -509,7 +513,7 @@ to do next; it never reaches the envelope itself.
 
 | Property                                   | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                        | Defined in                                                                                                                                         |
 | ------------------------------------------ | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest"></a> `manifest?` | `readonly` | `object`                                         | Who this driver is, for the record. The executor stamps the plugin's manifest on every execution record, and the loop is the same whichever driver is seated, so the loop reports the seated driver's manifest as its own: evidence is filed under what produced it. A driver that states none is reported as `sharedos.standard`. | [packages/runtime/src/standard-runtime.ts:127](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L127) |
+| <a id="property-manifest"></a> `manifest?` | `readonly` | `object`                                         | Who this driver is, for the record. The executor stamps the plugin's manifest on every execution record, and the loop is the same whichever driver is seated, so the loop reports the seated driver's manifest as its own: evidence is filed under what produced it. A driver that states none is reported as `sharedos.standard`. | [packages/runtime/src/standard-runtime.ts:125](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L125) |
 | `manifest.id`                              | `public`   | `string`                                         | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:9                                                                                                             |
 | `manifest.metadata?`                       | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:12                                                                                                            |
 | `manifest.protocolVersion`                 | `public`   | `"1"`                                            | -                                                                                                                                                                                                                                                                                                                                  | packages/contracts/dist/runtime.d.ts:11                                                                                                            |
@@ -521,7 +525,7 @@ to do next; it never reaches the envelope itself.
 
 > **open**(`request`, `signal`): `Promise`\<[`AgentTurnSession`](#agentturnsession)>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:137](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L137)
+Defined in: [packages/runtime/src/standard-runtime.ts:135](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L135)
 
 Open the session one turn is driven through.
 
@@ -546,13 +550,13 @@ session to close.
 
 ### AgentTurnSession
 
-Defined in: [packages/runtime/src/standard-runtime.ts:92](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L92)
+Defined in: [packages/runtime/src/standard-runtime.ts:90](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L90)
 
 #### Properties
 
 | Property                                       | Modifier   | Type     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Defined in                                                                                                                                         |
 | ---------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-prompthash"></a> `promptHash?` | `readonly` | `string` | What the session will tell the seat before its first decision, hashed. A driver that composes text for a model -- a system message, a prompt -- states the hash here, once, and nowhere else. The loop hands it to `RuntimeHost.annotate` as soon as `open` has resolved and before the first step, and the envelope writes it on the turn's result however the turn then ends, which is what a cancelled turn needs: a session that never returns a decision returns no metadata of its own, and the record would otherwise not say what that turn was asked. The loop cannot state it earlier than `open` returns, so a driver whose `open` itself sends the text should hash it before sending; a turn cancelled inside `open` has no hash to record. A driver that hands the seat no text leaves it absent. | [packages/runtime/src/standard-runtime.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L107) |
+| <a id="property-prompthash"></a> `promptHash?` | `readonly` | `string` | What the session will tell the seat before its first decision, hashed. A driver that composes text for a model -- a system message, a prompt -- states the hash here, once, and nowhere else. The loop hands it to `RuntimeHost.annotate` as soon as `open` has resolved and before the first step, and the envelope writes it on the turn's result however the turn then ends, which is what a cancelled turn needs: a session that never returns a decision returns no metadata of its own, and the record would otherwise not say what that turn was asked. The loop cannot state it earlier than `open` returns, so a driver whose `open` itself sends the text should hash it before sending; a turn cancelled inside `open` has no hash to record. A driver that hands the seat no text leaves it absent. | [packages/runtime/src/standard-runtime.ts:105](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L105) |
 
 #### Methods
 
@@ -560,7 +564,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:92](https://github.com/sys
 
 > `optional` **close**(`outcome`, `signal`): `void` \| `Promise`\<`void`>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:109](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L109)
+Defined in: [packages/runtime/src/standard-runtime.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L107)
 
 ###### Parameters
 
@@ -577,7 +581,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:109](https://github.com/sy
 
 > **next**(`input`, `signal`): `Promise`\<[`AgentTurnDecision`](#agentturndecision)>\>
 
-Defined in: [packages/runtime/src/standard-runtime.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L108)
+Defined in: [packages/runtime/src/standard-runtime.ts:106](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L106)
 
 ###### Parameters
 
@@ -606,20 +610,20 @@ Defined in: [packages/runtime/src/reach.ts:3](https://github.com/systemind-team/
 
 ### ExecuteTurnOptions
 
-Defined in: [packages/runtime/src/executor.ts:103](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L103)
+Defined in: [packages/runtime/src/executor.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L107)
 
 #### Properties
 
 | Property                                 | Type                | Description                                                             | Defined in                                                                                                                         |
 | ---------------------------------------- | ------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-onevent"></a> `onEvent?` | (`event`) => `void` | Synchronous observation hook for streaming an immutable event snapshot. | [packages/runtime/src/executor.ts:106](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L106) |
-| <a id="property-signal"></a> `signal?`   | `AbortSignal`       | -                                                                       | [packages/runtime/src/executor.ts:104](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L104) |
+| <a id="property-onevent"></a> `onEvent?` | (`event`) => `void` | Synchronous observation hook for streaming an immutable event snapshot. | [packages/runtime/src/executor.ts:110](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L110) |
+| <a id="property-signal"></a> `signal?`   | `AbortSignal`       | -                                                                       | [packages/runtime/src/executor.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L108) |
 
 ---
 
 ### RuntimeHost
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:146](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L146)
+Defined in: [packages/runtime/src/runtime-plugin.ts:151](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L151)
 
 The only effectful surface supplied to a runtime plugin. Every tool call is
 checked against the effective catalog and re-authorized by the kernel.
@@ -628,8 +632,8 @@ checked against the effective catalog and re-authorized by the kernel.
 
 | Property                                   | Modifier   | Type                              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Defined in                                                                                                                                     |
 | ------------------------------------------ | ---------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-draining"></a> `draining?` | `readonly` | `AbortSignal`                     | Aborted once the turn takes nothing new: `drainGraceMs` ahead of its deadline, or when the envelope is ending it on an audit outage. From then a new `invokeTool` comes back `denied` with `turn_draining`, and a call already with the kernel still answers with its real result. A plugin that reads this stops asking its model for decisions, which is what the standard loop does. One that does not read it is refused the same calls and stopped at the deadline. It is also aborted whenever the turn's own signal is. Optional so a narrow host double stays viable; the envelope always supplies it. | [packages/runtime/src/runtime-plugin.ts:160](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L160) |
-| <a id="property-limits"></a> `limits`      | `readonly` | [`RuntimeLimits`](#runtimelimits) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [packages/runtime/src/runtime-plugin.ts:147](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L147) |
+| <a id="property-draining"></a> `draining?` | `readonly` | `AbortSignal`                     | Aborted once the turn takes nothing new: `drainGraceMs` ahead of its deadline, or when the envelope is ending it on an audit outage. From then a new `invokeTool` comes back `denied` with `turn_draining`, and a call already with the kernel still answers with its real result. A plugin that reads this stops asking its model for decisions, which is what the standard loop does. One that does not read it is refused the same calls and stopped at the deadline. It is also aborted whenever the turn's own signal is. Optional so a narrow host double stays viable; the envelope always supplies it. | [packages/runtime/src/runtime-plugin.ts:165](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L165) |
+| <a id="property-limits"></a> `limits`      | `readonly` | [`RuntimeLimits`](#runtimelimits) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [packages/runtime/src/runtime-plugin.ts:152](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L152) |
 
 #### Methods
 
@@ -637,7 +641,7 @@ checked against the effective catalog and re-authorized by the kernel.
 
 > **annotate**(`key`, `value`): `void`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:192](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L192)
+Defined in: [packages/runtime/src/runtime-plugin.ts:197](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L197)
 
 State one fact about the turn, for its record.
 
@@ -682,7 +686,7 @@ whoever reads the record; nothing SharedOS decides depends on it.
 
 > **emit**(`event`): `void`
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:162](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L162)
+Defined in: [packages/runtime/src/runtime-plugin.ts:167](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L167)
 
 ###### Parameters
 
@@ -700,7 +704,7 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:162](https://github.com/syst
 
 > **invokeTool**(`call`, `options?`): `Promise`\<\{ `callId`: `string`; `completedAt`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `status`: `"succeeded"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"denied"`; `tool`: `string`; \} \| \{ `callId`: `string`; `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `status`: `"failed"`; `tool`: `string`; \}\>
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:161](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L161)
+Defined in: [packages/runtime/src/runtime-plugin.ts:166](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L166)
 
 ###### Parameters
 
@@ -722,21 +726,24 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:161](https://github.com/syst
 
 ### RuntimeLimits
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:124](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L124)
+Defined in: [packages/runtime/src/runtime-plugin.ts:128](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L128)
+
+The turn's limits as the host set them. `undefined` is no limit: SharedOS
+sets none of its own, so a runtime must not assume one.
 
 #### Properties
 
-| Property                                          | Modifier   | Type     | Defined in                                                                                                                                     |
-| ------------------------------------------------- | ---------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-maxsteps"></a> `maxSteps`         | `readonly` | `number` | [packages/runtime/src/runtime-plugin.ts:125](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L125) |
-| <a id="property-maxtoolcalls"></a> `maxToolCalls` | `readonly` | `number` | [packages/runtime/src/runtime-plugin.ts:126](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L126) |
-| <a id="property-timeoutms"></a> `timeoutMs`       | `readonly` | `number` | [packages/runtime/src/runtime-plugin.ts:127](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L127) |
+| Property                                          | Modifier   | Type                    | Defined in                                                                                                                                     |
+| ------------------------------------------------- | ---------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-maxsteps"></a> `maxSteps`         | `readonly` | `number` \| `undefined` | [packages/runtime/src/runtime-plugin.ts:129](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L129) |
+| <a id="property-maxtoolcalls"></a> `maxToolCalls` | `readonly` | `number` \| `undefined` | [packages/runtime/src/runtime-plugin.ts:130](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L130) |
+| <a id="property-timeoutms"></a> `timeoutMs`       | `readonly` | `number` \| `undefined` | [packages/runtime/src/runtime-plugin.ts:131](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L131) |
 
 ---
 
 ### RuntimePlugin
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:200](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L200)
+Defined in: [packages/runtime/src/runtime-plugin.ts:205](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L205)
 
 A replaceable one-turn harness running inside the SharedOS security envelope.
 Implementations must keep per-turn state inside `run` and support concurrent
@@ -746,7 +753,7 @@ calls when one plugin instance is shared by a RuntimeRegistry.
 
 | Property                                    | Modifier   | Type                                             | Defined in                                                                                                                                     |
 | ------------------------------------------- | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-manifest-1"></a> `manifest` | `readonly` | `object`                                         | [packages/runtime/src/runtime-plugin.ts:201](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L201) |
+| <a id="property-manifest-1"></a> `manifest` | `readonly` | `object`                                         | [packages/runtime/src/runtime-plugin.ts:206](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L206) |
 | `manifest.id`                               | `public`   | `string`                                         | packages/contracts/dist/runtime.d.ts:9                                                                                                         |
 | `manifest.metadata?`                        | `public`   | [`JsonObject`](sharedos-contracts.md#jsonobject) | packages/contracts/dist/runtime.d.ts:12                                                                                                        |
 | `manifest.protocolVersion`                  | `public`   | `"1"`                                            | packages/contracts/dist/runtime.d.ts:11                                                                                                        |
@@ -758,7 +765,7 @@ calls when one plugin instance is shared by a RuntimeRegistry.
 
 > **run**(`request`, `host`, `signal`): `Promise`\<\{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `type`: `"fail"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `reason`: `string`; `type`: `"escalate"`; \}\>
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:202](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L202)
+Defined in: [packages/runtime/src/runtime-plugin.ts:207](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L207)
 
 ###### Parameters
 
@@ -776,13 +783,13 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:202](https://github.com/syst
 
 ### RuntimeToolInvocationOptions
 
-Defined in: [packages/runtime/src/runtime-plugin.ts:130](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L130)
+Defined in: [packages/runtime/src/runtime-plugin.ts:134](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L134)
 
 #### Properties
 
-| Property                           | Modifier   | Type     | Description                                                                                                                                                                                                                                                                                             | Defined in                                                                                                                                     |
-| ---------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-step"></a> `step?` | `readonly` | `number` | Position within the runtime's own loop. Optional, and enforced when present: the execution envelope refuses a call declaring a step at or past `RuntimeLimits.maxSteps`, and refuses a new step once that many distinct ones have been seen. A plugin that omits it is bounded by `maxToolCalls` alone. | [packages/runtime/src/runtime-plugin.ts:139](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L139) |
+| Property                           | Modifier   | Type     | Description                                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                                                     |
+| ---------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-step"></a> `step?` | `readonly` | `number` | Position within the runtime's own loop. Optional, and enforced when present and the host set `maxSteps`: the execution envelope refuses a call declaring a step at or past `RuntimeLimits.maxSteps`, and refuses a new step once that many distinct ones have been seen. A plugin that omits it is bounded by `maxToolCalls` alone, when the host set that. | [packages/runtime/src/runtime-plugin.ts:144](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/runtime-plugin.ts#L144) |
 
 ---
 
@@ -806,34 +813,34 @@ Defined in: [packages/runtime/src/runtime-plugin.ts:82](https://github.com/syste
 
 ### SharedOSExecutorOptions
 
-Defined in: [packages/runtime/src/executor.ts:57](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L57)
+Defined in: [packages/runtime/src/executor.ts:55](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L55)
 
 #### Properties
 
-| Property                                                         | Type                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Defined in                                                                                                                         |
-| ---------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-clock"></a> `clock?`                             | () => `string`                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | [packages/runtime/src/executor.ts:58](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L58)   |
-| <a id="property-createid"></a> `createId?`                       | () => `string`                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | [packages/runtime/src/executor.ts:59](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L59)   |
-| <a id="property-defaultmaxsteps"></a> `defaultMaxSteps?`         | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | [packages/runtime/src/executor.ts:60](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L60)   |
-| <a id="property-defaultmaxtoolcalls"></a> `defaultMaxToolCalls?` | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | [packages/runtime/src/executor.ts:61](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L61)   |
-| <a id="property-defaulttimeoutms"></a> `defaultTimeoutMs?`       | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | [packages/runtime/src/executor.ts:62](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L62)   |
-| <a id="property-draingracems"></a> `drainGraceMs?`               | `number`                                  | How long before a turn's deadline it stops taking new tool calls, so the calls already inside a handler can answer before the deadline stops them. Inside the limit, never on top of it: with `timeoutMs` 120 000 and a grace of 5 000 a new call is refused from 115 s, a handler running then is left alone, and the abort reaches it at 120 s as it always did. A handler still running at the deadline is recorded `interrupted`. An audit outage drains the same way, for the grace or the time left, whichever is shorter. A host's own cancellation does not: it stops the turn at once, as before. Zero, the default, is the behaviour before this option. It is not capped against a request's `timeoutMs`; a grace no smaller than the limit leaves a turn no time in which a call is taken, and choosing it is the host's. | [packages/runtime/src/executor.ts:78](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L78)   |
-| <a id="property-onturnerror"></a> `onTurnError?`                 | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the turn body did not convert into an outcome. The envelope contains such a throw and ends the turn `failed` with `runtime_failed`; the error itself comes here rather than being discarded. See [TurnErrorReporter](#turnerrorreporter) for what it may and may not be used for. Not only the plugin's. The turn body also calls `openTurnAuthority`, `admitTurn`, `reach`, and `listTools`, and a host port that throws arrives here too under the same terminal code. That conflation is in the wire vocabulary and is not fixed by this hook; the error's own stack is what separates them, which is the reason for handing it over rather than classifying it here.                                                                                                                                     | [packages/runtime/src/executor.ts:100](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L100) |
-| <a id="property-spans"></a> `spans?`                             | [`SpanSink`](sharedos-core.md#spansink)   | Where the envelope reports what it cost, when a host is measuring. A second clock, and deliberately not the one `clock` supplies: that one names instants for a record and a conformance run freezes it. See [SpanSink](sharedos-core.md#spansink).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:86](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L86)   |
+| Property                                                         | Type                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Defined in                                                                                                                         |
+| ---------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-clock"></a> `clock?`                             | () => `string`                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:56](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L56)   |
+| <a id="property-createid"></a> `createId?`                       | () => `string`                            | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:57](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L57)   |
+| <a id="property-defaultmaxsteps"></a> `defaultMaxSteps?`         | `number`                                  | The turn limits used when a request sets none. Each is unset unless the host sets it, and an unset limit is no limit: a turn then runs until its runtime ends it or the host cancels it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | [packages/runtime/src/executor.ts:63](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L63)   |
+| <a id="property-defaultmaxtoolcalls"></a> `defaultMaxToolCalls?` | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:64](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L64)   |
+| <a id="property-defaulttimeoutms"></a> `defaultTimeoutMs?`       | `number`                                  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:65](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L65)   |
+| <a id="property-draingracems"></a> `drainGraceMs?`               | `number`                                  | How long before a turn's deadline it stops taking new tool calls, so the calls already inside a handler can answer before the deadline stops them. Inside the limit, never on top of it: with `timeoutMs` 120 000 and a grace of 5 000 a new call is refused from 115 s, a handler running then is left alone, and the abort reaches it at 120 s as it always did. A handler still running at the deadline is recorded `interrupted`. An audit outage drains the same way, for the grace or the time left, whichever is shorter. A host's own cancellation does not: it stops the turn at once, as before. Zero, the default, is the behaviour before this option. It is not capped against a request's `timeoutMs`; a grace no smaller than the limit leaves a turn no time in which a call is taken, and choosing it is the host's. A turn with no `timeoutMs` has no deadline to drain ahead of. | [packages/runtime/src/executor.ts:82](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L82)   |
+| <a id="property-onturnerror"></a> `onTurnError?`                 | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the turn body did not convert into an outcome. The envelope contains such a throw and ends the turn `failed` with `runtime_failed`; the error itself comes here rather than being discarded. See [TurnErrorReporter](#turnerrorreporter) for what it may and may not be used for. Not only the plugin's. The turn body also calls `openTurnAuthority`, `admitTurn`, `reach`, and `listTools`, and a host port that throws arrives here too under the same terminal code. That conflation is in the wire vocabulary and is not fixed by this hook; the error's own stack is what separates them, which is the reason for handing it over rather than classifying it here.                                                                                                                                                                                                   | [packages/runtime/src/executor.ts:104](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L104) |
+| <a id="property-spans"></a> `spans?`                             | [`SpanSink`](sharedos-core.md#spansink)   | Where the envelope reports what it cost, when a host is measuring. A second clock, and deliberately not the one `clock` supplies: that one names instants for a record and a conformance run freezes it. See [SpanSink](sharedos-core.md#spansink).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [packages/runtime/src/executor.ts:90](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L90)   |
 
 ---
 
 ### StandardRuntimeOptions
 
-Defined in: [packages/runtime/src/standard-runtime.ts:140](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L140)
+Defined in: [packages/runtime/src/standard-runtime.ts:138](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L138)
 
 #### Properties
 
 | Property                                               | Type                                      | Description                                                                                                                                                                                                                                                                                                                    | Defined in                                                                                                                                         |
 | ------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number`                                  | -                                                                                                                                                                                                                                                                                                                              | [packages/runtime/src/standard-runtime.ts:143](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L143) |
-| <a id="property-driver"></a> `driver`                  | [`AgentTurnDriver`](#agentturndriver)     | The one driver this runtime seats.                                                                                                                                                                                                                                                                                             | [packages/runtime/src/standard-runtime.ts:142](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L142) |
-| <a id="property-onturnerror-1"></a> `onTurnError?`     | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the loop contained rather than propagated. A driver that throws ends the turn `driver_failed`, which is a cooperative outcome the envelope never sees as an exception -- so the executor's own hook cannot report it and this one exists. Same contract; see [TurnErrorReporter](#turnerrorreporter). | [packages/runtime/src/standard-runtime.ts:152](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L152) |
+| <a id="property-closetimeoutms"></a> `closeTimeoutMs?` | `number`                                  | How long closing a driver's session may take before the turn stops waiting for it. Unset unless the host sets it, and unset is no limit.                                                                                                                                                                                       | [packages/runtime/src/standard-runtime.ts:145](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L145) |
+| <a id="property-driver"></a> `driver`                  | [`AgentTurnDriver`](#agentturndriver)     | The one driver this runtime seats.                                                                                                                                                                                                                                                                                             | [packages/runtime/src/standard-runtime.ts:140](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L140) |
+| <a id="property-onturnerror-1"></a> `onTurnError?`     | [`TurnErrorReporter`](#turnerrorreporter) | Notification for a throw the loop contained rather than propagated. A driver that throws ends the turn `driver_failed`, which is a cooperative outcome the envelope never sees as an exception -- so the executor's own hook cannot report it and this one exists. Same contract; see [TurnErrorReporter](#turnerrorreporter). | [packages/runtime/src/standard-runtime.ts:154](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L154) |
 
 ---
 
@@ -854,7 +861,7 @@ Which turn a [TurnErrorReporter](#turnerrorreporter) notification is about.
 
 ### TurnExecutionPort
 
-Defined in: [packages/runtime/src/executor.ts:109](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L109)
+Defined in: [packages/runtime/src/executor.ts:113](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L113)
 
 #### Methods
 
@@ -862,7 +869,7 @@ Defined in: [packages/runtime/src/executor.ts:109](https://github.com/systemind-
 
 > **execute**(`input`, `options?`): `Promise`\<\{ `completedAt`: `string`; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `startedAt`: `string`; `status`: `"succeeded"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"denied"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"failed"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `error?`: \{ `code`: `string`; `details?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `message`: `string`; `retryable?`: `boolean`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"cancelled"`; `traceId`: `string`; `version`: `"1"`; \} \| \{ `completedAt`: `string`; `escalation`: \{ `reason`: `string`; `requestedAt`: `string`; `requestedAuthority?`: \{ `capabilities`: `object`[]; `constraints?`: \{ `delegationDepth?`: `number`; `expiresAt?`: `string`; `maxUses?`: `number`; `notBefore?`: `string`; `purposes?`: `string`[]; \}; `id`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `namespaceId`: `string`; `owner`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `purpose`: `string`; `requestedAt`: `string`; `requester`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; \}; `reviewer`: \{ `kind`: `"human"`; `userId`: `string`; \} \| \{ `agentId`: `string`; `kind`: `"agent"`; \} \| \{ `conversationId`: `string`; `kind`: `"group"`; \} \| \{ `kind`: `"service"`; `serviceId`: `string`; \}; `status`: `"pending"`; \}; `events`: `object`[]; `executionId`: `string`; `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `startedAt`: `string`; `status`: `"escalated"`; `traceId`: `string`; `version`: `"1"`; \}\>
 
-Defined in: [packages/runtime/src/executor.ts:110](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L110)
+Defined in: [packages/runtime/src/executor.ts:114](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L114)
 
 ###### Parameters
 
@@ -989,11 +996,9 @@ plugin that replaced the loop entirely, which is why every driven column
 reported the escalation row as structurally unavailable -- a limit of this
 type, not of any vendor.
 
-The reason is the driver's own words and is recorded verbatim, up to the
-512 characters the outcome's contract carries; a driver reading it off a
-model or a harness cuts it there rather than replacing it (see
-`escalationRequest`), and one that hands the loop more than that has its
-decision refused. Nothing here advances the escalation: SharedOS records
+The reason is the driver's own words and is recorded verbatim, at any
+length; one that is empty once trimmed has its decision refused (see
+`escalationReason`). Nothing here advances the escalation: SharedOS records
 that a decision was asked for and grants nothing while it is pending.
 
 ---
@@ -1070,7 +1075,7 @@ turn's identifiers are not the ones a mediated call has.
 
 > **TurnKernel** = `Pick`\<[`SharedOSKernel`](sharedos-core.md#sharedoskernel), `"admitTurn"` \| `"reach"` \| `"listTools"` \| `"invokeTool"` \| `"openTurnAuthority"` \| `"recordEscalation"` \| `"recordTurnEnd"` \| `"recordRefusedCall"`>\>
 
-Defined in: [packages/runtime/src/executor.ts:128](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L128)
+Defined in: [packages/runtime/src/executor.ts:132](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L132)
 
 The minimal deny-by-default kernel surface required by a turn executor.
 
@@ -1108,7 +1113,7 @@ Defined in: [packages/runtime/src/escalation.ts:8](https://github.com/systemind-
 
 > `const` **ESCALATION\_ASKED\_ANNOTATION**: `"escalationAsked"` = `"escalationAsked"`
 
-Defined in: [packages/runtime/src/escalation.ts:36](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L36)
+Defined in: [packages/runtime/src/escalation.ts:29](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L29)
 
 The key a delegate states the ask under, through `RuntimeHost.annotate`.
 
@@ -1131,18 +1136,6 @@ it honoured.
 
 ---
 
-### ESCALATION\_REASON\_MAX\_LENGTH
-
-> `const` **ESCALATION\_REASON\_MAX\_LENGTH**: `512` = `512`
-
-Defined in: [packages/runtime/src/escalation.ts:14](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L14)
-
-The longest reason an escalation can carry, restating the contract's bound on
-`RuntimeTurnOutcome.reason` and `Escalation.reason` rather than importing a
-schema this package does not validate with.
-
----
-
 ### ESCALATION\_RESOURCE\_PATH
 
 > `const` **ESCALATION\_RESOURCE\_PATH**: readonly `string`[]
@@ -1157,7 +1150,7 @@ The resource an escalation grant is written over.
 
 > `const` **ESCALATION\_TOOL\_DEFINITION**: [`ToolDefinition`](sharedos-contracts.md#tooldefinition)
 
-Defined in: [packages/runtime/src/escalation.ts:71](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L71)
+Defined in: [packages/runtime/src/escalation.ts:64](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L64)
 
 The affordance a driver offers so escalation can be chosen rather than inferred.
 
@@ -1220,7 +1213,7 @@ the model or harness is sent anything.
 
 > `const` **STANDARD\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:155](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L155)
+Defined in: [packages/runtime/src/standard-runtime.ts:157](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L157)
 
 ---
 
@@ -1228,7 +1221,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:155](https://github.com/sy
 
 > `const` **TURN\_DRAINING**: `"turn_draining"` = `"turn_draining"`
 
-Defined in: [packages/runtime/src/executor.ts:1063](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1063)
+Defined in: [packages/runtime/src/executor.ts:1058](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1058)
 
 The code a new tool call is refused under once the turn takes nothing new.
 
@@ -1238,7 +1231,7 @@ The code a new tool call is refused under once the turn takes nothing new.
 
 > **createEscalationTool**(): [`ToolHandler`](sharedos-core.md#toolhandler)
 
-Defined in: [packages/runtime/src/escalation.ts:117](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L117)
+Defined in: [packages/runtime/src/escalation.ts:109](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L109)
 
 The handler a host registers so the affordance is catalogued.
 
@@ -1267,16 +1260,16 @@ record the wrong defect.
 
 > **createStandardRuntime**(`options`): [`RuntimePlugin`](#runtimeplugin)
 
-Defined in: [packages/runtime/src/standard-runtime.ts:180](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L180)
+Defined in: [packages/runtime/src/standard-runtime.ts:182](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/standard-runtime.ts#L182)
 
 The SharedOS loop, with one driver seated.
 
 "Standard" names the SharedOS-owned default at each layer: this is the
 default runtime, and a host may install another `RuntimePlugin` in its place.
 The loop asks the seated driver what to do next, forwards every tool call to
-the envelope, stops at `maxSteps`, and asks nothing more of the driver once
-the turn is draining. What differs between two uses of it is only the driver,
-so the runtime reports the driver's manifest (see
+the envelope, stops at `maxSteps` when the host set one, and asks nothing
+more of the driver once the turn is draining. What differs between two uses
+of it is only the driver, so the runtime reports the driver's manifest (see
 [AgentTurnDriver.manifest](#property-manifest)) and a record names what sat in the seat.
 
 The driver slot takes any [AgentTurnDriver](#agentturndriver): a host's own, or
@@ -1349,7 +1342,7 @@ told the list decides nothing.
 
 > **escalationArguments**(`reason`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/runtime/src/escalation.ts:192](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L192)
+Defined in: [packages/runtime/src/escalation.ts:158](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L158)
 
 The arguments an escalation is requested with, for a driver writing the call.
 
@@ -1369,7 +1362,7 @@ The arguments an escalation is requested with, for a driver writing the call.
 
 > **escalationAskedAnnotation**(`reason`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/runtime/src/escalation.ts:39](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L39)
+Defined in: [packages/runtime/src/escalation.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L32)
 
 The ask, in the one shape every delegate states it.
 
@@ -1389,7 +1382,7 @@ The ask, in the one shape every delegate states it.
 
 > **escalationOffered**(`tools`): `boolean`
 
-Defined in: [packages/runtime/src/escalation.ts:226](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L226)
+Defined in: [packages/runtime/src/escalation.ts:185](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L185)
 
 Whether a turn's catalogue offers the affordance.
 
@@ -1413,19 +1406,14 @@ the executor from the catalogue the turn was actually served.
 
 > **escalationReason**(`value`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:209](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L209)
+Defined in: [packages/runtime/src/escalation.ts:170](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L170)
 
-A reason string bounded exactly as `RuntimeTurnOutcome`'s is.
+A reason string as `RuntimeTurnOutcome` accepts one: text that is not empty
+once trimmed, at any length.
 
 Checked here rather than with a schema because this package carries no
-validator of its own; the bounds are the contract's and are restated, not
-loosened, so a decision that parses here still parses as an outcome.
-
-Strict where [escalationRequest](#escalationrequest) cuts, on purpose. That function reads
-a model's or a harness's words, which are input; this one checks a driver's
-decision, which is code. A driver that hands the loop an overlong reason has
-a bug, and the loop refusing the decision is how the bug is found rather
-than quietly trimmed away.
+validator of its own; the rule is the contract's, restated, so a decision
+that parses here still parses as an outcome.
 
 #### Parameters
 
@@ -1443,7 +1431,7 @@ than quietly trimmed away.
 
 > **escalationRequest**(`tool`, `arguments_`): `string` \| `undefined`
 
-Defined in: [packages/runtime/src/escalation.ts:159](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L159)
+Defined in: [packages/runtime/src/escalation.ts:148](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/escalation.ts#L148)
 
 Read an escalation out of a call a driver is about to make, if that is what it is.
 
@@ -1462,10 +1450,7 @@ under a reason saying so. The alternative is to forward it to a kernel that
 will refuse it, which turns "the driver asked for a human" into "the agent
 made a malformed call" -- the wrong record of what happened.
 
-A reason longer than the outcome can carry is cut to
-[ESCALATION\_REASON\_MAX\_LENGTH](#escalation_reason_max_length), not replaced. It is the occupant's own
-words, and the first 512 characters of what was said are a truer record than
-a sentence saying nothing was.
+The reason is the occupant's own words and is kept whole, at any length.
 
 #### Parameters
 
@@ -1519,7 +1504,7 @@ offers the same hook.
 
 > **terminalSource**(`events`): `"envelope"` \| `"runtime"` \| `undefined`
 
-Defined in: [packages/runtime/src/executor.ts:1126](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1126)
+Defined in: [packages/runtime/src/executor.ts:1121](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1121)
 
 Whether the envelope refused the turn or the runtime reported its own failure.
 

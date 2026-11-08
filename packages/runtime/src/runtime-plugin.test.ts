@@ -15,6 +15,7 @@ import {
   RuntimeRegistry,
   SharedOSExecutor,
   type RuntimeHost,
+  type RuntimeLimits,
   type RuntimePlugin,
   type RuntimeTurnRequest,
   type TurnErrorContext,
@@ -455,6 +456,71 @@ describe("RuntimePlugin security envelope", () => {
       expect(result.output).toEqual({
         results: ["succeeded", "succeeded", "tool_call_limit_exceeded"],
       });
+    }
+  });
+
+  it("sets no step, call or time limit of its own when the host sets none", async () => {
+    const runtimeKernel = kernel();
+    let limits: RuntimeLimits | undefined;
+    const plugin = runtime(async (_input, host) => {
+      limits = host.limits;
+      const results: string[] = [];
+      // Past the 16 steps and 16 calls SharedOS once assumed for a host.
+      for (let step = 0; step < 40; step += 1) {
+        const result = await host.invokeTool(
+          {
+            id: `call-${step}`,
+            tool: tool.name,
+            arguments: {},
+            traceId: context.traceId,
+            requestedAt: now,
+          },
+          { step },
+        );
+        results.push(result.status);
+      }
+      return { type: "complete", output: { results } };
+    });
+
+    const result = await new SharedOSExecutor(runtimeKernel, plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+    }).execute(request());
+
+    expect(limits).toEqual({ maxSteps: undefined, maxToolCalls: undefined, timeoutMs: undefined });
+    expect(result.status).toBe("succeeded");
+    if (result.status === "succeeded") {
+      expect(result.output).toEqual({ results: Array.from({ length: 40 }, () => "succeeded") });
+    }
+    expect(runtimeKernel.invokeTool).toHaveBeenCalledTimes(40);
+  });
+
+  it("does not stand a step limit in for a call limit the host left unset", async () => {
+    const runtimeKernel = kernel();
+    const plugin = runtime(async (_input, host) => {
+      const results: string[] = [];
+      for (const id of ["call-1", "call-2", "call-3"]) {
+        const result = await host.invokeTool({
+          id,
+          tool: tool.name,
+          arguments: {},
+          traceId: context.traceId,
+          requestedAt: now,
+        });
+        results.push(result.status);
+      }
+      return { type: "complete", output: { results } };
+    });
+
+    const result = await new SharedOSExecutor(runtimeKernel, plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      defaultMaxSteps: 1,
+    }).execute(request());
+
+    expect(result.status).toBe("succeeded");
+    if (result.status === "succeeded") {
+      expect(result.output).toEqual({ results: ["succeeded", "succeeded", "succeeded"] });
     }
   });
 

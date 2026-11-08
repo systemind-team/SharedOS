@@ -1573,6 +1573,8 @@ export interface ConformanceWorldOptions {
   /** Bound the turn below the number of calls its move declares. */
   readonly maxToolCalls?: number;
   readonly maxSteps?: number;
+  /** The turn's time limit, for a row that needs a deadline to drain ahead of. */
+  readonly timeoutMs?: number;
   /**
    * Take the audit sink down once this many tool calls have been recorded.
    *
@@ -1790,12 +1792,15 @@ export function createConformanceWorld(
   ];
 
   const executionOptions =
-    options.maxToolCalls === undefined && options.maxSteps === undefined
+    options.maxToolCalls === undefined &&
+    options.maxSteps === undefined &&
+    options.timeoutMs === undefined
       ? {}
       : {
           options: {
             ...(options.maxToolCalls === undefined ? {} : { maxToolCalls: options.maxToolCalls }),
             ...(options.maxSteps === undefined ? {} : { maxSteps: options.maxSteps }),
+            ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
           },
         };
 

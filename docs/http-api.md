@@ -321,10 +321,10 @@ at admission and nothing runs.
 `status` is `succeeded`, `denied`, `failed`, `cancelled`, or `escalated` — the
 last carries an `escalation` and no `error`. `events` is
 append-only and ordered by `sequence`; the nine types are listed in
-[events](errors.md#execution-events). `options` is validated, not clamped:
-`maxSteps` above 1,000, `maxToolCalls` above 10,000, or `timeoutMs` above
-600,000 is a `400 invalid_request`, the same limits the embedded schema
-enforces (see [contract limits](errors.md#contract-limits)).
+[events](errors.md#execution-events). `options` sets the turn's limits and
+each is unset unless the host sets it; an unset limit is no limit. A value that
+is not a positive integer is a `400 invalid_request`, as in the embedded schema;
+SharedOS sets no ceiling on the values themselves.
 
 There is no streaming endpoint. A turn is one request/response, and the event
 list is returned with the result.

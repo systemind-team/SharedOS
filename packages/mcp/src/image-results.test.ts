@@ -28,11 +28,19 @@ describe("image presentation through the authorized MCP result", () => {
       ).content,
     ).toHaveLength(1);
   });
-  it("bounds image size and rejects malformed base64", () => {
-    for (const data of ["!not-base64", "A".repeat(4 * 1024 * 1024 + 4)])
-      expect(
-        toCallToolResult(result([{ type: "image", mimeType: "image/png", data }])).content,
-      ).toHaveLength(1);
+  it("rejects malformed base64", () => {
+    expect(
+      toCallToolResult(result([{ type: "image", mimeType: "image/png", data: "!not-base64" }]))
+        .content,
+    ).toHaveLength(1);
+  });
+  it("passes images on at any count or size", () => {
+    const large = { type: "image", mimeType: "image/png", data: "A".repeat(4 * 1024 * 1024 + 4) };
+    const small = { type: "image", mimeType: "image/png", data: "aGVsbG8=" };
+    expect(toCallToolResult(result([large])).content).toHaveLength(2);
+    expect(toCallToolResult(result(Array.from({ length: 5 }, () => small))).content).toHaveLength(
+      6,
+    );
   });
   it("never exposes presentation hints from denied results", () => {
     const denied = {

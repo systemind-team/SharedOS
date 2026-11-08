@@ -9,14 +9,15 @@ import { MessageEnvelopeSchema } from "./message.js";
 import { ProtocolErrorSchema } from "./protocol-error.js";
 import { ToolDefinitionSchema } from "./tool.js";
 
-export const MAX_EXECUTION_TIMEOUT_MS = 7_200_000;
-export const MAX_EXECUTION_TOOL_CALLS = 10_000;
-
+/**
+ * The limits a host sets on one turn. Each is unset unless the host sets it,
+ * and an unset limit is no limit: SharedOS adds no ceiling of its own.
+ */
 export const ExecutionOptionsSchema = z
   .object({
-    maxSteps: z.number().int().positive().max(1_000).optional(),
-    maxToolCalls: z.number().int().positive().max(MAX_EXECUTION_TOOL_CALLS).optional(),
-    timeoutMs: z.number().int().positive().max(MAX_EXECUTION_TIMEOUT_MS).optional(),
+    maxSteps: z.number().int().positive().optional(),
+    maxToolCalls: z.number().int().positive().optional(),
+    timeoutMs: z.number().int().positive().optional(),
   })
   .strict();
 
@@ -30,7 +31,7 @@ export const ExecutionRequestSchema = z
     agent: AgentAddressSchema,
     context: AccessContextSchema,
     message: MessageEnvelopeSchema,
-    tools: z.array(ToolDefinitionSchema).max(512),
+    tools: z.array(ToolDefinitionSchema),
     state: JsonObjectSchema.optional(),
     options: ExecutionOptionsSchema.optional(),
     metadata: JsonObjectSchema.optional(),
@@ -69,7 +70,7 @@ export type ExecutionEvent = z.infer<typeof ExecutionEventSchema>;
  */
 export const EscalationSchema = z
   .object({
-    reason: z.string().trim().min(1).max(512),
+    reason: z.string().trim().min(1),
     reviewer: AddressSchema,
     requestedAt: TimestampSchema,
     /**

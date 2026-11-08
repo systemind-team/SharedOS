@@ -13,7 +13,6 @@ import {
   SHAREDOS_API_ERROR_CODES,
   SHAREDOS_ROUTES,
   isJsonObject,
-  MAX_EXECUTION_TIMEOUT_MS,
   MessageDeliveryResultSchema,
   MessageEnvelopeSchema,
   MessageRequestArgumentsSchema,
@@ -415,17 +414,8 @@ describe("JSON-safe protocol contracts", () => {
         tools: [tool],
       }).success,
     ).toBe(true);
-    expect(
-      ExecutionRequestSchema.safeParse({
-        version: "1",
-        executionId: "execution-1",
-        agent: actor,
-        context,
-        message,
-        tools: [tool],
-        options: { maxToolCalls: 10_001 },
-      }).success,
-    ).toBe(false);
+    // SharedOS sets no ceiling on a turn: any positive limit a host names is
+    // admitted, and a non-positive one is still not a limit at all.
     expect(
       ExecutionRequestSchema.safeParse({
         version: "1",
@@ -434,18 +424,18 @@ describe("JSON-safe protocol contracts", () => {
         context,
         message,
         tools: [tool],
-        options: { timeoutMs: MAX_EXECUTION_TIMEOUT_MS },
+        options: { maxSteps: 1_000_001, maxToolCalls: 10_000_001, timeoutMs: 30 * 86_400_000 },
       }).success,
     ).toBe(true);
     expect(
       ExecutionRequestSchema.safeParse({
         version: "1",
-        executionId: "execution-too-long",
+        executionId: "execution-no-time",
         agent: actor,
         context,
         message,
         tools: [tool],
-        options: { timeoutMs: MAX_EXECUTION_TIMEOUT_MS + 1 },
+        options: { timeoutMs: 0 },
       }).success,
     ).toBe(false);
     expect(

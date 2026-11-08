@@ -213,7 +213,7 @@ export const SharedOSToolCatalogSchema = z
     version: z.literal("1"),
     executionId: IdentifierSchema,
     catalogHash: z.string().regex(/^[0-9a-f]{64}$/u),
-    tools: z.array(PublishedToolDefinitionSchema).max(512),
+    tools: z.array(PublishedToolDefinitionSchema),
   })
   .strict()
   .superRefine((catalog, context) => {

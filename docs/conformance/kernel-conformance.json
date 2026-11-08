@@ -1,8 +1,8 @@
 {
   "version": "1",
   "judgeVersion": "6",
-  "caseSetHash": "9bec2d5476f98f6914fd8471c7aecc07e7125a0d8a9d116578f2ed9c6dc83188",
-  "worldSetHash": "072e045f04d45440355e3a5e36c9763d405837190c6e51d781db6df292279c2b",
+  "caseSetHash": "119e339e4a9f912b7eb5cca7fda05176b199322d1c63a51744a6aec19fa0da47",
+  "worldSetHash": "fc15c050f0bb95ec916c820b8b45d1271aae2dc778dc298cdcbf19b5076aed26",
   "columns": [
     {
       "id": "adversary-embedded",
@@ -2223,7 +2223,7 @@
       "kind": "turn_draining",
       "invariant": "Start a call on a turn that is taking nothing new",
       "expectedOutcome": "Deny",
-      "condition": "The envelope is given a drain grace as long as the longest turn it admits, so the turn takes no new call from its first instant. No clock is involved: every call the runtime makes is refused, on every run.",
+      "condition": "The envelope is given a drain grace as long as the turn's time limit, so the turn takes no new call from its first instant. No clock is involved: every call the runtime makes is refused, on every run.",
       "cells": [
         {
           "columnId": "adversary-embedded",

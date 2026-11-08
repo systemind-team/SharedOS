@@ -500,6 +500,8 @@ For the standard loop, the host implements `AgentTurnDriver`, seats it with
 ```ts
 import { SharedOSExecutor, createStandardRuntime } from "@aicoo/sharedos";
 
+// The host's own limits. Each is unset unless set here, and an unset limit is
+// no limit: SharedOS sets none of its own.
 const runtime = createStandardRuntime({ driver: agentDriver });
 const turns = new SharedOSExecutor(kernel, runtime, {
   defaultMaxSteps: 16,

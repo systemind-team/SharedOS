@@ -80,11 +80,9 @@ export type AgentTurnDecision =
    * reported the escalation row as structurally unavailable -- a limit of this
    * type, not of any vendor.
    *
-   * The reason is the driver's own words and is recorded verbatim, up to the
-   * 512 characters the outcome's contract carries; a driver reading it off a
-   * model or a harness cuts it there rather than replacing it (see
-   * `escalationRequest`), and one that hands the loop more than that has its
-   * decision refused. Nothing here advances the escalation: SharedOS records
+   * The reason is the driver's own words and is recorded verbatim, at any
+   * length; one that is empty once trimmed has its decision refused (see
+   * `escalationReason`). Nothing here advances the escalation: SharedOS records
    * that a decision was asked for and grants nothing while it is pending.
    */
   | { readonly type: "escalate"; readonly reason: string; readonly metadata?: JsonObject };
@@ -140,6 +138,10 @@ export interface AgentTurnDriver {
 export interface StandardRuntimeOptions {
   /** The one driver this runtime seats. */
   driver: AgentTurnDriver;
+  /**
+   * How long closing a driver's session may take before the turn stops
+   * waiting for it. Unset unless the host sets it, and unset is no limit.
+   */
   closeTimeoutMs?: number;
   /**
    * Notification for a throw the loop contained rather than propagated.
@@ -168,9 +170,9 @@ export const STANDARD_RUNTIME_MANIFEST: RuntimeManifest = deepFreeze({
  * "Standard" names the SharedOS-owned default at each layer: this is the
  * default runtime, and a host may install another `RuntimePlugin` in its place.
  * The loop asks the seated driver what to do next, forwards every tool call to
- * the envelope, stops at `maxSteps`, and asks nothing more of the driver once
- * the turn is draining. What differs between two uses of it is only the driver,
- * so the runtime reports the driver's manifest (see
+ * the envelope, stops at `maxSteps` when the host set one, and asks nothing
+ * more of the driver once the turn is draining. What differs between two uses
+ * of it is only the driver, so the runtime reports the driver's manifest (see
  * {@link AgentTurnDriver.manifest}) and a record names what sat in the seat.
  *
  * The driver slot takes any {@link AgentTurnDriver}: a host's own, or
@@ -184,15 +186,18 @@ export function createStandardRuntime(options: StandardRuntimeOptions): RuntimeP
 class StandardLoop implements RuntimePlugin {
   readonly manifest: RuntimeManifest;
   readonly #driver: AgentTurnDriver;
-  readonly #closeTimeoutMs: number;
+  readonly #closeTimeoutMs: number | undefined;
   readonly #onTurnError: TurnErrorReporter | undefined;
 
   constructor(options: StandardRuntimeOptions) {
     this.#driver = options.driver;
     this.manifest = options.driver.manifest ?? STANDARD_RUNTIME_MANIFEST;
     this.#onTurnError = options.onTurnError;
-    this.#closeTimeoutMs = options.closeTimeoutMs ?? 1_000;
-    if (!Number.isInteger(this.#closeTimeoutMs) || this.#closeTimeoutMs <= 0) {
+    this.#closeTimeoutMs = options.closeTimeoutMs;
+    if (
+      this.#closeTimeoutMs !== undefined &&
+      (!Number.isInteger(this.#closeTimeoutMs) || this.#closeTimeoutMs <= 0)
+    ) {
       throw new TypeError("closeTimeoutMs must be a positive integer");
     }
   }
@@ -218,7 +223,8 @@ class StandardLoop implements RuntimePlugin {
       }
       let nextInput: AgentTurnInput = { type: "start" };
 
-      for (let step = 0; step < host.limits.maxSteps; step += 1) {
+      const maxSteps = host.limits.maxSteps ?? Number.POSITIVE_INFINITY;
+      for (let step = 0; step < maxSteps; step += 1) {
         // Once the turn takes nothing new the seat is not asked again. A
         // decision already being made is left to land: one that ends the turn
         // is honoured below, and a tool call is refused by the envelope.
@@ -411,7 +417,7 @@ function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[])
 async function closeSession(
   session: AgentTurnSession | undefined,
   outcome: ExecutionResult["status"],
-  timeoutMs: number,
+  timeoutMs: number | undefined,
 ): Promise<void> {
   if (session?.close === undefined) {
     return;
@@ -421,7 +427,8 @@ async function closeSession(
   try {
     await raceAbort(Promise.resolve(session.close(outcome, abort.signal)), abort.signal);
   } catch {
-    // Closing a provider session must neither hang nor replace the protocol result.
+    // Closing a provider session must not replace the protocol result. It may
+    // hang only when the host set no close timeout.
   } finally {
     abort.abort(new Error("session close finished"));
     abort.dispose();
