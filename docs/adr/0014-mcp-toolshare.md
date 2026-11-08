@@ -5,6 +5,10 @@
 - Revised: 2026-09-20. The declared `ToolPolicy` is written to the record. "Three
   tool classes" said what it declares and why a result cannot be read without
   it; nothing put it anywhere a reader of a record would find it.
+- Revised: 2026-11-08. SharedOS no longer restricts a harness's own tools or
+  the other MCP servers it loads, so a `strict` policy is the host's
+  declaration rather than something a launch enforces. See "Amendment,
+  2026-11-08" below.
 
 ## Context
 
@@ -149,6 +153,26 @@ almost nothing when the harness also had a shell. So the declaration travels
 with the result: a column's policy is written to every execution record it
 produces, as `SystemIdentity.toolPolicy`, beside the `catalogHash` that says
 which managed tools it was given.
+
+### Amendment, 2026-11-08: strictness is the host's declaration
+
+The Claude Code launch no longer passes `--strict-mcp-config` or
+`--disallowedTools`. Those flags made a `strict` policy something the launch
+enforced: the machine's own MCP servers were dropped and the harness's file
+and shell tools removed. SharedOS imposes no restriction on a harness. It
+allows, denies or escalates the calls that reach it through MCP, and what the
+harness does with its own tools, or which other servers it loads, is the
+harness's and the host's. A host that wants a restriction appends the CLI's own
+flags through `args`.
+
+So `ToolPolicy` is now what the host declares about the run, not what the
+launch made true. A column whose host names no `externalDirect` servers is
+recorded `strict` on the host's word; a Claude Code launched without
+`--strict-mcp-config` loads whatever servers its machine configures, and a host
+that has some names them, which makes the column `hybrid`. `harnessLocal` names
+the CLI's built-in tools. A harness that reaches for one of them instead of the
+catalogue leaves no operation behind, and the row is `not exercised`: a finding
+about the harness, never a pass and never a kernel failure.
 
 ## The MCP conformance column
 

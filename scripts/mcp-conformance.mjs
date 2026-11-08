@@ -264,7 +264,9 @@ for (const harness of HARNESSES) {
   const probe = await probeHarness(requirements);
   // The operator's declaration where it made one: the machine's own MCP
   // servers for this CLI, and what is left of its tools when the run's `args`
-  // narrowed them.
+  // narrowed them. The mode is declared, not enforced: the launch no longer
+  // drops the machine's own servers, so a column whose operator names none is
+  // recorded `strict` on the operator's word, and nothing here checks it.
   const policy = declareToolPolicy({
     harnessLocal: host.harnessLocal ?? harness.harnessLocal,
     externalDirect: host.externalDirect ?? [],

@@ -220,7 +220,11 @@ configures servers of its own for the CLI declares them as `externalDirect`, and
 is `hybrid`.
 
 A conformance column that declares a policy has it written to every execution
-record it produces, as `system.toolPolicy`, beside `catalogHash`. `mcpColumn`
+record it produces, as `system.toolPolicy`, beside `catalogHash`. The policy is
+what the host declares, not what the launch enforces: SharedOS's launches no
+longer drop a CLI's own MCP servers, so `strict` means the host named no
+`externalDirect` server, and is only as true as that declaration
+([ADR 0014](adr/0014-mcp-toolshare.md), amended 2026-11-08). `mcpColumn`
 takes it as `toolPolicy`, and `scripts/mcp-conformance.mjs` passes each CLI's.
 A column that declares none, the scripted ones among them, leaves the field
 absent: the managed catalogue was all it had.
