@@ -207,7 +207,7 @@ export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
  * entry by its id when it reports that the entry did not activate, so this is
  * how a launch recognises its own client's failure among the owner's.
  */
-export function deepseekMcpEntryId(connection: Pick<HarnessMcpConnection, "name">): string {
+export function deepseekMcpEntryId(connection: HarnessMcpConnection): string {
   return `mcp-${mcpServerName(connection)}`;
 }
 

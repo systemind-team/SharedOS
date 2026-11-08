@@ -618,7 +618,7 @@ describe("harness configuration", () => {
     expect(overlay.startsWith("- insert:")).toBe(true);
     // The id dsh names the entry by when it reports that it did not activate.
     expect(overlay).toContain(`    - id: ${deepseekMcpEntryId(connection)}\n`);
-    expect(deepseekMcpEntryId({ name: "bridge" })).toBe("mcp-bridge");
+    expect(deepseekMcpEntryId({ ...connection, name: "bridge" })).toBe("mcp-bridge");
     expect(overlay).toContain("@deepseek-ai/dsh-mcp-client");
     expect(overlay).toContain("transport: streamable-http");
     expect(overlay).not.toMatch(/^- id:/mu);
