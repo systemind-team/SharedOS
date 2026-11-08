@@ -1,8 +1,8 @@
 {
   "version": "1",
   "judgeVersion": "6",
-  "caseSetHash": "1fbe4bbda5f8c4bf818ca87426f0449ffe98b258a91d3cae7321b45380240b59",
-  "worldSetHash": "37c6c19163fb85b26abe539e2a81bc920a3db75c05a52ab34943cb98380fbe09",
+  "caseSetHash": "9bec2d5476f98f6914fd8471c7aecc07e7125a0d8a9d116578f2ed9c6dc83188",
+  "worldSetHash": "072e045f04d45440355e3a5e36c9763d405837190c6e51d781db6df292279c2b",
   "columns": [
     {
       "id": "adversary-embedded",
