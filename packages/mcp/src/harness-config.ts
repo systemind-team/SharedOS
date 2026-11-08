@@ -230,7 +230,10 @@ export function deepseekMcpEntryId(connection: HarnessMcpConnection): string {
  * authorization.
  *
  * The bearer token goes in `headers.Authorization`, which is where Pi's schema
- * takes it, and `timeout` is Pi's per-request limit in seconds, written only when
+ * takes it, with every `$` in it doubled. Pi reads `$NAME` and `${NAME}` in a
+ * header value as environment variables and `$$` as one literal `$`, so a token
+ * the host chose with a `$` in it would otherwise reach the bridge rewritten and
+ * be refused. `timeout` is Pi's per-request limit in seconds, written only when
  * the host set one. There is no lifecycle key. Pi connects every server in the
  * background when the session starts, and its first prompt waits for servers
  * with direct tools up to a limit that is Pi's own, not SharedOS's.
@@ -247,7 +250,7 @@ export function piMcpConfig(connection: HarnessMcpConnection): JsonObject {
         url: connection.url,
         ...(connection.token === undefined
           ? {}
-          : { headers: { Authorization: `Bearer ${connection.token}` } }),
+          : { headers: { Authorization: `Bearer ${connection.token.split("$").join("$$")}` } }),
         ...(connection.timeoutSec === undefined ? {} : { timeout: connection.timeoutSec }),
         exposure: "direct",
       },
@@ -297,9 +300,10 @@ export function harnessMcpConfigFile(
  * approximation: DeepSeek normalises the raw name to `[A-Za-z0-9_-]` and, when
  * that changes the name -- which it does for every dotted SharedOS name --
  * appends a deterministic hash so two tools can never collapse into one alias.
- * Pi makes every character outside `[A-Za-z0-9_]` an underscore, as this does,
- * but caps the name at 64 characters, and a name longer than that, or one two
- * tools would share, ends in a hash instead.
+ * Pi makes every character outside `[A-Za-z0-9_]` an underscore across the whole
+ * name, so a server named `my-tools` becomes `my_tools`, where this rewrites the
+ * tool part alone. It also caps the name at 64 characters, and a name longer
+ * than that, or one two tools would share, ends in a hash instead.
  *
  * Which is exactly why nothing may authorize against this. The alias is recorded
  * so a vendor transcript can be read back to a canonical name, and SharedOS maps
