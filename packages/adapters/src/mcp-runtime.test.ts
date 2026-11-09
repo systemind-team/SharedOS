@@ -1484,6 +1484,129 @@ function codexCli(events: readonly JsonObject[], exitCode: number): McpHarnessSp
   };
 }
 
+/**
+ * What Codex 0.167.0 printed on stderr, verbatim, when its `required` bridge
+ * could not be reached: three transport errors, then the session's ERROR line
+ * and the `Error: thread/start` line it exits 1 on. Assembled from its repeated
+ * parts, which together give the captured lines byte for byte.
+ */
+const CODEX_TRANSPORT =
+  "Send message error Transport [codex_rmcp_client::tool_list_changes::ToolListChanges<" +
+  "codex_rmcp_client::event_notification_transport::EventNotificationTransport<" +
+  "rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::" +
+  "StreamableHttpClientWorker<codex_rmcp_client::http_client_adapter::StreamableHttpClientAdapter>>>>]";
+const CODEX_REQUEST =
+  "error: Client error: HTTP request failed: http/request failed: error sending request " +
+  "for url (http://127.0.0.1:47199/mcp), when send initialize request";
+const CODEX_REASON = `handshaking with MCP server failed: ${CODEX_TRANSPORT} ${CODEX_REQUEST}: ${CODEX_TRANSPORT} ${CODEX_REQUEST}`;
+const codexRequiredFailed = (server: string): string =>
+  [
+    ...[
+      "2026-11-09T18:22:55.479350Z",
+      "2026-11-09T18:22:55.732638Z",
+      "2026-11-09T18:22:56.736857Z",
+    ].map(
+      (at) =>
+        `${at} ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, ` +
+        'when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url ' +
+        '(http://127.0.0.1:47199/mcp)")))',
+    ),
+    `2026-11-09T18:22:56.738275Z ERROR codex_core::session: Failed to create session: required MCP servers failed to initialize: ${server}: ${CODEX_REASON}`,
+    `Error: thread/start: thread/start failed: error creating thread: Fatal error: Failed to initialize session: required MCP servers failed to initialize: ${server}: ${CODEX_REASON} (code -32603)`,
+    "",
+  ].join("\n");
+
+/** A stand-in Codex that prints those lines, then goes on as long as it is told to. */
+const CODEX_STDERR_CLI = `
+process.stderr.write(JSON.parse(process.argv[2]));
+await new Promise((resolve) => setTimeout(resolve, Number(process.argv[3])));
+for (const event of JSON.parse(process.argv[4])) {
+  process.stdout.write(JSON.stringify(event) + "\\n");
+}
+process.exitCode = Number(process.argv[5]);
+`;
+
+function codexStderrCli(
+  stderr: string,
+  runsForMs: number,
+  events: readonly JsonObject[],
+  exitCode: number,
+): McpHarnessSpec {
+  return {
+    ...CODEX_MCP_HARNESS,
+    configFiles: () => [{ harness: "codex", filename: "codex.mjs", contents: CODEX_STDERR_CLI }],
+    launch: ({ configPaths }) => ({
+      command: process.execPath,
+      args: [
+        configPaths["codex.mjs"] as string,
+        JSON.stringify(stderr),
+        String(runsForMs),
+        JSON.stringify(events),
+        String(exitCode),
+      ],
+    }),
+  };
+}
+
+describe("a Codex whose required bridge did not start, on the MCP toolshare path", () => {
+  it("fails the turn harness_not_connected with Codex's reason, and ends Codex at once", async () => {
+    // Codex exits by itself here, but the turn does not wait on it: the first
+    // of its two lines decides, and the process is ended there.
+    const startedAt = Date.now();
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(codexStderrCli(codexRequiredFailed("sharedos"), 60_000, [], 1)),
+    ).execute({ ...executionRequest(), options: { timeoutMs: 20_000 } });
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: {
+        code: "harness_not_connected",
+        message: `Codex did not connect to the SharedOS MCP server: ${CODEX_REASON}`,
+        retryable: false,
+      },
+    });
+    expect(Date.now() - startedAt).toBeLessThan(15_000);
+  }, 30_000);
+
+  it("leaves a required server of the owner's own to Codex", async () => {
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(
+        codexStderrCli(
+          codexRequiredFailed("github"),
+          0,
+          [
+            { type: "thread.started", thread_id: "t" },
+            { type: "turn.started" },
+            { type: "item.completed", item: { id: "i", type: "agent_message", text: "done" } },
+            { type: "turn.completed" },
+          ],
+          0,
+        ),
+      ),
+    ).execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+  }, 30_000);
+
+  it("reads the bridge's server where Codex names it after another", () => {
+    const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
+    const read = (text: string) => CODEX_MCP_HARNESS.readDiagnostic?.(text, "stderr", connection);
+    const line = "Error: thread/start: required MCP servers failed to initialize: ";
+
+    expect(read(`${line}github: refused; sharedos: handshaking failed`)).toMatchObject({
+      code: "harness_not_connected",
+      message: "Codex did not connect to the SharedOS MCP server: handshaking failed",
+    });
+    expect(read(`${line}github: refused`)).toBeUndefined();
+    expect(read(`${line}sharedos-extra: refused`)).toBeUndefined();
+    expect(
+      CODEX_MCP_HARNESS.readDiagnostic?.(`${line}sharedos: x`, "stdout", connection),
+    ).toBeUndefined();
+  });
+});
+
 describe("the Codex CLI's own events, on the MCP toolshare path", () => {
   // `codex exec --json` for "Hi", recorded live, answered in prose with no tool
   // call. Before the protocol read these, the turn was read from the exit code
