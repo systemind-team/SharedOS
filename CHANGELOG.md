@@ -57,6 +57,48 @@ each entry calls out what a host has to update.
   spec does not set it (see the restrictions entry below). Nothing a host
   already does changes.
 
+- **The model is told its limits, before the turn and when it reaches them.**
+  `describeLimits` in `@aicoo/sharedos-runtime` renders the limits the host set
+  as words a model reads: the tool calls the turn may make, its steps (each
+  tool call is one, and so is the final answer) and its deadline as a length of
+  time. An unset limit gets no sentence, and with none set it returns
+  `undefined`. The default instructions every seat in
+  `@aicoo/sharedos-adapters` composes (`SeatTextOptions`) append it after the
+  reach, so the standard driver, the evaluation driver and the MCP harness
+  runtime all tell the model; a host's guidance string still comes first, and
+  an `instructions` function still replaces the whole text. Over MCP
+  the budget is named as calls to the server's tools, since the harness's own
+  tools count against nothing, and no step budget is given, since none binds
+  it. A steps-only budget is never described as refused: the model is told a
+  turn whose last step is a tool call ends without an answer. Where the
+  catalogue offers `sharedos.escalate`, asking for a human is named as the call
+  that still works once the call budget is spent. To carry the limits to a
+  driver, `RuntimeTurnRequest.options` now holds the limits the turn runs
+  under, the request's own or the executor's default, and only those that are
+  set. A host writing its own driver calls
+  `describeLimits(request.options, { escalation: escalationOffered(request.tools) })`.
+  The refusals a model reads now say what follows, under the same codes:
+  - `tool_call_limit_exceeded`: "This turn's budget of N tool calls is used up.
+    No further call to these tools will run this turn; finish with what you
+    have."
+  - `step_limit_exceeded`: "This call named step S, past this turn's budget of
+    N steps, and did not run; no call past that budget will run this turn."
+  - `turn_draining`: "The turn is ending at its deadline and takes no new calls
+    to these tools; finish with what you have.", or on an audit outage "The
+    turn is ending and takes no new calls to these tools; finish with what you
+    have."
+
+  "These tools" keeps the text true for a harness with tools of its own. On a
+  turn that offers `sharedos.escalate` the call-budget and deadline refusals
+  add ", except asking for a human with sharedos.escalate"; an audit outage
+  does not, since the ask could not be recorded. The standard loop's own
+  turn-ending text for `step_limit_exceeded`, "The agent turn reached its
+  maximum number of steps.", is unchanged. Nothing about when a turn ends
+  changes: the model is told and decides, and the turn still ends at
+  `maxSteps` or the deadline when the host set them. The conformance prompt-set
+  hashes changed because the scripted columns set limits and their seats are
+  now told them; no cell moved.
+
 ### Changed
 
 - **Breaking: SharedOS no longer restricts a harness's own tools or its
