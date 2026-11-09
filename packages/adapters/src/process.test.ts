@@ -48,6 +48,25 @@ describe("the harness process runner", () => {
     expect(diagnostics).toHaveLength(2);
   });
 
+  it("reads stderr by the line, joining a line the pipe delivered in pieces", async () => {
+    const diagnostics: string[] = [];
+    const harness = new HarnessProcess(
+      node(`
+        process.stderr.write("mcp-sharedos (@deepseek-ai/dsh-mcp-client): Er");
+        setTimeout(() => process.stderr.write("ror: failed\\n\\nsecond line\\n  third"), 50);
+      `),
+      { onFrame: () => undefined, onDiagnostic: (text) => diagnostics.push(text) },
+    );
+
+    expect(await harness.exited).toEqual({ code: 0 });
+    harness.dispose();
+    expect(diagnostics).toEqual([
+      "mcp-sharedos (@deepseek-ai/dsh-mcp-client): Error: failed",
+      "second line",
+      "  third",
+    ]);
+  });
+
   it("reports a command that cannot be started as an exit, not a throw", async () => {
     const harness = new HarnessProcess(
       { command: "sharedos-no-such-harness" },

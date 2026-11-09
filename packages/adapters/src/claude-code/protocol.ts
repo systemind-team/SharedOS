@@ -1,4 +1,10 @@
-import type { JsonObject, JsonValue, ToolDefinition, ToolResult } from "@aicoo/sharedos-contracts";
+import type {
+  JsonObject,
+  JsonValue,
+  ProtocolError,
+  ToolDefinition,
+  ToolResult,
+} from "@aicoo/sharedos-contracts";
 import { z } from "zod";
 
 import type { HarnessFrame, HarnessProtocol, HarnessStep } from "../harness.js";
@@ -42,26 +48,129 @@ const ResultSchema = z
   })
   .passthrough();
 
+type ResultFrame = z.infer<typeof ResultSchema>;
+
+/**
+ * Whether a `result` frame ends the turn in failure.
+ *
+ * `subtype` is the field to read, and `is_error` is only a second witness.
+ * Before Claude Code 2.1.89 a run stopped at its turn limit or by an error
+ * during execution reported `error_max_turns` or `error_during_execution`
+ * with `is_error: false`, so a protocol that trusted `is_error` read the
+ * failed turn as complete with empty output. Any subtype other than
+ * `success` is a failure on every version. The reverse also happens: an API
+ * error arrives as `subtype: "success"` with `is_error: true` and the error
+ * text as `result`, so `is_error` is still read.
+ */
+function resultFailed(frame: ResultFrame): boolean {
+  return frame.is_error === true || (frame.subtype !== undefined && frame.subtype !== "success");
+}
+
+/**
+ * The failure a `result` frame reports.
+ *
+ * The code is the subtype when Claude stopped the run itself
+ * (`error_max_turns`, `error_during_execution`), and otherwise the frame's
+ * `terminal_reason` (`api_error` for a failed API call), so a failure never
+ * carries the code `success`. A frame naming neither is `harness_failed`.
+ *
+ * Only a transient API error is retryable. A turn limit, a budget, a refused
+ * credential or an exhausted balance fails the same way when the turn is run
+ * again, and so does an error Claude reported without saying more.
+ */
+function resultFailure(frame: ResultFrame): ProtocolError {
+  const stopped = frame.subtype === "success" ? undefined : frame.subtype;
+  const errors = reportedErrors(frame["errors"]);
+  const text = nonEmptyString(frame.result);
+  return {
+    code: stopped ?? nonEmptyString(frame["terminal_reason"]) ?? "harness_failed",
+    message: text ?? failureMessage(frame.subtype, frame["num_turns"], errors),
+    retryable:
+      frame.subtype?.startsWith("error_max_") !== true &&
+      transientFailure(frame, [text, ...errors]),
+  };
+}
+
 /**
  * What a failed result says when Claude wrote no text for it.
  *
  * Claude ends a run it stopped itself, at `--max-turns` for one, with a
  * subtype and no `result`. The subtype is then the only reason there is, so
- * it is named rather than dropped for a generic line. `num_turns` is read
+ * it is named rather than dropped for a generic line, followed by what the
+ * frame's `errors` list says when it says anything. `num_turns` is read
  * loosely: a count in a shape this does not expect leaves the count out, and
  * never the frame.
  */
-function failureMessage(subtype: string | undefined, turns: unknown): string {
-  if (subtype === "error_max_turns") {
-    const after =
-      typeof turns === "number" && Number.isInteger(turns) && turns > 0
-        ? ` after ${String(turns)} model turns`
-        : "";
-    return `Claude Code stopped at its turn limit${after} (error_max_turns).`;
+function failureMessage(
+  subtype: string | undefined,
+  turns: unknown,
+  errors: readonly string[],
+): string {
+  const after =
+    typeof turns === "number" && Number.isInteger(turns) && turns > 0
+      ? ` after ${String(turns)} model turns`
+      : "";
+  const what =
+    subtype === "error_max_turns"
+      ? `Claude Code stopped at its turn limit${after}`
+      : "The Claude Code harness reported a failure";
+  const named = subtype === undefined ? what : `${what} (${subtype})`;
+  return errors.length === 0 ? `${named}.` : `${named}: ${errors.join("; ")}`;
+}
+
+/** The `errors` list of a result frame, read loosely: entries that are not text are left out. */
+function reportedErrors(value: unknown): readonly string[] {
+  return Array.isArray(value)
+    ? value.flatMap((entry) => {
+        const said = nonEmptyString(entry);
+        return said === undefined ? [] : [said];
+      })
+    : [];
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() !== "" ? value : undefined;
+}
+
+/**
+ * Whether the API error that ended the run is worth asking again about.
+ *
+ * Claude Code 2.1.319 puts the provider's status on the result frame, as
+ * `api_error_status`, and that is read first. An earlier build, or a frame
+ * whose status is null, says it only in its text, so the text is read next:
+ * a status written in it (`API Error: 529 ...`, `Request rejected (429)`,
+ * `HTTP 503`), and otherwise the words Claude uses for a failure that passes
+ * with time ("Request timed out", "Connection to the API was lost",
+ * "Server is temporarily limiting requests", "is experiencing high load",
+ * overload). Rate limits, timeouts, overload and server errors pass. Anything
+ * else, an authentication or billing refusal among them, is the same answer
+ * next time.
+ */
+function transientFailure(frame: ResultFrame, said: readonly (string | undefined)[]): boolean {
+  const status = frame["api_error_status"];
+  if (typeof status === "number" && Number.isInteger(status)) {
+    return transientStatus(status);
   }
-  return subtype === undefined
-    ? "The Claude Code harness reported a failure."
-    : `The Claude Code harness reported a failure (${subtype}).`;
+  return said.some((text) => text !== undefined && transientText(text));
+}
+
+function transientStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
+
+const STATUS_IN_TEXT = [/^API Error\b[^:]*:\s*(\d{3})\b/u, /\((\d{3})\)/u, /\bHTTP (\d{3})\b/u];
+
+const TRANSIENT_WORDING =
+  /timed out|connection to the API was lost|temporarily limiting requests|experiencing high load|overloaded/iu;
+
+function transientText(text: string): boolean {
+  for (const pattern of STATUS_IN_TEXT) {
+    const status = pattern.exec(text.trim())?.[1];
+    if (status !== undefined) {
+      return transientStatus(Number(status));
+    }
+  }
+  return TRANSIENT_WORDING.test(text);
 }
 
 function toolUseStep(block: unknown): HarnessStep | undefined {
@@ -95,18 +204,8 @@ export const claudeCodeProtocol: HarnessProtocol = {
 
     const result = ResultSchema.safeParse(frame);
     if (result.success) {
-      if (result.data.is_error === true || result.data.subtype === "error") {
-        return [
-          {
-            type: "failed",
-            error: {
-              code: result.data.subtype ?? "harness_failed",
-              message:
-                result.data.result ?? failureMessage(result.data.subtype, result.data["num_turns"]),
-              retryable: true,
-            },
-          },
-        ];
+      if (resultFailed(result.data)) {
+        return [{ type: "failed", error: resultFailure(result.data) }];
       }
       const text = result.data.result;
       return [text === undefined ? { type: "complete" } : { type: "complete", output: { text } }];

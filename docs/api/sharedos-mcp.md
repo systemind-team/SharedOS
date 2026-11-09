@@ -822,7 +822,7 @@ Defined in: [mcp/src/protocol.ts:79](https://github.com/systemind-team/SharedOS/
 
 > **McpHarnessId** = _typeof_ [`MCP_HARNESS_IDS`](#mcp_harness_ids)\[`number`\]
 
-Defined in: [mcp/src/harness-config.ts:229](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L229)
+Defined in: [mcp/src/harness-config.ts:260](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L260)
 
 ## Variables
 
@@ -946,7 +946,7 @@ Defined in: [mcp/src/protocol.ts:21](https://github.com/systemind-team/SharedOS/
 
 > `const` **MCP\_HARNESS\_IDS**: readonly \[`"codex"`, `"claude-code"`, `"deepseek"`, `"pi"`\]
 
-Defined in: [mcp/src/harness-config.ts:228](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L228)
+Defined in: [mcp/src/harness-config.ts:259](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L259)
 
 The harnesses this package emits a connection for, by id.
 
@@ -957,6 +957,23 @@ The harnesses this package emits a connection for, by id.
 > `const` **SHAREDOS\_MCP\_SERVER\_NAME**: `"sharedos"` = `"sharedos"`
 
 Defined in: [mcp/src/server.ts:85](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/server.ts#L85)
+
+---
+
+### SHAREDOS\_MCP\_TOKEN\_VARIABLE
+
+> `const` **SHAREDOS\_MCP\_TOKEN\_VARIABLE**: `"SHAREDOS_MCP_TOKEN"` = `"SHAREDOS_MCP_TOKEN"`
+
+Defined in: [mcp/src/harness-config.ts:64](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L64)
+
+The environment variable Codex reads the bridge's bearer token from.
+
+Codex takes an MCP server's token by naming a variable, as
+`bearer_token_env_var`, and never as a value: from Codex 0.46 an inline
+`bearer_token` is refused ("bearer_token is not supported for
+streamable_http") and the CLI does not start. Named once here so the
+emitted configuration, the launch that sets the variable and the docs
+cannot name different ones.
 
 ---
 
@@ -999,7 +1016,7 @@ a label for equality, not an encoding: nothing parses it back into an
 
 > **claudeAgentSdkMcpOptions**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:129](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L129)
+Defined in: [mcp/src/harness-config.ts:150](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L150)
 
 Claude Agent SDK options for a non-interactive evaluation.
 
@@ -1025,7 +1042,7 @@ every one of those calls is re-authorized by the kernel.
 
 > **claudeCodeMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:105](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L105)
+Defined in: [mcp/src/harness-config.ts:126](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L126)
 
 Claude Code's `.mcp.json`.
 
@@ -1045,9 +1062,11 @@ Claude Code's `.mcp.json`.
 
 > **codexMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:95](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L95)
+Defined in: [mcp/src/harness-config.ts:116](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L116)
 
 Codex's `config.toml` fragment: [codexMcpServerSettings](#codexmcpserversettings) as a table.
+For a connection with a token, Codex is started with
+[SHAREDOS\_MCP\_TOKEN\_VARIABLE](#sharedos_mcp_token_variable) set to it.
 
 #### Parameters
 
@@ -1065,15 +1084,20 @@ Codex's `config.toml` fragment: [codexMcpServerSettings](#codexmcpserversettings
 
 > **codexMcpServerSettings**(`connection`): readonly readonly \[`string`, `string`\][]
 
-Defined in: [mcp/src/harness-config.ts:77](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L77)
+Defined in: [mcp/src/harness-config.ts:94](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L94)
 
 The settings a Codex MCP server entry carries, as key and TOML value.
 
-One list serves both forms Codex accepts -- the `[mcp_servers.<name>]` table
+One list serves both forms Codex accepts: the `[mcp_servers.<name>]` table
 [codexMcpConfig](#codexmcpconfig) emits, and the `-c mcp_servers.<name>.<key>=<value>`
-overrides a launch passes -- so the two cannot disagree. `bearer_token`,
-present only when the connection carries one, belongs to the file alone: a
-launch keeps it off the command line.
+overrides a launch passes, so the two cannot disagree. When the connection
+carries a token the entry names [SHAREDOS\_MCP\_TOKEN\_VARIABLE](#sharedos_mcp_token_variable) as
+`bearer_token_env_var`, and whoever starts Codex sets that variable to the
+token. The token itself is in neither form, so it is on no command line and
+in no file. It is in Codex's environment, which Codex passes to the shell
+commands its model runs, so the harness's own commands can read it, as
+they can the other harnesses' configuration files. It identifies the
+bridge session and grants nothing; the bridge re-authorizes every call.
 
 `required = true` is deliberate. A Codex run whose SharedOS server failed to
 start should not quietly continue with only its own tools -- that run would
@@ -1139,7 +1163,7 @@ Defined in: [mcp/src/policy.ts:27](https://github.com/systemind-team/SharedOS/bl
 
 > **deepseekMcpConfig**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:161](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L161)
+Defined in: [mcp/src/harness-config.ts:184](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L184)
 
 DeepSeek Harness's plugin patch overlay.
 
@@ -1159,9 +1183,33 @@ activates a plugin; it does not fetch one.
 schemas, and registers each result through `ctx.tools.register()`. Nothing in
 this file describes a tool, for the same reason as the others.
 
-`failOnStartupError` is set for the same reason Codex's server is `required`:
-a run that quietly continued with only the harness's own tools would look like
-a harness that declined to use the catalogue, which is a different finding.
+The entry names the connection and nothing else: no `failOnStartupError`. A
+host that wants it adds it to the overlay it writes itself; from dsh 0.1.6 it
+no longer stops the run in any case. Either way dsh reports an entry that did
+not activate on stderr, under [deepseekMcpEntryId](#deepseekmcpentryid), and goes on
+without it.
+
+#### Parameters
+
+| Parameter    | Type                                            |
+| ------------ | ----------------------------------------------- |
+| `connection` | [`HarnessMcpConnection`](#harnessmcpconnection) |
+
+#### Returns
+
+`string`
+
+---
+
+### deepseekMcpEntryId()
+
+> **deepseekMcpEntryId**(`connection`): `string`
+
+Defined in: [mcp/src/harness-config.ts:212](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L212)
+
+The id of the plugin entry [deepseekMcpConfig](#deepseekmcpconfig) inserts. dsh names an
+entry by its id when it reports that the entry did not activate, so this is
+how a launch recognises its own client's failure among the owner's.
 
 #### Parameters
 
@@ -1179,7 +1227,7 @@ a harness that declined to use the catalogue, which is a different finding.
 
 > **harnessMcpConfigFile**(`harness`, `connection`): [`HarnessMcpConfigFile`](#harnessmcpconfigfile)
 
-Defined in: [mcp/src/harness-config.ts:232](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L232)
+Defined in: [mcp/src/harness-config.ts:263](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L263)
 
 Every emitter above, addressed by harness id.
 
@@ -1200,7 +1248,7 @@ Every emitter above, addressed by harness id.
 
 > **harnessToolAlias**(`serverName`, `tool`): `string`
 
-Defined in: [mcp/src/harness-config.ts:271](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L271)
+Defined in: [mcp/src/harness-config.ts:302](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L302)
 
 The harness-facing alias a tool is likely to appear under.
 
@@ -1431,7 +1479,7 @@ Defined in: [mcp/src/policy.ts:37](https://github.com/systemind-team/SharedOS/bl
 
 > **piMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:209](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L209)
+Defined in: [mcp/src/harness-config.ts:240](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L240)
 
 Pi's `.mcp.json`, read by an MCP extension.
 

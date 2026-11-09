@@ -11,10 +11,15 @@
  * `not exercised`, never as a pass and never as a kernel failure -- an absent
  * harness is not evidence about SharedOS.
  *
- * The harness's own tools are disabled where the CLI supports it. A conformance
- * probe must not be able to edit files or run commands on the machine it is
- * measuring, and a harness reaching for its own `bash` instead of the catalogue
- * would be answering a different question anyway.
+ * Each CLI runs with its own tools, like any host that sets no restriction:
+ * SharedOS decides the calls that reach it and nothing else. Driven over its
+ * stdio a CLI runs those tools itself, Pi with no permission prompt at all, so
+ * a call naming one of them has already happened by the time its frame is
+ * read. Such a call is not handed to the envelope, where it would be refused
+ * as an unpublished tool and recorded as refused although it ran. It is
+ * recorded as run by the harness instead: the row it stood in for reads
+ * `not exercised`, and the call is counted under `harnessRan` in the output.
+ * See `ranByHarness`.
  *
  * One column here is not a CLI. Given a model API key, the standard turn loop
  * runs with the model itself in the delegate seat -- no vendor binary, no stdio,
@@ -167,9 +172,9 @@ const harnessConfig = (id) => {
  * the turn's instructions (where its tools may operate) and then the prompt.
  * Both are in the column's prompt hash, so both are handed over.
  *
- * Every entry carries the flags that keep the harness's own tools out of the
- * run. Where a CLI has no such flag the harness is still launched, because a
- * transport that cannot be exercised is a result worth recording too.
+ * No entry turns the CLI's own tools off, for the reason the header gives. An
+ * operator who wants them off passes the CLI's own flags through the
+ * configuration's `args`.
  */
 const HARNESSES = [
   {
@@ -179,10 +184,11 @@ const HARNESSES = [
     protocol: codexProtocol,
     requirements: CODEX_REQUIREMENTS,
     /**
-     * `-` is positional and means "read the prompt from stdin", so the
-     * operator's `-c` overrides have to be spliced in ahead of it rather than
-     * appended. Codex needs no `codex login` for a non-OpenAI provider: the
-     * provider block names the variable the key is read from.
+     * `-` is positional and means "read the prompt from stdin". The operator's
+     * `-c` overrides sit before it; Codex would apply them after it as well,
+     * since its parser takes options after the positional. Codex needs no
+     * `codex login` for a non-OpenAI provider: the provider block names the
+     * variable the key is read from.
      */
     launch: (extra = []) => ({
       command: CODEX_REQUIREMENTS.executable,
@@ -205,11 +211,6 @@ const HARNESSES = [
         "--output-format",
         "stream-json",
         "--verbose",
-        // The harness must not reach for its own tools: this run is about the
-        // permission-filtered catalogue, and a probe that could run Bash on the
-        // measuring machine is not a probe worth having.
-        "--disallowedTools",
-        "Bash,Edit,Write,Read,NotebookEdit,Task,WebFetch,WebSearch",
         "--max-turns",
         "6",
         ...extra,
@@ -275,7 +276,7 @@ const HARNESSES = [
     requirements: PI_REQUIREMENTS,
     launch: (extra = []) => ({
       command: PI_REQUIREMENTS.executable,
-      args: ["--mode", "rpc", "--no-session", "--no-tools", ...extra],
+      args: ["--mode", "rpc", "--no-session", ...extra],
       openingFrame: (request) => ({
         id: request.executionId,
         type: "prompt",
@@ -295,6 +296,47 @@ if (only !== undefined) {
 
 const availability = [];
 const columns = [ADVERSARY_COLUMN];
+
+/**
+ * Calls each column's CLI ran with its own tools, by column and tool name.
+ *
+ * Written to the output beside the manifest, because the execution record has
+ * no place for them: they never reached SharedOS, so they are no operation of
+ * its, refused or otherwise.
+ */
+const harnessRan = new Map();
+
+/**
+ * The column's protocol, reading a call to one of the CLI's own tools as a
+ * call the CLI already ran.
+ *
+ * A CLI driven this way is never handed the catalogue, so the only tools it
+ * offers its model are its own, and it runs those itself. A SharedOS tool is
+ * named `<namespace>.<name>`, as is every tool a conformance case asks for,
+ * and none of the CLIs' own tools has a dot in its name (the model APIs they
+ * call do not accept one in a tool name), so a name without one is the
+ * CLI's. That call becomes a notice, is never handed to the envelope, and
+ * nothing is written back to a CLI that has its own result already. A name
+ * with a dot is passed on as before: the CLI has no such tool and ran
+ * nothing, so the envelope's refusal is the true record of it.
+ */
+function ranByHarness(columnId, protocol) {
+  return {
+    id: protocol.id,
+    describeTools: (tools) => protocol.describeTools(tools),
+    encodeToolResult: (result) => protocol.encodeToolResult(result),
+    interpret: (frame) =>
+      protocol.interpret(frame).map((step) => {
+        if (step.type !== "tool_call" || step.tool.includes(".")) {
+          return step;
+        }
+        const counts = harnessRan.get(columnId) ?? new Map();
+        counts.set(step.tool, (counts.get(step.tool) ?? 0) + 1);
+        harnessRan.set(columnId, counts);
+        return { type: "notice", text: `the harness ran its own tool ${step.tool}` };
+      }),
+  };
+}
 
 for (const harness of HARNESSES.filter(({ harness: id }) => only === undefined || id === only)) {
   const host = harnessConfig(harness.harness);
@@ -325,7 +367,7 @@ for (const harness of HARNESSES.filter(({ harness: id }) => only === undefined |
     liveColumn({
       id: harness.id,
       label: harness.label,
-      protocol: harness.protocol,
+      protocol: ranByHarness(harness.id, harness.protocol),
       createTransport: () =>
         new ChildProcessTransport({
           ...launch,
@@ -516,6 +558,13 @@ for (const column of manifest.columns) {
     `  ${"".padEnd(28)} model: ` + (models.length === 0 ? "not declared" : models.join(", ")),
   );
   console.log(`  ${"".padEnd(28)} prompt set: ${promptSet(column)}`);
+  const ran = [...(harnessRan.get(column.id) ?? new Map()).entries()];
+  if (ran.length > 0) {
+    console.log(
+      `  ${"".padEnd(28)} ran by the harness itself: ` +
+        ran.map(([tool, count]) => `${tool}×${count}`).join(", "),
+    );
+  }
 }
 
 /**
@@ -542,7 +591,9 @@ await writeFile(
       note:
         "Vendor columns here were driven by the installed CLI over its real stdio " +
         "transport. A column absent from `columns` was not installed and is not a " +
-        "result about SharedOS.",
+        "result about SharedOS. Each CLI ran with its own tools; a call to one of " +
+        "them was run by the CLI, never reached SharedOS, and is counted under " +
+        "`harnessRan` rather than recorded as an operation.",
       elapsedMs,
       // Which rows this run actually put, beside every row it could have. A
       // partial run that recorded only its results would be read as a whole one.
@@ -561,6 +612,13 @@ await writeFile(
           // spawn was attempted and left unrecorded.
           ...(command === undefined ? {} : { command, args }),
         }),
+      ),
+      // By column, then tool: what each CLI ran with its own tools.
+      harnessRan: Object.fromEntries(
+        [...harnessRan.entries()].map(([columnId, counts]) => [
+          columnId,
+          Object.fromEntries(counts),
+        ]),
       ),
       manifest,
     },

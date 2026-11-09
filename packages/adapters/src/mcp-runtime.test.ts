@@ -35,15 +35,23 @@ import {
   type RuntimeHost,
   type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
-import { codexMcpConfig, codexMcpServerSettings } from "@aicoo/sharedos-mcp";
+import {
+  SHAREDOS_MCP_TOKEN_VARIABLE,
+  codexMcpConfig,
+  codexMcpServerSettings,
+} from "@aicoo/sharedos-mcp";
 import { InMemoryAuditSink } from "@aicoo/sharedos-testkit";
 
 import {
   CLAUDE_CODE_MCP_HARNESS,
   CODEX_MCP_HARNESS,
+  DEEPSEEK_MCP_HARNESS,
+  PI_MCP_HARNESS,
   createMcpHarnessRuntime,
+  type McpHarnessLaunch,
   type McpHarnessRuntimeOptions,
   type McpHarnessSpec,
+  type McpLaunchContext,
 } from "./mcp-runtime.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
 
@@ -890,28 +898,37 @@ describe("a harness runtime whose signal is aborted", () => {
   });
 });
 
+/** What a spec launches for one turn, outside a run: the request as the executor hands it over. */
+function launchOf(
+  spec: McpHarnessSpec,
+  connection: McpLaunchContext["connection"],
+  prompt = "read both files",
+): McpHarnessLaunch {
+  const { context, ...request } = executionRequest();
+  return spec.launch({
+    prompt,
+    connection,
+    workspace: "/tmp/sharedos-test",
+    configPaths: {},
+    request: {
+      ...request,
+      context: {
+        actor: context.actor,
+        owner: context.owner,
+        namespaceId: context.namespaceId,
+        purpose: context.purpose,
+        traceId: context.traceId,
+        now: context.now,
+        reach: { status: "computed", reach: [] },
+      },
+    },
+  });
+}
+
 describe("the Codex spec", () => {
   it("passes the same server settings codexMcpConfig emits, as overrides", () => {
     const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
-    const { context, ...request } = executionRequest();
-    const launch = CODEX_MCP_HARNESS.launch({
-      prompt: "read both files",
-      connection,
-      workspace: "/tmp/sharedos-test",
-      configPaths: {},
-      request: {
-        ...request,
-        context: {
-          actor: context.actor,
-          owner: context.owner,
-          namespaceId: context.namespaceId,
-          purpose: context.purpose,
-          traceId: context.traceId,
-          now: context.now,
-          reach: { status: "computed", reach: [] },
-        },
-      },
-    });
+    const launch = launchOf(CODEX_MCP_HARNESS, connection);
     const settings = codexMcpServerSettings(connection);
     const emitted = codexMcpConfig(connection);
 
@@ -931,87 +948,167 @@ describe("the Codex spec", () => {
     ]);
   });
 
-  it("makes the scratch workspace the project root, so no checkout above it is read", () => {
+  it("leaves Codex to find its own project root, in the turn's workspace", () => {
+    // A host whose workspace sits inside a repository appends
+    // `-c project_root_markers=[]` itself; the spec sets nothing there.
     const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
-    const { context, ...request } = executionRequest();
-    const launch = CODEX_MCP_HARNESS.launch({
-      prompt: "read both files",
-      connection,
-      workspace: "/tmp/sharedos-test",
-      configPaths: {},
-      request: {
-        ...request,
-        context: {
-          actor: context.actor,
-          owner: context.owner,
-          namespaceId: context.namespaceId,
-          purpose: context.purpose,
-          traceId: context.traceId,
-          now: context.now,
-          reach: { status: "computed", reach: [] },
-        },
-      },
-    });
-    const at = launch.args.indexOf("project_root_markers=[]");
-    expect(at).toBeGreaterThan(0);
-    expect(launch.args[at - 1]).toBe("-c");
+    const launch = launchOf(CODEX_MCP_HARNESS, connection);
+    expect(launch.args.some((arg) => arg.startsWith("project_root_markers"))).toBe(false);
     expect(launch.cwd).toBe("/tmp/sharedos-test");
   });
 
-  it("keeps a bearer token off the command line", () => {
+  it("hands Codex a bridge token through its environment, not its command line", () => {
     const connection = { url: "http://127.0.0.1:41234/mcp", token: "secret-bridge-token" };
-    const { context, ...request } = executionRequest();
-    const launch = CODEX_MCP_HARNESS.launch({
-      prompt: "read both files",
-      connection,
-      workspace: "/tmp/sharedos-test",
-      configPaths: {},
-      request: {
-        ...request,
-        context: {
-          actor: context.actor,
-          owner: context.owner,
-          namespaceId: context.namespaceId,
-          purpose: context.purpose,
-          traceId: context.traceId,
-          now: context.now,
-          reach: { status: "computed", reach: [] },
-        },
-      },
-    });
+    const launch = launchOf(CODEX_MCP_HARNESS, connection);
 
-    expect(codexMcpServerSettings(connection).map(([key]) => key)).toContain("bearer_token");
-    expect(codexMcpConfig(connection)).toContain('bearer_token = "secret-bridge-token"');
+    // The override names the variable and the environment carries the token,
+    // which Codex from 0.46 requires and which keeps the token off a command
+    // line every local process can read.
+    expect(launch.args).toContain(
+      `mcp_servers.sharedos.bearer_token_env_var=${JSON.stringify(SHAREDOS_MCP_TOKEN_VARIABLE)}`,
+    );
+    expect(launch.env).toEqual({ [SHAREDOS_MCP_TOKEN_VARIABLE]: "secret-bridge-token" });
     expect(launch.args.some((arg) => arg.includes("secret-bridge-token"))).toBe(false);
+    expect(codexMcpConfig(connection)).not.toContain("secret-bridge-token");
+  });
+
+  it("sets no token variable for a bridge that takes none", () => {
+    const launch = launchOf(CODEX_MCP_HARNESS, { url: "http://127.0.0.1:41234/mcp" });
+
+    expect(launch.env).toBeUndefined();
     expect(launch.args.some((arg) => arg.includes("bearer_token"))).toBe(false);
+  });
+});
+
+describe("what a spec leaves the harness", () => {
+  const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
+
+  it("restricts none of the harness's own tools, and none of its other MCP servers", () => {
+    // SharedOS allows, denies or escalates the calls that reach it over MCP.
+    // What the harness does with its own tools, and which other servers it
+    // loads, is the harness's and the host's: a host that wants a restriction
+    // appends it through `args`.
+    const claude = launchOf(CLAUDE_CODE_MCP_HARNESS, connection);
+    expect(claude.args).not.toContain("--disallowedTools");
+    expect(claude.args).not.toContain("--strict-mcp-config");
+    // The one tool setting left only skips the approval prompt for the
+    // SharedOS server, which print mode has no human to answer.
+    const allowed = claude.args.indexOf("--allowedTools");
+    expect(claude.args[allowed + 1]).toBe("mcp__sharedos");
+    expect(claude.args).toContain("--verbose");
+  });
+
+  it("ends Claude's command line on a flag that takes no value", () => {
+    // `--allowedTools` and `--mcp-config` take every value up to the next
+    // flag. Left last, a bare token a host appended would be read as one more
+    // allowed tool or config file.
+    const claude = launchOf(CLAUDE_CODE_MCP_HARNESS, connection);
+    expect(claude.args.at(-1)).toBe("--verbose");
+    expect(claude.args.indexOf("--allowedTools")).toBeLessThan(
+      claude.args.indexOf("--output-format"),
+    );
+    expect(claude.args.indexOf("--mcp-config")).toBeLessThan(
+      claude.args.indexOf("--output-format"),
+    );
   });
 });
 
 describe("the Claude Code spec", () => {
   it("sets no turn cap of its own, so the host's limits are the only ones", () => {
-    const { context, ...request } = executionRequest();
-    const launch = CLAUDE_CODE_MCP_HARNESS.launch({
-      prompt: "read both files",
-      connection: { url: "http://127.0.0.1:41234/mcp", name: "sharedos" },
-      workspace: "/tmp/sharedos-test",
-      configPaths: {},
-      request: {
-        ...request,
-        context: {
-          actor: context.actor,
-          owner: context.owner,
-          namespaceId: context.namespaceId,
-          purpose: context.purpose,
-          traceId: context.traceId,
-          now: context.now,
-          reach: { status: "computed", reach: [] },
-        },
-      },
+    const launch = launchOf(CLAUDE_CODE_MCP_HARNESS, {
+      url: "http://127.0.0.1:41234/mcp",
+      name: "sharedos",
     });
 
     expect(launch.args).not.toContain("--max-turns");
   });
 });
+
+/**
+ * The prompt goes to the CLI on stdin, never as an argument.
+ *
+ * One argument holds at most 128 KiB on Linux, past which the spawn itself
+ * fails with `E2BIG`, and a prompt that starts with `-` is read by the CLI as
+ * an option. Neither is a limit SharedOS meant to set.
+ */
+describe("a launch's prompt", () => {
+  const PROMPT = "--help me read both files";
+  const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
+
+  it("is written to stdin by every spec, and appears in no argument", () => {
+    for (const spec of [CLAUDE_CODE_MCP_HARNESS, CODEX_MCP_HARNESS, DEEPSEEK_MCP_HARNESS]) {
+      const launch = launchOf(spec, connection, PROMPT);
+      expect(launch.stdin, spec.id).toBe(PROMPT);
+      expect(launch.keepStdinOpen, spec.id).toBeUndefined();
+      expect(
+        launch.args.some((arg) => arg.includes(PROMPT)),
+        spec.id,
+      ).toBe(false);
+    }
+    // Pi's prompt is an RPC frame on the same channel, as it was.
+    const pi = launchOf(PI_MCP_HARNESS, connection, PROMPT);
+    expect(JSON.parse(pi.stdin ?? "{}")).toMatchObject({ type: "prompt", message: PROMPT });
+    expect(pi.args.some((arg) => arg.includes(PROMPT))).toBe(false);
+  });
+
+  it("is named on each command line the way that CLI reads stdin", () => {
+    // `claude -p` with no prompt argument reads stdin; `codex exec -` and
+    // dsh's headless `-` read it when named.
+    const claude = launchOf(CLAUDE_CODE_MCP_HARNESS, connection, PROMPT);
+    expect(claude.args[0]).toBe("-p");
+    expect(claude.args.filter((arg) => !arg.startsWith("-"))).toEqual([
+      "mcp__sharedos",
+      "/tmp/sharedos-test/.mcp.json",
+      "stream-json",
+    ]);
+
+    const codex = launchOf(CODEX_MCP_HARNESS, connection, PROMPT);
+    expect(codex.args.at(-1)).toBe("-");
+    expect(codex.args.filter((arg) => arg === "-")).toHaveLength(1);
+
+    const deepseek = launchOf(DEEPSEEK_MCP_HARNESS, connection, PROMPT);
+    expect(deepseek.args.at(-1)).toBe("-");
+  });
+
+  it("reaches the CLI whole, however long it is and however it starts", async () => {
+    const prompt = `-${"x".repeat(200 * 1024)}`;
+    const spec: McpHarnessSpec = {
+      ...fakeHarness([]),
+      configFiles: () => [{ harness: "fake", filename: "echo.mjs", contents: STDIN_CLI }],
+      launch: ({ prompt: given, configPaths }) => ({
+        command: process.execPath,
+        args: [configPaths["echo.mjs"] as string],
+        stdin: given,
+      }),
+    };
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(spec, { prompt: () => prompt }),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    const read = JSON.parse(
+      result.status === "succeeded" ? ((result.output as { text: string }).text ?? "{}") : "{}",
+    ) as { length?: number; head?: string };
+    expect(read).toEqual({ length: prompt.length, head: "-xxx" });
+  }, 30_000);
+});
+
+/** Reads stdin to EOF, as `claude -p` does, and says what arrived in a result frame. */
+const STDIN_CLI = `
+const chunks = [];
+for await (const chunk of process.stdin) chunks.push(chunk);
+const text = Buffer.concat(chunks).toString("utf8");
+process.stdout.write(
+  JSON.stringify({
+    type: "result",
+    subtype: "success",
+    is_error: false,
+    result: JSON.stringify({ length: text.length, head: text.slice(0, 4) }),
+  }) + "\\n",
+);
+`;
 
 /**
  * What the harness is told at initialize.
@@ -1387,6 +1484,129 @@ function codexCli(events: readonly JsonObject[], exitCode: number): McpHarnessSp
   };
 }
 
+/**
+ * What Codex 0.167.0 printed on stderr, verbatim, when its `required` bridge
+ * could not be reached: three transport errors, then the session's ERROR line
+ * and the `Error: thread/start` line it exits 1 on. Assembled from its repeated
+ * parts, which together give the captured lines byte for byte.
+ */
+const CODEX_TRANSPORT =
+  "Send message error Transport [codex_rmcp_client::tool_list_changes::ToolListChanges<" +
+  "codex_rmcp_client::event_notification_transport::EventNotificationTransport<" +
+  "rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::" +
+  "StreamableHttpClientWorker<codex_rmcp_client::http_client_adapter::StreamableHttpClientAdapter>>>>]";
+const CODEX_REQUEST =
+  "error: Client error: HTTP request failed: http/request failed: error sending request " +
+  "for url (http://127.0.0.1:47199/mcp), when send initialize request";
+const CODEX_REASON = `handshaking with MCP server failed: ${CODEX_TRANSPORT} ${CODEX_REQUEST}: ${CODEX_TRANSPORT} ${CODEX_REQUEST}`;
+const codexRequiredFailed = (server: string): string =>
+  [
+    ...[
+      "2026-11-09T18:22:55.479350Z",
+      "2026-11-09T18:22:55.732638Z",
+      "2026-11-09T18:22:56.736857Z",
+    ].map(
+      (at) =>
+        `${at} ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, ` +
+        'when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url ' +
+        '(http://127.0.0.1:47199/mcp)")))',
+    ),
+    `2026-11-09T18:22:56.738275Z ERROR codex_core::session: Failed to create session: required MCP servers failed to initialize: ${server}: ${CODEX_REASON}`,
+    `Error: thread/start: thread/start failed: error creating thread: Fatal error: Failed to initialize session: required MCP servers failed to initialize: ${server}: ${CODEX_REASON} (code -32603)`,
+    "",
+  ].join("\n");
+
+/** A stand-in Codex that prints those lines, then goes on as long as it is told to. */
+const CODEX_STDERR_CLI = `
+process.stderr.write(JSON.parse(process.argv[2]));
+await new Promise((resolve) => setTimeout(resolve, Number(process.argv[3])));
+for (const event of JSON.parse(process.argv[4])) {
+  process.stdout.write(JSON.stringify(event) + "\\n");
+}
+process.exitCode = Number(process.argv[5]);
+`;
+
+function codexStderrCli(
+  stderr: string,
+  runsForMs: number,
+  events: readonly JsonObject[],
+  exitCode: number,
+): McpHarnessSpec {
+  return {
+    ...CODEX_MCP_HARNESS,
+    configFiles: () => [{ harness: "codex", filename: "codex.mjs", contents: CODEX_STDERR_CLI }],
+    launch: ({ configPaths }) => ({
+      command: process.execPath,
+      args: [
+        configPaths["codex.mjs"] as string,
+        JSON.stringify(stderr),
+        String(runsForMs),
+        JSON.stringify(events),
+        String(exitCode),
+      ],
+    }),
+  };
+}
+
+describe("a Codex whose required bridge did not start, on the MCP toolshare path", () => {
+  it("fails the turn harness_not_connected with Codex's reason, and ends Codex at once", async () => {
+    // Codex exits by itself here, but the turn does not wait on it: the first
+    // of its two lines decides, and the process is ended there.
+    const startedAt = Date.now();
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(codexStderrCli(codexRequiredFailed("sharedos"), 60_000, [], 1)),
+    ).execute({ ...executionRequest(), options: { timeoutMs: 20_000 } });
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: {
+        code: "harness_not_connected",
+        message: `Codex did not connect to the SharedOS MCP server: ${CODEX_REASON}`,
+        retryable: false,
+      },
+    });
+    expect(Date.now() - startedAt).toBeLessThan(15_000);
+  }, 30_000);
+
+  it("leaves a required server of the owner's own to Codex", async () => {
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(
+        codexStderrCli(
+          codexRequiredFailed("github"),
+          0,
+          [
+            { type: "thread.started", thread_id: "t" },
+            { type: "turn.started" },
+            { type: "item.completed", item: { id: "i", type: "agent_message", text: "done" } },
+            { type: "turn.completed" },
+          ],
+          0,
+        ),
+      ),
+    ).execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+  }, 30_000);
+
+  it("reads the bridge's server where Codex names it after another", () => {
+    const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
+    const read = (text: string) => CODEX_MCP_HARNESS.readDiagnostic?.(text, "stderr", connection);
+    const line = "Error: thread/start: required MCP servers failed to initialize: ";
+
+    expect(read(`${line}github: refused; sharedos: handshaking failed`)).toMatchObject({
+      code: "harness_not_connected",
+      message: "Codex did not connect to the SharedOS MCP server: handshaking failed",
+    });
+    expect(read(`${line}github: refused`)).toBeUndefined();
+    expect(read(`${line}sharedos-extra: refused`)).toBeUndefined();
+    expect(
+      CODEX_MCP_HARNESS.readDiagnostic?.(`${line}sharedos: x`, "stdout", connection),
+    ).toBeUndefined();
+  });
+});
+
 describe("the Codex CLI's own events, on the MCP toolshare path", () => {
   // `codex exec --json` for "Hi", recorded live, answered in prose with no tool
   // call. Before the protocol read these, the turn was read from the exit code
@@ -1412,6 +1632,61 @@ describe("the Codex CLI's own events, on the MCP toolshare path", () => {
     expect(result.status === "succeeded" ? result.output : undefined).toEqual({ text: prose });
   }, 30_000);
 
+  it("completes a turn that reconnected on the way, with its prose", async () => {
+    // Codex reports a recovered stream error as a top-level `error` event and
+    // carries on. The runtime keeps the first outcome it reads, so a protocol
+    // that failed on that event ended this turn failed.
+    const reconnected: JsonObject[] = [
+      ...answered.slice(0, 2),
+      {
+        type: "error",
+        message:
+          "Reconnecting... 1/5 (stream disconnected before completion: error sending request for url (https://api.openai.com/v1/responses))",
+      },
+      ...answered.slice(2),
+    ];
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(codexCli(reconnected, 0)),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    expect(result.status === "succeeded" ? result.output : undefined).toEqual({ text: prose });
+  }, 30_000);
+
+  it("names the CLI's last error when it exits with no turn.failed", async () => {
+    // An interrupted turn: Codex printed its error and exited 1 before it
+    // could print `turn.failed`. Its exit code alone says nothing of why.
+    const interrupted: JsonObject[] = [
+      { type: "thread.started", thread_id: "t" },
+      { type: "turn.started" },
+      {
+        type: "error",
+        message: "Reconnecting... 1/5 (stream disconnected before completion)",
+      },
+      {
+        type: "error",
+        message:
+          "stream disconnected before completion: Transport error: error decoding response body",
+      },
+    ];
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(codexCli(interrupted, 1)),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: {
+        code: "harness_exited_without_outcome",
+        message:
+          "The codex CLI exited with code 1 without completing the turn. It last reported: stream disconnected before completion: Transport error: error decoding response body",
+      },
+    });
+  }, 30_000);
+
   it("fails a turn the CLI failed, with the CLI's reason rather than its exit code", async () => {
     const failed: JsonObject[] = [
       { type: "thread.started", thread_id: "t" },
@@ -1425,5 +1700,193 @@ describe("the Codex CLI's own events, on the MCP toolshare path", () => {
       status: "failed",
       error: { code: "harness_failed", message: "401 Unauthorized", retryable: true },
     });
+  }, 30_000);
+});
+
+/**
+ * A stand-in for `dsh --profile headless --json`: it prints the events it is
+ * given and exits as told. The events are the headless stream's, which is all
+ * the real CLI puts on stdout with `--json`.
+ */
+const DSH_CLI = `
+process.stderr.write(JSON.parse(process.argv[4]));
+// How long the run goes on after its startup warning, as dsh's does when it
+// carries on without the bridge to run the task with its own tools.
+await new Promise((resolve) => setTimeout(resolve, Number(process.argv[5])));
+for (const event of JSON.parse(process.argv[2])) {
+  process.stdout.write(JSON.stringify(event) + "\\n");
+}
+process.exitCode = Number(process.argv[3]);
+`;
+
+function dshCli(
+  events: readonly JsonObject[],
+  exitCode: number,
+  stderr = "",
+  runsForMs = 0,
+): McpHarnessSpec {
+  return {
+    ...DEEPSEEK_MCP_HARNESS,
+    configFiles: () => [{ harness: "deepseek", filename: "dsh.mjs", contents: DSH_CLI }],
+    launch: ({ configPaths }) => ({
+      command: process.execPath,
+      args: [
+        configPaths["dsh.mjs"] as string,
+        JSON.stringify(events),
+        String(exitCode),
+        JSON.stringify(stderr),
+        String(runsForMs),
+      ],
+    }),
+  };
+}
+
+describe("DeepSeek Harness's headless run, on the MCP toolshare path", () => {
+  const answer = "Both files read: Work/Public holds the notes.";
+  const run = (final: JsonObject): JsonObject[] => [
+    { type: "session", sessionId: "session-1", cwd: "/tmp/w" },
+    { type: "status", phase: "turn_start", turn: 1 },
+    { type: "text", text: "Both files", truncated: true },
+    { type: "status", phase: "turn_end", turn: 1, reason: { kind: "completed" } },
+    final,
+  ];
+
+  it("is launched with --json after its launcher flags, and its task on stdin", () => {
+    const launch = launchOf(DEEPSEEK_MCP_HARNESS, { url: "http://127.0.0.1:41234/mcp" });
+    expect(launch.args.slice(-2)).toEqual(["--json", "-"]);
+    expect(launch.args.indexOf("--json")).toBeGreaterThan(launch.args.indexOf("--patch"));
+  });
+
+  it("gives a completed run final.text as its output, whole", async () => {
+    // Before `--json` the headless profile printed only its answer, which no
+    // protocol here read, and the turn completed with empty output.
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(
+        dshCli(
+          run({
+            type: "final",
+            sessionId: "session-1",
+            reason: { kind: "completed" },
+            text: answer,
+          }),
+          0,
+        ),
+      ),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
+    expect(result.status === "succeeded" ? result.output : undefined).toEqual({ text: answer });
+  }, 30_000);
+
+  it("reads a dsh before 0.2.2, whose final has no reason, by its exit code", async () => {
+    const completed = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(dshCli(run({ type: "final", text: answer }), 0)),
+    ).execute(executionRequest());
+    expect(completed.status).toBe("succeeded");
+    expect(completed.status === "succeeded" ? completed.output : undefined).toEqual({
+      text: answer,
+    });
+
+    const failed = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(dshCli(run({ type: "final", text: "" }), 1)),
+    ).execute(executionRequest());
+    expect(failed).toMatchObject({
+      status: "failed",
+      error: { code: "harness_exited_without_outcome" },
+    });
+  }, 30_000);
+
+  it("fails a run whose last turn failed, with the harness's own code", async () => {
+    const executor = new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(
+        dshCli(
+          run({
+            type: "final",
+            sessionId: "session-1",
+            reason: { kind: "error", error: { code: "MISSING_CREDENTIAL", message: "no API key" } },
+            text: "",
+          }),
+          1,
+        ),
+      ),
+    );
+    const result = await executor.execute(executionRequest());
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "MISSING_CREDENTIAL", message: "no API key", retryable: false },
+    });
+  }, 30_000);
+
+  /** What dsh 0.2.2-rc.1 printed on stderr when the overlay's server could not be reached. */
+  const notActivated = (entry: string, server: string): string =>
+    [
+      "dsh: warning: 1 entry did not activate",
+      `${entry} (@deepseek-ai/dsh-mcp-client): Error: mcp-client(${server}): initial connection or tool synchronization failed`,
+      "    at Object.apply [as callback] (file:///opt/dsh/node_modules/@deepseek-ai/dsh-mcp-client/lib/index.js:833:67)",
+      "SdkError: Version negotiation probe failed: fetch failed",
+      "Error: connect ECONNREFUSED 127.0.0.1:47123",
+      "",
+    ].join("\n");
+  const completed = run({
+    type: "final",
+    sessionId: "session-1",
+    reason: { kind: "completed" },
+    text: "I used the shell instead.",
+  });
+
+  it("fails a run whose SharedOS client did not activate, though dsh went on and completed", async () => {
+    // dsh goes on with its own tools and completes, as it does from 0.1.6
+    // even with `failOnStartupError: true`, and stderr is the only witness.
+    const diagnostics: string[] = [];
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(dshCli(completed, 0, notActivated("mcp-sharedos", "sharedos")), {
+        onDiagnostic: (_harness, line) => diagnostics.push(line),
+      }),
+    ).execute(executionRequest());
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "harness_not_connected", retryable: false },
+    });
+    expect(result.status === "failed" ? result.error.message : "").toContain(
+      "mcp-client(sharedos): initial connection or tool synchronization failed",
+    );
+    // Still kept for diagnosis, as every line beside the frames is.
+    expect(diagnostics).toContain("dsh: warning: 1 entry did not activate");
+  }, 30_000);
+
+  it("ends a run that went on without the bridge, and returns at once", async () => {
+    // Left alone, dsh would run the whole task with its own tools, and the
+    // turn would wait for it; a deadline reached first would cancel the turn
+    // and lose the outcome SharedOS had already reached.
+    const startedAt = Date.now();
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(
+        dshCli(completed, 0, notActivated("mcp-sharedos", "sharedos"), 60_000),
+      ),
+    ).execute({ ...executionRequest(), options: { timeoutMs: 20_000 } });
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "harness_not_connected" },
+    });
+    expect(Date.now() - startedAt).toBeLessThan(15_000);
+  }, 30_000);
+
+  it("leaves a failing MCP server of the owner's own to the owner", async () => {
+    const result = await new SharedOSExecutor(
+      kernel(),
+      createMcpHarnessRuntime(dshCli(completed, 0, notActivated("mcp-github", "github"))),
+    ).execute(executionRequest());
+
+    expect(result.status).toBe("succeeded");
   }, 30_000);
 });

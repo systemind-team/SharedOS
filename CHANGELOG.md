@@ -10,6 +10,31 @@ each entry calls out what a host has to update.
 
 ### Added
 
+- **The MCP toolshare docs record the CLI versions each launch was found to
+  need**, as information: Codex 0.44 for the `--json` event shape, 0.46 for
+  `bearer_token_env_var`, 0.99 for `required`; Claude Code 2.1.221 for MCP
+  servers connected before the first turn in `-p` mode; dsh 0.1.6 for a task
+  on stdin. SharedOS enforces no floor and records the version each CLI
+  reports.
+
+- **An MCP harness spec can read what its CLI says beside its frames.**
+  `McpHarnessSpec.readDiagnostic(text, stream, connection)` is called with
+  each line of stderr and each stdout line that is not a frame, until the
+  turn has an outcome. It returns a `ProtocolError` or nothing, so a line of
+  prose can never complete a turn. A failure it returns is the turn's
+  outcome, and the CLI's process is ended there and then: closing stdin does
+  not stop a one-shot CLI, which would otherwise run its task to the end
+  with its own tools while the turn waited. `deepseekMcpEntryId` names the
+  plugin entry `deepseekMcpConfig` inserts. `HarnessProcess` now reads
+  stderr by the line, so `onDiagnostic` receives one stderr line per call
+  rather than one chunk, and a line the pipe split arrives whole.
+
+- **`probeHarness` takes an `AbortSignal`.** An optional third argument,
+  also on `probeCodex`, `probeClaudeCode`, `probeDeepseek` and `probePi`.
+  The version probe sets no time limit of its own, so a caller that wants
+  one aborts: the probe's child is ended and the call rejects with the
+  signal's reason. Without a signal nothing changes.
+
 - **`OpenAiCompatibleModelClient` takes a `reasoningEffort`.** Sent as
   OpenAI's `reasoning_effort` field, only when set, and recorded on each turn
   through `settings` beside `thinking`. A vendor may refuse function tools on
@@ -25,11 +50,52 @@ each entry calls out what a host has to update.
   instruction file from, so a host can hand a vendor CLI its standing
   instructions as the `AGENTS.md` the CLI's own loader reads rather than as
   prompt text. A name that would leave the workspace, or that is the generated
-  configuration's own, fails the turn before launch. The Codex spec now passes `project_root_markers=[]`, so the scratch
-  workspace is the project root and a checkout anywhere above it is never
-  read as this turn's instructions. Nothing a host already does changes.
+  configuration's own, fails the turn before launch. A host whose
+  `workspaceRoot` sits inside a repository appends
+  `-c project_root_markers=[]` for Codex, so the workspace is Codex's project
+  root and a checkout above it is not read as this turn's instructions; the
+  spec does not set it (see the restrictions entry below). Nothing a host
+  already does changes.
 
 ### Changed
+
+- **Breaking: SharedOS no longer restricts a harness's own tools or its
+  other MCP servers.** SharedOS allows, denies or escalates the calls that
+  reach it through MCP, and nothing else. `CLAUDE_CODE_MCP_HARNESS` drops
+  `--disallowedTools ...` and `--strict-mcp-config`, so Claude Code keeps its
+  file and shell tools and the MCP servers configured on the machine;
+  `--allowedTools mcp__<server>` stays, since it only skips the approval
+  prompt for the SharedOS server. `CODEX_MCP_HARNESS` drops
+  `-c project_root_markers=[]`, so Codex finds its project root and AGENTS.md
+  files itself; a host whose `workspaceRoot` sits inside a repository
+  restores it. A host that wants any of these appends it through `args`.
+  The emitted DeepSeek overlay names the connection and nothing else:
+  `deepseekMcpConfig` drops `failOnStartupError: true`, which from dsh
+  0.1.6 stopped nothing. A host that wants it adds it to the overlay it
+  writes itself. A harness that reaches for its own tool instead of the catalogue
+  leaves no operation behind, and the row is `not exercised`: a finding
+  about the harness. `mcp-conformance` declares each CLI's built-in tools as
+  `harnessLocal` and reads `externalDirect` and `harnessLocal` from the
+  run's configuration. `native-conformance` drops its Claude deny list and
+  Pi's `--no-tools` as well, and runs each CLI with its own tools like any
+  host that sets no restriction. A CLI driven over its stdio runs those
+  tools itself, so a call naming one of them is no longer handed to the
+  envelope and recorded as refused: it is recorded as run by the harness,
+  counted under `harnessRan` in `native-conformance.json`, and the row reads
+  `not exercised`.
+
+- **The prompt reaches Claude Code, Codex and DeepSeek Harness on stdin.**
+  `CLAUDE_CODE_MCP_HARNESS`, `CODEX_MCP_HARNESS` and `DEEPSEEK_MCP_HARNESS`
+  passed the prompt as one argument, so a prompt over 128 KiB failed the
+  launch with `E2BIG` and one starting with `-` was read as an option. Each
+  launch now writes the prompt to stdin and closes it: `claude -p` with no
+  prompt argument, `codex exec ... -` and `dsh --profile headless ... -`.
+  A host that appends `args` keeps doing so; Codex applies `-c` overrides
+  placed after `-`. Claude's line now ends on `--verbose`, after
+  `--allowedTools` and `--mcp-config`, which take every value up to the next
+  flag, so an appended token is never read as a tool name. dsh's ends on
+  `-`, so a host's `args` there must be headless app options. Pi already
+  took its prompt on stdin.
 
 - **Breaking: SharedOS sets no limits of its own.** Every turn and harness
   limit is now unset unless the host sets it, and an unset limit is no limit.
@@ -132,6 +198,96 @@ each entry calls out what a host has to update.
   `ProtocolVersionSchema` row in `docs/open-items.md` is closed.
 
 ### Fixed
+
+- **A Codex run whose required bridge did not start fails
+  `harness_not_connected` with Codex's reason.** Codex from 0.99 stops at
+  startup when a `required` MCP server fails, and says why only on stderr:
+  `required MCP servers failed to initialize: sharedos: ...`, first as a
+  `codex_core::session` ERROR line and then as the `Error: thread/start` line
+  it exits 1 on. The turn read `harness_exited_without_outcome` with the exit
+  code alone. `CODEX_MCP_HARNESS` now reads the first of those lines that
+  names the bridge's server, fails the turn with Codex's text after the
+  server name, and ends Codex; a line naming another server is left to
+  Codex's exit. Codex before 0.99 ignores `required` and runs the turn alone
+  with its own tools, which this cannot see. Checked on Codex 0.167.0.
+
+- **A DeepSeek Harness run that never reached the bridge fails
+  `harness_not_connected`.** From dsh 0.1.6 a client that cannot reach the
+  bridge does not stop the run, even with `failOnStartupError: true`, which
+  the overlay no longer sets: dsh prints
+  `dsh: warning: 1 entry did not activate` and `mcp-sharedos
+(@deepseek-ai/dsh-mcp-client): Error: mcp-client(sharedos): initial
+connection or tool synchronization failed` on stderr and carries on with
+  only its own tools, which read as a harness that declined the catalogue.
+  `DEEPSEEK_MCP_HARNESS` reads that line, fails the turn with the new code
+  `harness_not_connected`, not retryable, and ends dsh, so the run does not
+  go on to do the task with its own tools. Checked on dsh 0.2.2-rc.1.
+
+- **A DeepSeek Harness turn on the MCP path has its answer as output.**
+  `DEEPSEEK_MCP_HARNESS` runs dsh's headless profile, which printed only its
+  final answer, and its protocol read the session-event vocabulary
+  (`tool/call`, `assistant/message`, `turn/end`) that profile never prints,
+  so every turn completed with empty output. The launch now passes `--json`,
+  and the new `deepseekHeadlessProtocol` (`deepseek.headless.jsonl`) reads
+  the headless event stream: the output is `final.text`, the one string dsh
+  never cuts at 8 KiB; `final.reason` decides the outcome from dsh 0.2.2,
+  and the exit code before it; an `error` event fails the turn
+  `harness_failed`. A headless failure is retryable only when it was
+  interrupted or its code is one dsh retries itself. `deepseekProtocol` is
+  unchanged and still serves the evaluation driver.
+
+- **Codex reaches a bridge that takes a token.** `codexMcpServerSettings`
+  and `codexMcpConfig` emitted `bearer_token`, which Codex refuses from 0.46
+  ("bearer_token is not supported for streamable_http") and which stops the
+  CLI before it starts. They now emit `bearer_token_env_var =
+"SHAREDOS_MCP_TOKEN"`, and the new export `SHAREDOS_MCP_TOKEN_VARIABLE`
+  names the variable. `CODEX_MCP_HARNESS` passes the setting as a `-c`
+  override, which it used to filter out, and sets the variable to the token
+  in the CLI's environment, so the token is on no command line. It is
+  visible to the harness's own commands, since Codex passes its environment
+  to the shell commands it runs, as the other harnesses' tokens are in the
+  workspace files they read; it grants nothing, and the bridge
+  re-authorizes every call. A host that writes the emitted `config.toml`
+  itself starts Codex with `SHAREDOS_MCP_TOKEN` set to the token.
+
+- **A Codex turn that reconnected and then completed is no longer failed.**
+  `codex exec --json` prints a top-level `{"type":"error","message":
+"Reconnecting... 2/5 ..."}` for each stream error it recovers from, and the
+  turn carries on. The protocol read it as a failure and the MCP runtime
+  keeps the first outcome it reads, so the turn was reported failed. The
+  CLI's `error` event is now a `notice`, a new `HarnessStep` that is
+  neither output nor an outcome; the turn ends on `turn.failed`, which
+  carries the error that ended it, on `turn.completed`, or on the exit code.
+  A turn the CLI leaves with no outcome, an interrupted one, names the last
+  notice in its `harness_exited_without_outcome` or
+  `harness_ended_without_outcome` message. A consumer that switches on
+  `HarnessStep.type` sees the new kind. A Responses `response.failed` is now read where the protocol
+  puts its error, on `response.error`, as well as at the top level, and the
+  Responses stream's own `error` event, which carries `code`, still fails
+  the turn.
+
+- **A Claude Code run that stopped is read as failed on every version.**
+  Before Claude Code 2.1.89 the `result` frame for `error_max_turns` and
+  `error_during_execution` carried `is_error: false`, so the turn was read
+  as complete with empty output. Any `result` whose `subtype` is not
+  `success` now fails the turn, and the frame's `errors` list is named in
+  the failure's message. An API error, which arrives as `subtype:
+"success"` with `is_error: true`, failed with the code `success`; its code
+  is now the frame's `terminal_reason` (`api_error`), or `harness_failed`
+  when there is none. A Claude Code failure is no longer always
+  `retryable`: only a transient API error is. The frame's
+  `api_error_status` (Claude Code 2.1.319) is read first, 408, 429 and 5xx
+  being transient; without one, a status written in the text, then the
+  words Claude writes for a timeout, a lost connection, request limiting,
+  high load or overload. A turn limit, a budget, a refused credential or an
+  exhausted balance is not retryable.
+
+- **An outcome at the frame limit ends the turn.** With
+  `maxIgnoredFrames: N`, `EvalHarnessDriver` read the frame after the Nth
+  ignored one and never interpreted it, so N ignored frames followed by a
+  completion failed `harness_frame_limit_exceeded`. Every frame read is now
+  interpreted first: N ignored frames and then an outcome is that outcome,
+  and the N+1th ignored frame fails the turn as before.
 
 - **Two opens of one execution id give the turn to the one called first.**
   `openTurnAuthority` let both load authority and gave the turn to whichever

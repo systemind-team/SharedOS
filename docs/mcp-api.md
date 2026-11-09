@@ -252,6 +252,67 @@ the Agent SDK; `harnessToolAlias` reproduces the display name a harness will
 show. Pi's file is the shape `pi-mcp-adapter` reads, because Pi has no MCP client
 of its own; which extension a host installs is the host's choice.
 
+The DeepSeek overlay names the connection and nothing else: it sets no
+`failOnStartupError`, and a host that wants it adds it to the overlay it writes
+itself.
+
+For a connection that carries a token, Codex's table names the variable the
+token is read from rather than the token:
+
+```toml
+[mcp_servers.sharedos]
+url = "http://127.0.0.1:53124/mcp"
+required = true
+default_tools_approval_mode = "approve"
+bearer_token_env_var = "SHAREDOS_MCP_TOKEN"
+```
+
+Start Codex with `SHAREDOS_MCP_TOKEN` set to the token; the name is exported
+as `SHAREDOS_MCP_TOKEN_VARIABLE`. Codex refuses an inline `bearer_token` from
+0.46 ("bearer_token is not supported for streamable_http") and does not start.
+A token named by variable is on no command line and in no file, but it is in
+Codex's environment, and Codex's default `shell_environment_policy` passes that
+environment to every shell command the model runs. The token is visible to the
+harness's own commands, as the other harnesses' tokens are in the workspace
+files they read. That is what a token on this path is: it identifies the turn's
+bridge session and carries no authority, and the bridge re-authorizes every
+call. `CODEX_MCP_HARNESS` passes the same settings as `-c` overrides and sets
+the variable in the CLI's environment.
+
+### Launching the installed CLIs
+
+`createMcpHarnessRuntime` with `CLAUDE_CODE_MCP_HARNESS`, `CODEX_MCP_HARNESS`,
+`DEEPSEEK_MCP_HARNESS` or `PI_MCP_HARNESS` writes the file above into a scratch
+workspace (Codex takes the same settings as `-c` overrides instead), starts the
+CLI there, and reads its stdout for the turn's outcome:
+
+| Harness     | Command line                                                                                       | Prompt                 |
+| ----------- | -------------------------------------------------------------------------------------------------- | ---------------------- |
+| Claude Code | `claude -p --allowedTools mcp__sharedos --mcp-config <file> --output-format stream-json --verbose` | stdin                  |
+| Codex       | `codex exec --json --skip-git-repo-check -c ... -`                                                 | stdin                  |
+| DeepSeek    | `dsh --profile headless --patch <file> --json -`                                                   | stdin                  |
+| Pi          | `pi --mode rpc --no-session --no-builtin-tools`                                                    | stdin, as an RPC frame |
+
+The prompt always goes on stdin, so its length is not bounded by the 128 KiB
+one argument may hold and a prompt that starts with `-` is not read as an
+option. A host's `args` are appended after the spec's. Claude's line ends on
+`--verbose`, which takes no value, so an appended token is never read as one
+more `--allowedTools` entry. dsh's ends on `-`, its task, so whatever a host
+appends there is read by the headless app: its own options, such as
+`--permission-mode <preset>`, `--approval-policy <policy>` or
+`--add-dir <path>`, work, and a launcher flag such as `--patch` or a second
+task argument fails the run. Codex applies `-c` overrides placed after its
+`-`; a host whose `workspaceRoot` sits inside a repository may append
+`-c project_root_markers=[]`, since Codex otherwise finds its project root, and
+the AGENTS.md files it reads, by walking up from the workspace.
+
+Apart from Pi's `--no-builtin-tools`, none of these restricts the harness's own
+tools or the other MCP servers it loads: SharedOS decides the calls that reach
+it here, and nothing else. A host that wants a restriction appends it through
+`args`. A CLI's version is not checked;
+[MCP toolshare](mcp-toolshare.md#versions) records the versions each launch was
+found to need.
+
 ## Escalation over MCP
 
 A turn driven over MCP can end by asking a human to decide, the same as one

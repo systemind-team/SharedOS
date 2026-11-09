@@ -120,6 +120,8 @@ class HarnessSession implements AgentTurnSession {
    */
   readonly #pending: HarnessStep[] = [];
   readonly #messages: string[] = [];
+  /** The last thing the harness reported that was not an outcome; see `HarnessStep`. */
+  #lastNotice: string | undefined;
   readonly #calls: SeatCalls;
   /** What the harness was told before it answered, hashed; the loop states it. */
   readonly promptHash: string;
@@ -144,26 +146,31 @@ class HarnessSession implements AgentTurnSession {
     }
 
     const maxIgnoredFrames = this.#maxIgnoredFrames ?? Number.POSITIVE_INFINITY;
-    for (let frames = 0; frames <= maxIgnoredFrames; frames += 1) {
+    // Every frame read is interpreted before the count is checked, so the
+    // limit is on frames that produced nothing: N of them followed by an
+    // outcome is a turn with an outcome, and only the N+1th ends it.
+    for (let ignored = 0; ; ignored += 1) {
       const decision = this.#drainPending();
       if (decision !== undefined) {
         return decision;
+      }
+      if (ignored > maxIgnoredFrames) {
+        return failed(
+          "harness_frame_limit_exceeded",
+          "The harness emitted too many frames without producing an outcome.",
+        );
       }
 
       const frame = await this.#channel.read(signal);
       if (frame === undefined) {
         return failed(
           "harness_ended_without_outcome",
-          "The harness stopped speaking without completing the turn.",
+          "The harness stopped speaking without completing the turn." +
+            (this.#lastNotice === undefined ? "" : ` It last reported: ${this.#lastNotice}`),
         );
       }
       this.#pending.push(...this.#protocol.interpret(frame));
     }
-
-    return failed(
-      "harness_frame_limit_exceeded",
-      "The harness emitted too many frames without producing an outcome.",
-    );
   }
 
   #drainPending(): AgentTurnDecision | undefined {
@@ -171,6 +178,10 @@ class HarnessSession implements AgentTurnSession {
       const step = this.#pending.shift() as HarnessStep;
       if (step.type === "message") {
         this.#messages.push(step.text);
+        continue;
+      }
+      if (step.type === "notice") {
+        this.#lastNotice = step.text;
         continue;
       }
       if (step.type === "failed") {

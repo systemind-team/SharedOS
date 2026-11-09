@@ -4,6 +4,7 @@ import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 import type {
   JsonObject,
+  ProtocolError,
   RuntimeManifest,
   RuntimeTurnOutcome,
   ToolCall,
@@ -15,8 +16,10 @@ import {
   mcpServerName,
   claudeAgentSdkMcpOptions,
   codexMcpServerSettings,
+  deepseekMcpEntryId,
   harnessMcpConfigFile,
   openToolBridge,
+  SHAREDOS_MCP_TOKEN_VARIABLE,
   type BridgeToolInvoker,
   type HarnessMcpConfigFile,
   type HarnessMcpConnection,
@@ -32,7 +35,8 @@ import {
   type RuntimeTurnRequest,
 } from "@aicoo/sharedos-runtime";
 
-import type { HarnessProtocol } from "./harness.js";
+import { deepseekHeadlessProtocol } from "./deepseek/headless.js";
+import type { HarnessProtocol, HarnessStep } from "./harness.js";
 import { failed } from "./internal.js";
 import { HarnessProcess } from "./process.js";
 import { CLAUDE_CODE_VENDOR, CODEX_VENDOR, DEEPSEEK_VENDOR, PI_VENDOR } from "./vendors.js";
@@ -64,7 +68,15 @@ export interface McpHarnessLaunch {
   readonly args: readonly string[];
   readonly cwd?: string;
   readonly env?: Readonly<Record<string, string>>;
-  /** Written to the child's stdin, for a CLI that takes its prompt that way. */
+  /**
+   * Written to the child's stdin, for a CLI that takes its prompt that way.
+   *
+   * Every spec here does. A prompt passed as one argument fails the spawn
+   * with `E2BIG` once it is past the 128 KiB the kernel allows a single
+   * argument, and one that starts with `-` is read as an option. On stdin
+   * neither can happen, and how much a CLI will read there is the CLI's own
+   * limit.
+   */
   readonly stdin?: string;
   /**
    * Whether the CLI treats stdin as an open command channel rather than as one
@@ -129,6 +141,28 @@ export interface McpHarnessSpec {
   readonly serverName?: string;
   readonly configFiles?: (connection: HarnessMcpConnection) => readonly HarnessMcpConfigFile[];
   readonly launch: (context: McpLaunchContext) => McpHarnessLaunch;
+  /**
+   * Reads what the CLI says beside its frames, for a failure its frames never
+   * carry.
+   *
+   * Called with each line of stderr and each stdout line that is not a frame,
+   * until the turn has an outcome. A failure it returns is the turn's outcome,
+   * and the process is ended there and then: the turn is over, and what the
+   * CLI would go on to do, with its own tools and none of SharedOS's, is no
+   * longer part of it. Only a failure can be returned, so a line of prose can
+   * never complete a turn. Absent, what the CLI says there is kept for
+   * diagnosis only, as it always was.
+   *
+   * It exists for a harness that reports a broken connection to SharedOS in
+   * prose and then carries on without it: a turn that went on with only the
+   * harness's own tools would otherwise read as a harness that looked at the
+   * catalogue and declined it.
+   */
+  readonly readDiagnostic?: (
+    text: string,
+    stream: "stdout" | "stderr",
+    connection: HarnessMcpConnection,
+  ) => ProtocolError | undefined;
 }
 
 /**
@@ -295,7 +329,7 @@ export function createMcpHarnessRuntime(
           args: [...declared.args, ...(options.args ?? [])],
           env: { ...declared.env, ...options.env },
         };
-        const outcome = await runHarness(spec, launch, signal, options);
+        const outcome = await runHarness(spec, launch, connection, signal, options);
         const catalogHash = await bridgeCatalogHash(bridge, signal);
         return escalation.settle(outcome, {
           ...outcome.metadata,
@@ -513,10 +547,12 @@ function harnessMetadata(
 async function runHarness(
   spec: McpHarnessSpec,
   launch: McpHarnessLaunch,
+  connection: HarnessMcpConnection,
   signal: AbortSignal,
   options: McpHarnessRuntimeOptions,
 ): Promise<RuntimeTurnOutcome> {
   const messages: string[] = [];
+  let lastNotice: string | undefined;
   let terminal: RuntimeTurnOutcome | undefined;
 
   // A session harness is shut down by closing its command channel, so the close
@@ -546,40 +582,60 @@ async function runHarness(
     );
   };
 
+  // What one frame, or one line the spec read beside the frames, means for
+  // the turn. The first outcome is the turn's.
+  const take = (steps: readonly HarnessStep[]): void => {
+    for (const step of steps) {
+      if (step.type === "message") {
+        messages.push(step.text);
+        continue;
+      }
+      if (step.type === "notice") {
+        lastNotice = step.text;
+        continue;
+      }
+      if (step.type === "failed") {
+        terminal ??= { type: "fail", error: step.error };
+        continue;
+      }
+      if (step.type === "complete") {
+        terminal ??= {
+          type: "complete",
+          output: step.output ?? { text: messages.join("\n") },
+        };
+      }
+      // A `tool_call` step cannot occur here: tool calls left over MCP, not
+      // over this channel. If a harness emits one anyway it is transcript
+      // noise, and acting on it would be a second, unauthorized call path.
+    }
+    if (terminal !== undefined) {
+      // The turn is over. For a session harness this is what makes it exit;
+      // for a one-shot one stdin is already closed and this does nothing.
+      closeStdin();
+    }
+  };
+
   // The turn's hard signal ends the process. A draining turn does not: the
   // harness reads `turn_draining` on its next call and winds down itself.
   const harness = new HarnessProcess(
     launch,
     {
       onFrame: (frame) => {
-        for (const step of spec.protocol.interpret(frame)) {
-          if (step.type === "message") {
-            messages.push(step.text);
-            continue;
-          }
-          if (step.type === "failed") {
-            terminal ??= { type: "fail", error: step.error };
-            continue;
-          }
-          if (step.type === "complete") {
-            terminal ??= {
-              type: "complete",
-              output: step.output ?? { text: messages.join("\n") },
-            };
-          }
-          // A `tool_call` step cannot occur here: tool calls left over MCP, not
-          // over this channel. If a harness emits one anyway it is transcript
-          // noise, and acting on it would be a second, unauthorized call path.
-        }
-        if (terminal !== undefined) {
-          // The turn is over. For a session harness this is what makes it exit;
-          // for a one-shot one stdin is already closed and this does nothing.
-          closeStdin();
-        }
+        take(spec.protocol.interpret(frame));
         touch();
       },
       onDiagnostic: (text, stream) => {
         options.onDiagnostic?.(spec.id, text);
+        const failure =
+          terminal === undefined ? spec.readDiagnostic?.(text, stream, connection) : undefined;
+        if (failure !== undefined) {
+          terminal = { type: "fail", error: failure };
+          // Closing stdin would not stop a one-shot CLI, which has read its
+          // prompt already: it would run the task to the end with its own
+          // tools, the turn waiting on it, and a deadline reached in the
+          // meantime would cancel the turn and lose this outcome.
+          harness.kill();
+        }
         // A banner on stdout is not the harness working; stderr is.
         if (stream === "stderr") {
           touch();
@@ -618,33 +674,32 @@ async function runHarness(
   }
   return failed(
     "harness_exited_without_outcome",
-    `The ${spec.id} CLI exited with code ${String(exit.code)} without completing the turn.`,
+    `The ${spec.id} CLI exited with code ${String(exit.code)} without completing the turn.` +
+      (lastNotice === undefined ? "" : ` It last reported: ${lastNotice}`),
   );
 }
 
 /**
  * Claude Code, connected to the SharedOS bridge.
  *
- * `--strict-mcp-config` is what makes a `strict` tool policy checkable rather
- * than merely declared: it drops every MCP server configured on the machine, so
- * the only brokered tools in the run are the ones SharedOS published. The
- * `--disallowedTools` list then removes the harness's own file and shell tools,
- * because a probe that can edit files on the machine it is measuring is
- * answering a different question -- and because a harness that reaches for its
- * own `Read` instead of `files.read` produces no evidence about the kernel.
+ * SharedOS decides the calls that reach it over MCP, and only those: it
+ * allows, denies or escalates each one. It sets nothing on the harness's own
+ * tools or on which other MCP servers the harness loads, so Claude keeps its
+ * own file and shell tools and every MCP server configured on the machine.
+ * A host that wants a restriction appends it through `args`
+ * (`--disallowedTools ...`, `--strict-mcp-config`). A harness that reaches
+ * for its own `Read` rather than the catalogue's `files.read` leaves no
+ * operation in the record, and that absence is a finding about the harness,
+ * not about SharedOS.
  *
  * `--allowedTools mcp__sharedos` auto-approves the server. That is a permission
  * *prompt* decision, not an authorization one: Claude separates the two, print
  * mode has no human to prompt, and what actually secures the run is that every
- * one of those calls is re-authorized by the kernel.
+ * one of those calls is re-authorized by the kernel. It allows and refuses
+ * nothing else.
  *
- * `Task`, Claude's in-process subagent, is not refused. A subagent runs inside
- * the same process, under the same identity and the same MCP configuration, so
- * every call it makes goes to the bridge and is re-authorized by the kernel
- * like the parent's; the deny list above applies to it as well, so it has no
- * native file or shell tool either. Refusing it would only make the harness
- * do in one context what it would otherwise split across several, with no
- * gain in evidence.
+ * `--verbose` is not optional: `--output-format stream-json` refuses to run
+ * in print mode without it.
  *
  * No `--max-turns` is set, as no other spec caps its CLI's turns: a turn ends
  * when the harness finishes, or when the host's own limits say so if it set
@@ -658,21 +713,23 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
   configFiles: (connection) => [harnessMcpConfigFile("claude-code", connection)],
   launch: ({ prompt, workspace, configPaths, connection }) => ({
     command: "claude",
+    // `-p` with no prompt argument reads the prompt from stdin to EOF.
+    // `--allowedTools` and `--mcp-config` each take every value up to the
+    // next flag, so they come first and the list ends on `--verbose`, which
+    // takes none: a bare token a host appends through `args` is then never
+    // read as a tool name or a config file.
     args: [
       "-p",
-      prompt,
+      "--allowedTools",
+      `mcp__${mcpServerName(connection)}`,
+      "--mcp-config",
+      configPaths[".mcp.json"] ?? join(workspace, ".mcp.json"),
       "--output-format",
       "stream-json",
       "--verbose",
-      "--mcp-config",
-      configPaths[".mcp.json"] ?? join(workspace, ".mcp.json"),
-      "--strict-mcp-config",
-      "--allowedTools",
-      `mcp__${mcpServerName(connection)}`,
-      "--disallowedTools",
-      "Bash,Edit,Write,Read,Glob,Grep,NotebookEdit,WebFetch,WebSearch,TodoWrite",
     ],
     cwd: workspace,
+    stdin: prompt,
   }),
 });
 
@@ -683,42 +740,76 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
  * `config.toml`, so nothing on the machine's real Codex configuration is touched
  * by a conformance run. `required = true` means a run whose bridge failed to
  * start stops rather than continuing with only Codex's own tools, which would
- * look like a harness that declined to use the catalogue.
+ * look like a harness that declined to use the catalogue. Codex says why on
+ * stderr only, and `readDiagnostic` reads it there, so the turn fails
+ * `harness_not_connected` with Codex's reason rather than with an exit code.
+ * The check is only as good as `required`, which Codex honours from 0.99 and
+ * ignores before: an older Codex whose bridge failed still runs the turn alone,
+ * with its own tools, and prints nothing this reads.
+ *
+ * A bridge that requires a token is reached through
+ * `bearer_token_env_var`: the override names
+ * {@link SHAREDOS_MCP_TOKEN_VARIABLE} and the token is set in the CLI's
+ * environment under it, which keeps it off the command line, where every
+ * local process can read it. It is not hidden from the harness: Codex passes
+ * its environment to the shell commands it runs, as the other harnesses'
+ * tokens sit in the workspace files they read. The token identifies the
+ * bridge session and grants nothing, and every call is re-authorized.
  */
 export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: CODEX_VENDOR.id,
   manifest: CODEX_VENDOR.mcpManifest,
   protocol: CODEX_VENDOR.protocol,
+  readDiagnostic: (text, stream, connection) => {
+    // Codex reports a required server that failed twice on stderr, first as a
+    // `codex_core::session` ERROR line and then as the `Error: thread/start`
+    // line it exits on: `required MCP servers failed to initialize: <server>:
+    // <reason>`. The first of them ends the turn, so the second is never read.
+    // Only the bridge's own server counts: a required server of the owner's
+    // that failed is left to Codex's exit.
+    if (stream !== "stderr") {
+      return undefined;
+    }
+    const server = mcpServerName(connection).replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+    const reason = new RegExp(
+      `required MCP servers failed to initialize: (?:.*?[;,] )?${server}: (.*)$`,
+      "su",
+    ).exec(text)?.[1];
+    return reason === undefined
+      ? undefined
+      : {
+          code: "harness_not_connected",
+          message: `Codex did not connect to the SharedOS MCP server: ${reason}`,
+          retryable: false,
+        };
+  },
   launch: ({ prompt, workspace, connection }) => ({
     command: "codex",
     args: [
       "exec",
       "--json",
       "--skip-git-repo-check",
-      // The workspace is a scratch directory, not a repository. Codex finds its
-      // project root by walking up to the nearest `.git` and reads the AGENTS.md
-      // files from there down, so a checkout anywhere above the scratch
-      // directory would have its instructions read as this turn's. With no
-      // markers the working directory is the root, and the only directory read.
-      "-c",
-      "project_root_markers=[]",
+      // Codex finds its project root and AGENTS.md files itself; a host whose
+      // `workspaceRoot` sits inside a repository may append
+      // `-c project_root_markers=[]` through `args`.
       // One source with `codexMcpConfig`: the same settings, as overrides, so a
       // launch and an emitted `config.toml` cannot disagree. Why each setting is
-      // there -- `required`, and the approval mode that keeps a run with no
-      // human from refusing every write inside Codex -- is on
-      // `codexMcpServerSettings`. The bearer token is the one setting left to
-      // the file: a command line is readable by every local process, so a
-      // bridge that requires a token is reached through the `config.toml`
-      // `codexMcpConfig` emits, which this launch does not write.
-      ...codexMcpServerSettings(connection)
-        .filter(([key]) => key !== "bearer_token")
-        .flatMap(([key, value]) => [
-          "-c",
-          `mcp_servers.${mcpServerName(connection)}.${key}=${value}`,
-        ]),
-      prompt,
+      // there is on `codexMcpServerSettings`: `required`, the approval mode
+      // that keeps a run with no human from refusing every write inside Codex,
+      // and the variable the token is read from.
+      ...codexMcpServerSettings(connection).flatMap(([key, value]) => [
+        "-c",
+        `mcp_servers.${mcpServerName(connection)}.${key}=${value}`,
+      ]),
+      // The prompt is read from stdin. Overrides a host appends after this
+      // are still applied.
+      "-",
     ],
     cwd: workspace,
+    stdin: prompt,
+    ...(connection.token === undefined
+      ? {}
+      : { env: { [SHAREDOS_MCP_TOKEN_VARIABLE]: connection.token } }),
   }),
 });
 
@@ -727,32 +818,70 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
  *
  * Its official MCP plugin performs `tools/list`, converts the schemas, and
  * registers them through `ctx.tools.register()`, so the generated overlay names
- * the endpoint and nothing else. The plugin must already be installed into the
- * profile -- `dsh plugin --profile <name> add @deepseek-ai/dsh-mcp-client` --
- * because a `--patch` overlay activates a plugin and does not fetch one.
+ * the endpoint and nothing else. The plugin is a dependency of the dsh CLI,
+ * and dsh 0.2.2-rc.1 loads it from there. A build that does not needs it
+ * installed into the profile first, with
+ * `dsh plugin --profile <name> add @deepseek-ai/dsh-mcp-client`, because a
+ * `--patch` overlay activates a plugin and does not fetch one.
  *
  * `DSH_COMMAND` and `DSH_PROFILE` are read from the environment because a dsh
  * profile is host state with its own plugin dependencies, not something a turn
- * should materialise for itself.
+ * should materialise for itself. The overlay is added on top of that profile
+ * and of the owner's own dsh configuration, and removes nothing from either.
+ *
+ * `--json` has the headless profile print its run as events rather than only
+ * the final answer, which is what `deepseekHeadlessProtocol` reads.
+ *
+ * A run whose client could not reach the bridge goes on with only dsh's own
+ * tools, and the one sign of it is a line dsh prints on stderr, whatever the
+ * overlay says: from dsh 0.1.6 even `failOnStartupError: true`, which the
+ * overlay does not set, stops nothing. `readDiagnostic` reads that line, fails
+ * the turn `harness_not_connected` and ends dsh, so the turn is not read as a
+ * harness that declined the catalogue and dsh does not go on to run the task
+ * without it.
  */
 export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: DEEPSEEK_VENDOR.id,
   manifest: DEEPSEEK_VENDOR.mcpManifest,
-  protocol: DEEPSEEK_VENDOR.protocol,
+  // The headless profile's `--json` stream, not the session events the
+  // vendor's driven codec reads: that is what this launch prints.
+  protocol: deepseekHeadlessProtocol,
   configFiles: (connection) => [harnessMcpConfigFile("deepseek", connection)],
+  readDiagnostic: (text, stream, connection) => {
+    // dsh reports an entry that did not activate as `<id> (<package>): <error>`
+    // on stderr and goes on without it. The SharedOS entry is matched by its
+    // id, so a failing MCP server of the owner's own is left to the owner.
+    const prefix = `${deepseekMcpEntryId(connection)} (@deepseek-ai/dsh-mcp-client): `;
+    if (stream !== "stderr" || !text.startsWith(prefix)) {
+      return undefined;
+    }
+    return {
+      code: "harness_not_connected",
+      message: `DeepSeek Harness did not connect to the SharedOS MCP server: ${text.slice(prefix.length)}`,
+      retryable: false,
+    };
+  },
   launch: ({ prompt, workspace, configPaths }) => ({
     command: process.env["DSH_COMMAND"] ?? "dsh",
     // Launcher flags first, then the profile's own arguments: the first token
-    // dsh does not recognise starts the app's arguments, and the headless
-    // profile's first argument is the job.
+    // dsh does not recognise starts the app's arguments, so `--json` goes
+    // after `--patch` and never before it. `-` as the only task argument has
+    // the headless profile read the job from stdin, which it does from dsh
+    // 0.1.6. It is passed rather than left out: with no task, dsh reads stdin
+    // only when stdin is not a terminal, and a launch should not depend on how
+    // it was started. A host's `args` land after `-`, so they are the headless
+    // app's too: its own options, such as `--permission-mode`, work there, and
+    // a launcher flag such as `--patch` or a second task argument is refused.
     args: [
       "--profile",
       process.env["DSH_PROFILE"] ?? "headless",
       "--patch",
       configPaths["cordis.patch.yml"] ?? join(workspace, "cordis.patch.yml"),
-      prompt,
+      "--json",
+      "-",
     ],
     cwd: workspace,
+    stdin: prompt,
   }),
 });
 

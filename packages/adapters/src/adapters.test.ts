@@ -37,6 +37,7 @@ import {
 } from "./vendors.js";
 import { claudeCodeProtocol } from "./claude-code/protocol.js";
 import { codexProtocol } from "./codex/protocol.js";
+import { deepseekHeadlessProtocol } from "./deepseek/headless.js";
 import { deepseekProtocol } from "./deepseek/protocol.js";
 import { piProtocol } from "./pi/protocol.js";
 import { probeHarness } from "./node.js";
@@ -298,27 +299,81 @@ describe("the Codex protocol", () => {
     });
   });
 
-  it("keeps the failure text whichever shape Codex reports it in", () => {
-    // The Responses protocol nests the message under `error`; the CLI's JSON
-    // mode puts it at the top level. Reading only the nested form reported every
-    // live CLI failure as a generic one, which loses the only useful detail.
-    const nested = codexProtocol.interpret({
+  it("keeps the failure text whichever shape a Responses failure arrives in", () => {
+    // The Responses protocol puts the error on the failed response; the
+    // top-level form is read as well, as it was before.
+    const onResponse = codexProtocol.interpret({
+      type: "response.failed",
+      response: {
+        id: "resp_1",
+        status: "failed",
+        error: { code: "server_error", message: "The server had an error." },
+      },
+    });
+    const topLevel = codexProtocol.interpret({
       type: "response.failed",
       error: { code: "rate_limit", message: "slow down" },
     });
-    const flat = codexProtocol.interpret({
+    const streamError = codexProtocol.interpret({
       type: "error",
+      code: null,
       message: "unexpected status 401 Unauthorized",
+      param: null,
+      sequence_number: 3,
     });
 
-    expect(nested[0]).toMatchObject({
+    expect(onResponse).toEqual([
+      {
+        type: "failed",
+        error: { code: "server_error", message: "The server had an error.", retryable: true },
+      },
+    ]);
+    expect(topLevel[0]).toMatchObject({
       type: "failed",
       error: { code: "rate_limit", message: "slow down" },
     });
-    expect(flat[0]).toMatchObject({
+    expect(streamError[0]).toMatchObject({
       type: "failed",
-      error: { message: "unexpected status 401 Unauthorized" },
+      error: { code: "harness_failed", message: "unexpected status 401 Unauthorized" },
     });
+  });
+
+  it("reads the CLI's error event as a report, and the turn's end from what follows it", () => {
+    // `codex exec --json` prints an `error` event for each stream error it
+    // recovers from, and the turn goes on. Read as a failure, a turn that
+    // reconnected once and then completed was reported failed.
+    const reconnect: HarnessFrame = {
+      type: "error",
+      message:
+        "Reconnecting... 2/5 (stream disconnected before completion: error sending request for url (https://api.openai.com/v1/responses))",
+    };
+    expect(codexProtocol.interpret(reconnect)).toEqual([
+      { type: "notice", text: reconnect["message"] },
+    ]);
+
+    const recovered = [cliTurn[0], cliTurn[1], reconnect, ...cliTurn.slice(2)] as HarnessFrame[];
+    expect(recovered.flatMap((frame) => codexProtocol.interpret(frame))).toEqual([
+      { type: "notice", text: reconnect["message"] },
+      { type: "message", text: "Hi! What can I help you with?" },
+      { type: "complete" },
+    ]);
+
+    // The error that ended the turn is the one `turn.failed` carries.
+    const refused = "unexpected status 401 Unauthorized: Missing bearer or basic authentication";
+    const failedTurn: HarnessFrame[] = [
+      { type: "thread.started", thread_id: "t" },
+      { type: "turn.started" },
+      { type: "error", message: `Reconnecting... 1/5 (${refused})` },
+      { type: "error", message: refused },
+      { type: "turn.failed", error: { message: refused } },
+    ];
+    expect(
+      failedTurn
+        .flatMap((frame) => codexProtocol.interpret(frame))
+        .filter(({ type }) => type !== "notice"),
+    ).toEqual([
+      { type: "failed", error: { code: "harness_failed", message: refused, retryable: true } },
+    ]);
   });
 });
 
@@ -376,7 +431,7 @@ describe("the Claude Code protocol", () => {
         error: {
           code: "error_max_turns",
           message: "Claude Code stopped at its turn limit after 24 model turns (error_max_turns).",
-          retryable: true,
+          retryable: false,
         },
       },
     ]);
@@ -408,6 +463,147 @@ describe("the Claude Code protocol", () => {
       type: "failed",
       error: { code: "harness_failed", message: "The Claude Code harness reported a failure." },
     });
+  });
+
+  /** The fields every result frame carries, as `claude -p --output-format stream-json` prints them. */
+  const resultFrame = (fields: JsonObject): HarnessFrame => ({
+    type: "result",
+    duration_ms: 18_204,
+    duration_api_ms: 17_655,
+    num_turns: 3,
+    session_id: "7f1c2a9e-0000-4000-8000-000000000000",
+    total_cost_usd: 0.0412,
+    usage: { input_tokens: 2_310, output_tokens: 412 },
+    permission_denials: [],
+    uuid: "c0ffee00-0000-4000-8000-000000000000",
+    ...fields,
+  });
+
+  it("fails a run Claude stopped, even when the frame says is_error false", () => {
+    // Before Claude Code 2.1.89 the turn limit and an error during execution
+    // were reported with `is_error: false`, and no `result`: read on
+    // `is_error`, the failed turn completed with empty output.
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({ subtype: "error_max_turns", is_error: false, num_turns: 6 }),
+      ),
+    ).toEqual([
+      {
+        type: "failed",
+        error: {
+          code: "error_max_turns",
+          message: "Claude Code stopped at its turn limit after 6 model turns (error_max_turns).",
+          retryable: false,
+        },
+      },
+    ]);
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({ subtype: "error_during_execution", is_error: false }),
+      )[0],
+    ).toMatchObject({ type: "failed", error: { code: "error_during_execution" } });
+    // Whatever subtype a later version adds, only `success` completes.
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({ subtype: "error_max_budget_usd", is_error: true }),
+      )[0],
+    ).toMatchObject({ type: "failed", error: { code: "error_max_budget_usd", retryable: false } });
+  });
+
+  it("names what the frame's errors list says", () => {
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({
+          subtype: "error_during_execution",
+          is_error: true,
+          errors: ['MCP server "sharedos" disconnected', 42, "  "],
+        }),
+      ),
+    ).toEqual([
+      {
+        type: "failed",
+        error: {
+          code: "error_during_execution",
+          message:
+            'The Claude Code harness reported a failure (error_during_execution): MCP server "sharedos" disconnected',
+          retryable: false,
+        },
+      },
+    ]);
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({
+          subtype: "error_max_turns",
+          is_error: true,
+          num_turns: 24,
+          errors: ["Reached maximum number of turns (24)"],
+        }),
+      )[0],
+    ).toMatchObject({
+      error: {
+        message:
+          "Claude Code stopped at its turn limit after 24 model turns (error_max_turns): Reached maximum number of turns (24)",
+      },
+    });
+  });
+
+  it("fails an API error with its terminal reason as the code, retryable only when it passes", () => {
+    const apiError = (result: string, status: number | null = null) =>
+      claudeCodeProtocol.interpret(
+        resultFrame({
+          subtype: "success",
+          is_error: true,
+          result,
+          terminal_reason: "api_error",
+          api_error_status: status,
+        }),
+      )[0];
+    const rejected = "API Error: Request rejected (429) · this may be a temporary capacity issue.";
+
+    // The code was the subtype, so an API error was reported as a failure
+    // whose code is "success".
+    expect(apiError(rejected)).toEqual({
+      type: "failed",
+      error: { code: "api_error", message: rejected, retryable: true },
+    });
+    // Claude Code 2.1.319 states the status on the frame, and it is read first.
+    expect(apiError("Invalid API key · Fix external API key", 401)).toMatchObject({
+      error: { code: "api_error", retryable: false },
+    });
+    expect(apiError("Repeated 529 Overloaded errors", 529)).toMatchObject({
+      error: { retryable: true },
+    });
+    expect(apiError("Prompt is too long", 400)).toMatchObject({ error: { retryable: false } });
+    // Without one, the words Claude writes, as 2.1.319 writes them.
+    for (const transient of [
+      "API Error: Server is temporarily limiting requests (not your usage limit)",
+      "Request timed out",
+      "API Error: Connection to the API was lost (ECONNRESET). This is usually temporary; try again.",
+      "API Error: Connection to the API was lost (EPIPE). This is usually temporary; try again.",
+      "Opus is experiencing high load, please use /model to switch to Sonnet",
+      "Repeated 529 Overloaded errors",
+    ]) {
+      expect(apiError(transient), transient).toMatchObject({ error: { retryable: true } });
+    }
+    for (const lasting of [
+      "Credit balance is too low",
+      "Invalid API key · Fix external API key",
+      "Prompt is too long",
+      "API Error: Request was aborted.",
+    ]) {
+      expect(apiError(lasting), lasting).toMatchObject({ error: { retryable: false } });
+    }
+    // No terminal reason, no subtype: the generic code, never "success".
+    expect(
+      claudeCodeProtocol.interpret(
+        resultFrame({
+          subtype: "success",
+          is_error: true,
+          result: "Request timed out",
+          api_error_status: null,
+        }),
+      )[0],
+    ).toMatchObject({ error: { code: "harness_failed", retryable: true } });
   });
 
   it("marks a refused call so the harness knows it was refused", () => {
@@ -599,6 +795,51 @@ describe("a harness driven as a SharedOS turn", () => {
 
     expect(result.status).toBe("failed");
   });
+
+  it("names what the harness last reported when it stops without an outcome", async () => {
+    const transport = new TranscriptTransport({
+      batches: [[{ type: "turn.started" }, { type: "error", message: "stream disconnected" }]],
+    });
+    const { result } = await runWith(createCodexDriver({ transport }));
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: {
+        code: "harness_ended_without_outcome",
+        message:
+          "The harness stopped speaking without completing the turn. It last reported: stream disconnected",
+      },
+    });
+  });
+
+  it("reads the outcome that follows as many ignored frames as the limit allows", async () => {
+    const ignored: HarnessFrame = { type: "system", subtype: "init" };
+    const done: HarnessFrame = { type: "result", subtype: "success", result: "done" };
+
+    // The last frame read was never interpreted, so an outcome arriving right
+    // at the limit was reported as the limit being exceeded.
+    const atLimit = await runWith(
+      createClaudeCodeDriver({
+        transport: new TranscriptTransport({ batches: [[ignored, ignored, done]] }),
+        maxIgnoredFrames: 2,
+      }),
+    );
+    expect(atLimit.result.status).toBe("succeeded");
+    expect(atLimit.result.status === "succeeded" ? atLimit.result.output : undefined).toEqual({
+      text: "done",
+    });
+
+    const pastLimit = await runWith(
+      createClaudeCodeDriver({
+        transport: new TranscriptTransport({ batches: [[ignored, ignored, ignored, done]] }),
+        maxIgnoredFrames: 2,
+      }),
+    );
+    expect(pastLimit.result).toMatchObject({
+      status: "failed",
+      error: { code: "harness_frame_limit_exceeded" },
+    });
+  });
 });
 
 describe("a harness asking for a human", () => {
@@ -777,6 +1018,38 @@ describe("harness availability", () => {
     expect(availability.detail).toMatchObject({ credential: "ANTHROPIC_API_KEY" });
   });
 
+  it("stops waiting for a version when the caller aborts", async () => {
+    // A CLI that never answers holds the probe for as long as it is silent:
+    // SharedOS sets no limit, so the caller's signal is how one is set.
+    const controller = new AbortController();
+    const reason = new Error("probe abandoned");
+    const startedAt = Date.now();
+    const probing = probeHarness(
+      {
+        ...CODEX_REQUIREMENTS,
+        executable: "node",
+        versionArguments: ["-e", "setTimeout(() => console.log('0.1.0'), 20000)"],
+      },
+      { PATH: process.env["PATH"] ?? "" },
+      controller.signal,
+    );
+    setTimeout(() => controller.abort(reason), 200);
+
+    await expect(probing).rejects.toBe(reason);
+    expect(Date.now() - startedAt).toBeLessThan(10_000);
+  });
+
+  it("does not start a probe whose signal is already aborted", async () => {
+    const reason = new Error("not wanted");
+    await expect(
+      probeHarness(
+        { ...CODEX_REQUIREMENTS, executable: "node" },
+        { PATH: process.env["PATH"] ?? "" },
+        AbortSignal.abort(reason),
+      ),
+    ).rejects.toBe(reason);
+  });
+
   it("requires a credential only when the harness cannot use a stored session", async () => {
     const strict = await probeHarness(
       { ...CODEX_REQUIREMENTS, executable: "node", credentialsOptional: false },
@@ -902,6 +1175,165 @@ describe("the DeepSeek Harness protocol", () => {
   it("ignores frames that carry nothing relevant to the turn", () => {
     expect(deepseekProtocol.interpret(event("step/start", { turn: 1, step: 1 }))).toEqual([]);
     expect(deepseekProtocol.interpret({ jsonrpc: "2.0", id: 1, result: {} })).toEqual([]);
+  });
+});
+
+/**
+ * `dsh --profile headless --json`, as 0.2.2-rc.1 prints a run that read two
+ * files over MCP and answered. The text event is cut at 8 KiB by dsh and
+ * marked; `final.text` never is.
+ */
+const SESSION = "session-6f0e2b1c-0000-4000-8000-000000000000";
+const headlessRun: HarnessFrame[] = [
+  { type: "session", sessionId: SESSION, cwd: "/tmp/sharedos-mcp-a1b2c3" },
+  { type: "status", phase: "turn_start", turn: 1 },
+  { type: "status", phase: "step_start", turn: 1, step: 1 },
+  { type: "thinking", text: "Read both files through the catalogue." },
+  {
+    type: "tool_call",
+    callId: "call_00_x1",
+    tool: "mcp__sharedos__files_read_3f9a",
+    input: { path: ["Work", "Public"] },
+  },
+  {
+    type: "tool_result",
+    callId: "call_00_x1",
+    status: "completed",
+    result: '{"status":"succeeded"}',
+  },
+  {
+    type: "status",
+    phase: "step_end",
+    turn: 1,
+    step: 1,
+    usage: { inputTokens: 1_840, outputTokens: 52 },
+  },
+  { type: "status", phase: "step_start", turn: 1, step: 2 },
+  { type: "text", text: "Both files", truncated: true },
+  { type: "status", phase: "step_end", turn: 1, step: 2 },
+  { type: "status", phase: "turn_end", turn: 1, reason: { kind: "completed" } },
+  {
+    type: "final",
+    sessionId: SESSION,
+    reason: { kind: "completed" },
+    text: "Both files read: Work/Public holds the notes.",
+  },
+];
+
+describe("the DeepSeek Harness headless protocol", () => {
+  const final = (reason: JsonObject | null): HarnessFrame => ({
+    type: "final",
+    sessionId: SESSION,
+    reason,
+    text: "",
+  });
+
+  it("completes a run with final.text as its output, and reads nothing else as an outcome", () => {
+    expect(headlessRun.flatMap((frame) => deepseekHeadlessProtocol.interpret(frame))).toEqual([
+      { type: "complete", output: { text: "Both files read: Work/Public holds the notes." } },
+    ]);
+  });
+
+  it("reads a call dsh already made as a record, never as a call to make", () => {
+    expect(
+      deepseekHeadlessProtocol.interpret({
+        type: "tool_call",
+        callId: "c",
+        tool: "bash",
+        input: { command: "ls" },
+      }),
+    ).toEqual([]);
+  });
+
+  it("is decided by the run's last turn, not a failed one on the way", () => {
+    const recovered: HarnessFrame[] = [
+      {
+        type: "status",
+        phase: "turn_end",
+        turn: 1,
+        reason: { kind: "error", error: { code: "SERVER", message: "502 Bad Gateway" } },
+      },
+      { type: "status", phase: "turn_start", turn: 2 },
+      { type: "status", phase: "turn_end", turn: 2, reason: { kind: "completed" } },
+      { type: "final", sessionId: SESSION, reason: { kind: "completed" }, text: "done" },
+    ];
+    expect(recovered.flatMap((frame) => deepseekHeadlessProtocol.interpret(frame))).toEqual([
+      { type: "complete", output: { text: "done" } },
+    ]);
+  });
+
+  it("fails a run whose last turn did not complete, with the harness's code", () => {
+    const missingKey =
+      'llm-deepseek: no API key for provider route "deepseek-official"; store DEEPSEEK_API_KEY through the credentials service';
+    expect(
+      deepseekHeadlessProtocol.interpret(
+        final({ kind: "error", error: { message: missingKey, code: "MISSING_CREDENTIAL" } }),
+      ),
+    ).toEqual([
+      {
+        type: "failed",
+        error: { code: "MISSING_CREDENTIAL", message: missingKey, retryable: false },
+      },
+    ]);
+    expect(
+      deepseekHeadlessProtocol.interpret(
+        final({ kind: "error", error: { message: "429", code: "RATE_LIMIT", status: 429 } }),
+      )[0],
+    ).toMatchObject({ error: { code: "RATE_LIMIT", retryable: true } });
+    expect(deepseekHeadlessProtocol.interpret(final({ kind: "max-tokens" }))[0]).toMatchObject({
+      type: "failed",
+      error: { code: "harness_turn_max_tokens", retryable: false },
+    });
+    expect(
+      deepseekHeadlessProtocol.interpret(final({ kind: "aborted", reason: { kind: "signal" } }))[0],
+    ).toMatchObject({ error: { code: "harness_turn_aborted", retryable: false } });
+    expect(deepseekHeadlessProtocol.interpret(final({ kind: "interrupted" }))[0]).toMatchObject({
+      error: { code: "harness_turn_interrupted", retryable: true },
+    });
+    // dsh exits 0 only for `completed`, so a kind this adapter has not seen
+    // is a failure too.
+    expect(deepseekHeadlessProtocol.interpret(final({ kind: "forked" }))[0]).toMatchObject({
+      type: "failed",
+      error: { code: "harness_turn_forked" },
+    });
+    expect(deepseekHeadlessProtocol.interpret(final(null))[0]).toMatchObject({
+      type: "failed",
+      error: { code: "harness_ended_without_outcome" },
+    });
+  });
+
+  it("keeps a final without a reason as the answer, and leaves the outcome to the exit code", () => {
+    // Before 0.2.2 `final` carried only its text.
+    expect(deepseekHeadlessProtocol.interpret({ type: "final", text: "answered" })).toEqual([
+      { type: "message", text: "answered" },
+    ]);
+    expect(deepseekHeadlessProtocol.interpret({ type: "final", text: "" })).toEqual([]);
+  });
+
+  it("fails a run dsh could not drive", () => {
+    expect(
+      deepseekHeadlessProtocol.interpret({
+        type: "error",
+        message: "`-` must be the only task argument",
+      }),
+    ).toEqual([
+      {
+        type: "failed",
+        error: {
+          code: "harness_failed",
+          message: "`-` must be the only task argument",
+          retryable: false,
+        },
+      },
+    ]);
+  });
+
+  it("is a protocol of its own, beside the session-event one the driver reads", () => {
+    expect(deepseekHeadlessProtocol.id).toBe("deepseek.headless.jsonl");
+    expect(deepseekHeadlessProtocol.id).not.toBe(deepseekProtocol.id);
+    expect(deepseekHeadlessProtocol.describeTools([READ_TOOL])).toEqual(
+      deepseekProtocol.describeTools([READ_TOOL]),
+    );
   });
 });
 

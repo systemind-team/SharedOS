@@ -52,13 +52,30 @@ export interface HarnessMcpConfigFile {
 }
 
 /**
+ * The environment variable Codex reads the bridge's bearer token from.
+ *
+ * Codex takes an MCP server's token by naming a variable, as
+ * `bearer_token_env_var`, and never as a value: from Codex 0.46 an inline
+ * `bearer_token` is refused ("bearer_token is not supported for
+ * streamable_http") and the CLI does not start. Named once here so the
+ * emitted configuration, the launch that sets the variable and the docs
+ * cannot name different ones.
+ */
+export const SHAREDOS_MCP_TOKEN_VARIABLE = "SHAREDOS_MCP_TOKEN";
+
+/**
  * The settings a Codex MCP server entry carries, as key and TOML value.
  *
- * One list serves both forms Codex accepts -- the `[mcp_servers.<name>]` table
+ * One list serves both forms Codex accepts: the `[mcp_servers.<name>]` table
  * {@link codexMcpConfig} emits, and the `-c mcp_servers.<name>.<key>=<value>`
- * overrides a launch passes -- so the two cannot disagree. `bearer_token`,
- * present only when the connection carries one, belongs to the file alone: a
- * launch keeps it off the command line.
+ * overrides a launch passes, so the two cannot disagree. When the connection
+ * carries a token the entry names {@link SHAREDOS_MCP_TOKEN_VARIABLE} as
+ * `bearer_token_env_var`, and whoever starts Codex sets that variable to the
+ * token. The token itself is in neither form, so it is on no command line and
+ * in no file. It is in Codex's environment, which Codex passes to the shell
+ * commands its model runs, so the harness's own commands can read it, as
+ * they can the other harnesses' configuration files. It identifies the
+ * bridge session and grants nothing; the bridge re-authorizes every call.
  *
  * `required = true` is deliberate. A Codex run whose SharedOS server failed to
  * start should not quietly continue with only its own tools -- that run would
@@ -86,12 +103,16 @@ export function codexMcpServerSettings(
     ["default_tools_approval_mode", JSON.stringify("approve")],
   ];
   if (connection.token !== undefined) {
-    settings.push(["bearer_token", JSON.stringify(connection.token)]);
+    settings.push(["bearer_token_env_var", JSON.stringify(SHAREDOS_MCP_TOKEN_VARIABLE)]);
   }
   return settings;
 }
 
-/** Codex's `config.toml` fragment: {@link codexMcpServerSettings} as a table. */
+/**
+ * Codex's `config.toml` fragment: {@link codexMcpServerSettings} as a table.
+ * For a connection with a token, Codex is started with
+ * {@link SHAREDOS_MCP_TOKEN_VARIABLE} set to it.
+ */
 export function codexMcpConfig(connection: HarnessMcpConnection): string {
   const name = mcpServerName(connection);
   const lines = [
@@ -154,21 +175,22 @@ export function claudeAgentSdkMcpOptions(connection: HarnessMcpConnection): Json
  * schemas, and registers each result through `ctx.tools.register()`. Nothing in
  * this file describes a tool, for the same reason as the others.
  *
- * `failOnStartupError` is set for the same reason Codex's server is `required`:
- * a run that quietly continued with only the harness's own tools would look like
- * a harness that declined to use the catalogue, which is a different finding.
+ * The entry names the connection and nothing else: no `failOnStartupError`. A
+ * host that wants it adds it to the overlay it writes itself; from dsh 0.1.6 it
+ * no longer stops the run in any case. Either way dsh reports an entry that did
+ * not activate on stderr, under {@link deepseekMcpEntryId}, and goes on
+ * without it.
  */
 export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
   const name = mcpServerName(connection);
   const lines = [
     "- insert:",
-    `    - id: mcp-${name}`,
+    `    - id: ${deepseekMcpEntryId(connection)}`,
     "      name: '@deepseek-ai/dsh-mcp-client'",
     "      config:",
     `        serverName: ${name}`,
     "        transport: streamable-http",
     `        url: ${JSON.stringify(connection.url)}`,
-    "        failOnStartupError: true",
     ...(connection.timeoutSec === undefined
       ? []
       : [`        toolCallTimeoutMs: ${connection.timeoutSec * 1_000}`]),
@@ -180,6 +202,15 @@ export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
     );
   }
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * The id of the plugin entry {@link deepseekMcpConfig} inserts. dsh names an
+ * entry by its id when it reports that the entry did not activate, so this is
+ * how a launch recognises its own client's failure among the owner's.
+ */
+export function deepseekMcpEntryId(connection: HarnessMcpConnection): string {
+  return `mcp-${mcpServerName(connection)}`;
 }
 
 /**

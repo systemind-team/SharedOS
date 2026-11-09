@@ -34,6 +34,8 @@ import {
   claudeAgentSdkMcpOptions,
   claudeCodeMcpConfig,
   codexMcpConfig,
+  deepseekMcpEntryId,
+  SHAREDOS_MCP_TOKEN_VARIABLE,
   declareToolPolicy,
   deepseekMcpConfig,
   harnessMcpConfigFile,
@@ -595,6 +597,17 @@ describe("harness configuration", () => {
     expect(claudeAgentSdkMcpOptions(connection)["allowedTools"]).toEqual(["mcp__sharedos__*"]);
   });
 
+  it("names the variable Codex reads a bridge token from, and never the token", () => {
+    // From Codex 0.46 an inline `bearer_token` stops the CLI before it starts.
+    const emitted = codexMcpConfig({ ...connection, token: "secret-bridge-token" });
+
+    expect(SHAREDOS_MCP_TOKEN_VARIABLE).toBe("SHAREDOS_MCP_TOKEN");
+    expect(emitted).toContain('bearer_token_env_var = "SHAREDOS_MCP_TOKEN"');
+    expect(emitted).not.toContain("secret-bridge-token");
+    expect(emitted).not.toMatch(/^bearer_token =/mu);
+    expect(codexMcpConfig(connection)).not.toContain("bearer_token");
+  });
+
   it("adds the dsh plugin with `insert`, because a bare id only overrides one", () => {
     const overlay = deepseekMcpConfig(connection);
 
@@ -603,9 +616,15 @@ describe("harness configuration", () => {
     // A run that reached the model with no MCP client at all would read as a
     // harness that declined to use the catalogue rather than as a broken config.
     expect(overlay.startsWith("- insert:")).toBe(true);
+    // The id dsh names the entry by when it reports that it did not activate.
+    expect(overlay).toContain(`    - id: ${deepseekMcpEntryId(connection)}\n`);
+    expect(deepseekMcpEntryId({ ...connection, name: "bridge" })).toBe("mcp-bridge");
     expect(overlay).toContain("@deepseek-ai/dsh-mcp-client");
     expect(overlay).toContain("transport: streamable-http");
     expect(overlay).not.toMatch(/^- id:/mu);
+    // The connection and nothing else: whether a failed client stops the run
+    // is the host's to add.
+    expect(overlay).not.toContain("failOnStartupError");
   });
 
   it("gives Pi an eager connection, because a lazy one may outlive the turn", () => {

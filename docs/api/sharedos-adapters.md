@@ -898,25 +898,25 @@ its transport to hand over with the prompt.
 
 ### HarnessAvailability
 
-Defined in: [packages/adapters/src/harness.ts:100](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L100)
+Defined in: [packages/adapters/src/harness.ts:107](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L107)
 
 Whether a harness can actually be run here, and if not, why not.
 
 #### Properties
 
-| Property                                    | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Defined in                                                                                                                         |
-| ------------------------------------------- | ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-available"></a> `available` | `readonly` | `boolean`                                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/harness.ts:102](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L102) |
-| <a id="property-detail"></a> `detail?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Includes `versionOutput`, the line `version` was read from, verbatim.                                                                                                                                                                                                                                                                                                                                                                                       | [packages/adapters/src/harness.ts:115](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L115) |
-| <a id="property-harness"></a> `harness`     | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/harness.ts:101](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L101) |
-| <a id="property-reason"></a> `reason?`      | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [packages/adapters/src/harness.ts:103](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L103) |
-| <a id="property-version"></a> `version?`    | `readonly` | `string`                                         | The build that answered, as the harness itself reports it. A result about a vendor CLI is a result about one version of it, and the version is the harness's to state: nothing in this repository pins the installed binary, and a number carried in a runbook is a claim about what someone typed rather than about what ran. Absent when the executable declined to report one -- see [HarnessRequirements.versionArguments](#property-versionarguments). | [packages/adapters/src/harness.ts:113](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L113) |
+| Property                                    | Modifier   | Type                                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                               | Defined in                                                                                                                         |
+| ------------------------------------------- | ---------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-available"></a> `available` | `readonly` | `boolean`                                        | -                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/harness.ts:109](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L109) |
+| <a id="property-detail"></a> `detail?`      | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject) | Includes `versionOutput`, the line `version` was read from, verbatim.                                                                                                                                                                                                                                                                                                                                                                                     | [packages/adapters/src/harness.ts:122](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L122) |
+| <a id="property-harness"></a> `harness`     | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/harness.ts:108](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L108) |
+| <a id="property-reason"></a> `reason?`      | `readonly` | `string`                                         | -                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [packages/adapters/src/harness.ts:110](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L110) |
+| <a id="property-version"></a> `version?`    | `readonly` | `string`                                         | The build that answered, as the harness itself reports it. A result about a vendor CLI is a result about one version of it, and the version is the harness's to state: nothing in this repository pins the installed binary, and a number carried in a runbook is a claim about what someone typed rather than about what ran. Absent when the executable declined to report one; see [HarnessRequirements.versionArguments](#property-versionarguments). | [packages/adapters/src/harness.ts:120](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L120) |
 
 ---
 
 ### HarnessChannel
 
-Defined in: [packages/adapters/src/harness.ts:62](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L62)
+Defined in: [packages/adapters/src/harness.ts:69](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L69)
 
 One open harness turn. Reads and writes are frames, never SharedOS types.
 
@@ -926,7 +926,7 @@ One open harness turn. Reads and writes are frames, never SharedOS types.
 
 > **close**(): `Promise`\<`void`>\>
 
-Defined in: [packages/adapters/src/harness.ts:66](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L66)
+Defined in: [packages/adapters/src/harness.ts:73](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L73)
 
 ###### Returns
 
@@ -936,7 +936,7 @@ Defined in: [packages/adapters/src/harness.ts:66](https://github.com/systemind-t
 
 > **read**(`signal`): `Promise`\<[`JsonObject`](sharedos-contracts.md#jsonobject) \| `undefined`>\>
 
-Defined in: [packages/adapters/src/harness.ts:64](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L64)
+Defined in: [packages/adapters/src/harness.ts:71](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L71)
 
 The next frame, or `undefined` once the harness has finished speaking.
 
@@ -954,7 +954,7 @@ The next frame, or `undefined` once the harness has finished speaking.
 
 > **write**(`frame`, `signal`): `Promise`\<`void`>\>
 
-Defined in: [packages/adapters/src/harness.ts:65](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L65)
+Defined in: [packages/adapters/src/harness.ts:72](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L72)
 
 ###### Parameters
 
@@ -1047,7 +1047,7 @@ Defined in: [packages/adapters/src/writer.ts:25](https://github.com/systemind-te
 
 ### HarnessProtocol
 
-Defined in: [packages/adapters/src/harness.ts:86](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L86)
+Defined in: [packages/adapters/src/harness.ts:93](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L93)
 
 The translation between SharedOS and one vendor's wire shapes.
 
@@ -1059,7 +1059,7 @@ the SharedOS execution envelope and is not reimplemented per vendor.
 
 | Property                      | Modifier   | Type     | Defined in                                                                                                                       |
 | ----------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-id"></a> `id` | `readonly` | `string` | [packages/adapters/src/harness.ts:87](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L87) |
+| <a id="property-id"></a> `id` | `readonly` | `string` | [packages/adapters/src/harness.ts:94](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L94) |
 
 #### Methods
 
@@ -1067,7 +1067,7 @@ the SharedOS execution envelope and is not reimplemented per vendor.
 
 > **describeTools**(`tools`): [`JsonValue`](sharedos-contracts.md#jsonvalue)
 
-Defined in: [packages/adapters/src/harness.ts:89](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L89)
+Defined in: [packages/adapters/src/harness.ts:96](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L96)
 
 Render the permission-filtered catalogue in the harness's own tool shape.
 
@@ -1085,7 +1085,7 @@ Render the permission-filtered catalogue in the harness's own tool shape.
 
 > **encodeToolResult**(`result`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [packages/adapters/src/harness.ts:96](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L96)
+Defined in: [packages/adapters/src/harness.ts:103](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L103)
 
 ###### Parameters
 
@@ -1101,7 +1101,7 @@ Defined in: [packages/adapters/src/harness.ts:96](https://github.com/systemind-t
 
 > **interpret**(`frame`): readonly [`HarnessStep`](#harnessstep)[]
 
-Defined in: [packages/adapters/src/harness.ts:95](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L95)
+Defined in: [packages/adapters/src/harness.ts:102](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L102)
 
 Everything one frame means, in order. Frames carrying nothing relevant --
 progress notices, token counts, thinking blocks -- yield an empty array,
@@ -1121,7 +1121,7 @@ readonly [`HarnessStep`](#harnessstep)[]
 
 ### HarnessRequirements
 
-Defined in: [packages/adapters/src/harness.ts:119](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L119)
+Defined in: [packages/adapters/src/harness.ts:126](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L126)
 
 What a harness needs before it can run: an executable, credentials, or both.
 
@@ -1129,11 +1129,11 @@ What a harness needs before it can run: an executable, credentials, or both.
 
 | Property                                                        | Modifier   | Type                | Description                                                                                                                                     | Defined in                                                                                                                         |
 | --------------------------------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-credentialsoptional"></a> `credentialsOptional` | `readonly` | `boolean`           | True when the harness can authenticate from a stored session instead.                                                                           | [packages/adapters/src/harness.ts:126](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L126) |
-| <a id="property-credentialvariables"></a> `credentialVariables` | `readonly` | readonly `string`[] | Environment variables, any one of which satisfies the credential need.                                                                          | [packages/adapters/src/harness.ts:124](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L124) |
-| <a id="property-executable"></a> `executable`                   | `readonly` | `string`            | Executable expected on PATH.                                                                                                                    | [packages/adapters/src/harness.ts:122](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L122) |
-| <a id="property-harness-1"></a> `harness`                       | `readonly` | `string`            | -                                                                                                                                               | [packages/adapters/src/harness.ts:120](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L120) |
-| <a id="property-versionarguments"></a> `versionArguments?`      | `readonly` | readonly `string`[] | How to ask this executable what it is. Defaults to `--version`, which all four harnesses here answer; declared so one that does not can say so. | [packages/adapters/src/harness.ts:131](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L131) |
+| <a id="property-credentialsoptional"></a> `credentialsOptional` | `readonly` | `boolean`           | True when the harness can authenticate from a stored session instead.                                                                           | [packages/adapters/src/harness.ts:133](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L133) |
+| <a id="property-credentialvariables"></a> `credentialVariables` | `readonly` | readonly `string`[] | Environment variables, any one of which satisfies the credential need.                                                                          | [packages/adapters/src/harness.ts:131](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L131) |
+| <a id="property-executable"></a> `executable`                   | `readonly` | `string`            | Executable expected on PATH.                                                                                                                    | [packages/adapters/src/harness.ts:129](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L129) |
+| <a id="property-harness-1"></a> `harness`                       | `readonly` | `string`            | -                                                                                                                                               | [packages/adapters/src/harness.ts:127](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L127) |
+| <a id="property-versionarguments"></a> `versionArguments?`      | `readonly` | readonly `string`[] | How to ask this executable what it is. Defaults to `--version`, which all four harnesses here answer; declared so one that does not can say so. | [packages/adapters/src/harness.ts:138](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L138) |
 
 ---
 
@@ -1158,7 +1158,7 @@ exercises the same code path a live session does.
 
 ### HarnessTransport
 
-Defined in: [packages/adapters/src/harness.ts:75](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L75)
+Defined in: [packages/adapters/src/harness.ts:82](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L82)
 
 How a harness is reached: a subprocess, an HTTP session, or a recorded
 transcript. Keeping this separate from the protocol is what lets one adapter
@@ -1171,7 +1171,7 @@ translation code under test.
 
 > **open**(`request`, `signal`): `Promise`\<[`HarnessChannel`](#harnesschannel)>\>
 
-Defined in: [packages/adapters/src/harness.ts:76](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L76)
+Defined in: [packages/adapters/src/harness.ts:83](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L83)
 
 ###### Parameters
 
@@ -1188,7 +1188,7 @@ Defined in: [packages/adapters/src/harness.ts:76](https://github.com/systemind-t
 
 ### HarnessTurnRequest
 
-Defined in: [packages/adapters/src/harness.ts:31](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L31)
+Defined in: [packages/adapters/src/harness.ts:38](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L38)
 
 Everything a harness needs to start one turn.
 
@@ -1196,12 +1196,12 @@ Everything a harness needs to start one turn.
 
 | Property                                             | Modifier   | Type                                                                 | Description                                                                                                                                                                                                                                                                            | Defined in                                                                                                                       |
 | ---------------------------------------------------- | ---------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context"></a> `context`              | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | The sanitised context. It carries no grants and no issuing authority.                                                                                                                                                                                                                  | [packages/adapters/src/harness.ts:44](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L44) |
-| <a id="property-executionid"></a> `executionId`      | `readonly` | `string`                                                             | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:32](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L32) |
-| <a id="property-instructions-1"></a> `instructions?` | `readonly` | `string`                                                             | What the harness is told before the prompt: by default where this turn's tools may operate. It is part of the turn's prompt hash, so a transport that opens the harness hands it over; [harnessTurnText](#harnessturntext) is the text for a harness whose opening frame has one slot. | [packages/adapters/src/harness.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L40) |
-| <a id="property-metadata"></a> `metadata?`           | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                     | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L45) |
-| <a id="property-prompt-1"></a> `prompt`              | `readonly` | `string`                                                             | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:33](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L33) |
-| <a id="property-tools"></a> `tools`                  | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                       | The permission-filtered catalogue, already in the harness's own shape.                                                                                                                                                                                                                 | [packages/adapters/src/harness.ts:42](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L42) |
+| <a id="property-context"></a> `context`              | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | The sanitised context. It carries no grants and no issuing authority.                                                                                                                                                                                                                  | [packages/adapters/src/harness.ts:51](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L51) |
+| <a id="property-executionid"></a> `executionId`      | `readonly` | `string`                                                             | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:39](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L39) |
+| <a id="property-instructions-1"></a> `instructions?` | `readonly` | `string`                                                             | What the harness is told before the prompt: by default where this turn's tools may operate. It is part of the turn's prompt hash, so a transport that opens the harness hands it over; [harnessTurnText](#harnessturntext) is the text for a harness whose opening frame has one slot. | [packages/adapters/src/harness.ts:47](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L47) |
+| <a id="property-metadata"></a> `metadata?`           | `readonly` | [`JsonObject`](sharedos-contracts.md#jsonobject)                     | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:52](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L52) |
+| <a id="property-prompt-1"></a> `prompt`              | `readonly` | `string`                                                             | -                                                                                                                                                                                                                                                                                      | [packages/adapters/src/harness.ts:40](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L40) |
+| <a id="property-tools"></a> `tools`                  | `readonly` | [`JsonValue`](sharedos-contracts.md#jsonvalue)                       | The permission-filtered catalogue, already in the harness's own shape.                                                                                                                                                                                                                 | [packages/adapters/src/harness.ts:49](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L49) |
 
 ---
 
@@ -1516,14 +1516,20 @@ One raw protocol frame, in whatever shape the harness speaks.
 
 ### HarnessStep
 
-> **HarnessStep** = \{ `arguments`: [`JsonObject`](sharedos-contracts.md#jsonobject); `callId`: `string`; `tool`: `string`; `type`: `"tool_call"`; \} \| \{ `text`: `string`; `type`: `"message"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `type`: `"failed"`; \}
+> **HarnessStep** = \{ `arguments`: [`JsonObject`](sharedos-contracts.md#jsonobject); `callId`: `string`; `tool`: `string`; `type`: `"tool_call"`; \} \| \{ `text`: `string`; `type`: `"message"`; \} \| \{ `text`: `string`; `type`: `"notice"`; \} \| \{ `metadata?`: [`JsonObject`](sharedos-contracts.md#jsonobject); `output?`: [`JsonValue`](sharedos-contracts.md#jsonvalue); `type`: `"complete"`; \} \| \{ `error`: [`ProtocolError`](sharedos-contracts.md#protocolerror); `type`: `"failed"`; \}
 
-Defined in: [packages/adapters/src/harness.ts:19](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L19)
+Defined in: [packages/adapters/src/harness.ts:25](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L25)
 
 What one frame means once the vendor protocol has interpreted it.
 
 `message` is assistant prose. It is kept rather than discarded so a harness
 whose terminal frame carries no text still produces a turn output.
+
+`notice` is something the harness reported that is neither prose nor an
+ending: an error it recovered from, or one it had not yet acted on. It is
+never output and never an outcome. A turn the harness leaves without an
+outcome names the last one in its failure, since that may be the only
+reason the harness gave.
 
 ---
 
@@ -1764,7 +1770,7 @@ Defined in: [packages/adapters/src/vendors.ts:140](https://github.com/systemind-
 
 > `const` **CLAUDE\_CODE\_PROTOCOL\_ID**: `"anthropic.messages.stream-json"` = `"anthropic.messages.stream-json"`
 
-Defined in: [packages/adapters/src/claude-code/protocol.ts:16](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L16)
+Defined in: [packages/adapters/src/claude-code/protocol.ts:22](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L22)
 
 Claude Code speaks Anthropic message content blocks inside a stream-json
 envelope.
@@ -1813,7 +1819,7 @@ Frames in the Anthropic content-block shape Claude Code speaks.
 
 > `const` **claudeCodeProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/claude-code/protocol.ts:79](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L79)
+Defined in: [packages/adapters/src/claude-code/protocol.ts:188](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/claude-code/protocol.ts#L188)
 
 ---
 
@@ -1894,7 +1900,7 @@ Frames in the OpenAI Responses function-calling shape Codex speaks.
 
 > `const` **codexProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/codex/protocol.ts:97](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L97)
+Defined in: [packages/adapters/src/codex/protocol.ts:131](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/codex/protocol.ts#L131)
 
 ---
 
@@ -1906,11 +1912,55 @@ Defined in: [packages/adapters/src/vendors.ts:144](https://github.com/systemind-
 
 ---
 
+### DEEPSEEK\_HEADLESS\_PROTOCOL\_ID
+
+> `const` **DEEPSEEK\_HEADLESS\_PROTOCOL\_ID**: `"deepseek.headless.jsonl"` = `"deepseek.headless.jsonl"`
+
+Defined in: [packages/adapters/src/deepseek/headless.ts:45](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/deepseek/headless.ts#L45)
+
+DeepSeek Harness's headless profile, read through its `--json` stream.
+
+`dsh --profile headless` answers one task and exits. Without `--json` it
+prints only the final answer, and none of the session events
+`deepseekProtocol` reads, so a turn read that way completed with nothing to
+show. With `--json` it prints one event per line, the same from dsh
+0.1.6-alpha.1 through 0.2.2-rc.1:
+
+    {type:"session", sessionId, cwd}
+    {type:"status", phase:"turn_start"|"step_start"|"step_end"|"turn_end", turn, step?, reason?}
+    {type:"thinking", text}            {type:"text", text}
+    {type:"tool_call", callId, tool, input}
+    {type:"tool_result", callId, status:"completed"|"error", result, error?}
+    {type:"final", text}               until 0.2.1
+    {type:"final", sessionId, reason, text}   from 0.2.2
+    {type:"error", message}
+
+The turn's outcome is read from `final` and `error`, and nothing else.
+dsh cuts every string but `final.text` at 8 KiB and marks the event
+`truncated`, so the answer is `final.text`, which is the run's last
+assistant text, whole. A run can hold more than one turn, and only its last
+one decides how the run ended: that is how dsh sets its own exit code, so
+a `turn_end` on the way is not read as the run's end.
+
+`final.reason` is that last turn's `turn/end` reason, or null when no turn
+ended. `{kind:"completed"}` is a completed turn; any other kind is a failed
+one, read as `deepseekProtocol` reads a `turn/end`; null is a run that
+ended no turn. Before 0.2.2 `final` carries no reason, so its text is kept
+as the turn's message and the CLI's exit code decides, which is the reason
+dsh's own exit code is set from. `error` is a run dsh could not drive at
+all: a usage error, or an Agent failure no turn recovered from.
+
+dsh executes its own tools, and on this path the SharedOS ones reach it
+over MCP. A `tool_call` event is a record of a call already made, never one
+to make, so it yields nothing.
+
+---
+
 ### DEEPSEEK\_PROTOCOL\_ID
 
 > `const` **DEEPSEEK\_PROTOCOL\_ID**: `"deepseek.harness.session-events"` = `"deepseek.harness.session-events"`
 
-Defined in: [packages/adapters/src/deepseek/protocol.ts:27](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L27)
+Defined in: [packages/adapters/src/deepseek/protocol.ts:28](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L28)
 
 DeepSeek Harness speaks its own session-log vocabulary over a
 newline-delimited JSON-RPC 2.0 stdio transport.
@@ -1970,11 +2020,19 @@ envelope would exercise only half of what the parser has to accept.
 
 ---
 
+### deepseekHeadlessProtocol
+
+> `const` **deepseekHeadlessProtocol**: [`HarnessProtocol`](#harnessprotocol)
+
+Defined in: [packages/adapters/src/deepseek/headless.ts:81](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/deepseek/headless.ts#L81)
+
+---
+
 ### deepseekProtocol
 
 > `const` **deepseekProtocol**: [`HarnessProtocol`](#harnessprotocol)
 
-Defined in: [packages/adapters/src/deepseek/protocol.ts:102](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L102)
+Defined in: [packages/adapters/src/deepseek/protocol.ts:88](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/deepseek/protocol.ts#L88)
 
 ---
 
@@ -2142,7 +2200,7 @@ One message in the shape the provider's wire carries it.
 
 > **harnessTurnText**(`request`): `string`
 
-Defined in: [packages/adapters/src/harness.ts:52](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L52)
+Defined in: [packages/adapters/src/harness.ts:59](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/harness.ts#L59)
 
 The instructions and the prompt as one text, instructions first, for a
 harness whose opening frame carries a single message.

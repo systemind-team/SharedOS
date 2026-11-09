@@ -211,13 +211,20 @@ versus
 
 A `strict` policy that also lists `externalDirect` entries is rejected by the
 schema, rather than producing a run whose headline claim its own manifest
-contradicts. `harnessLocal` stays permitted under `strict` — most CLIs keep some
-tool of their own — but the entries must be named, and a launch that leaves the
+contradicts. `harnessLocal` stays permitted under `strict`, since most CLIs keep
+tools of their own, but the entries must be named, and a launch that leaves the
 harness none of its own, as Pi's does with `--no-builtin-tools`, declares `[]`:
-the extension's `mcp` proxy is the catalogue's conduit, not a local tool.
+the extension's `mcp` proxy is the catalogue's conduit, not a local tool. No
+spec drops the other MCP servers a CLI loads, so a column run on a machine that
+configures servers of its own for the CLI declares them as `externalDirect`, and
+is `hybrid`.
 
 A conformance column that declares a policy has it written to every execution
-record it produces, as `system.toolPolicy`, beside `catalogHash`. `mcpColumn`
+record it produces, as `system.toolPolicy`, beside `catalogHash`. The policy is
+what the host declares, not what the launch enforces: SharedOS's launches no
+longer drop a CLI's own MCP servers, so `strict` means the host named no
+`externalDirect` server, and is only as true as that declaration
+([ADR 0014](adr/0014-mcp-toolshare.md), amended 2026-11-08). `mcpColumn`
 takes it as `toolPolicy`, and `scripts/mcp-conformance.mjs` passes each CLI's.
 A column that declares none, the scripted ones among them, leaves the field
 absent: the managed catalogue was all it had.
@@ -301,18 +308,29 @@ carries only the turn. The files are written before the CLI starts and are
 named in `configPaths`; a filename that would leave the workspace, or that is
 the name of the configuration the adapter generated for the CLI, fails the turn
 before launch, since a file under that name would point the CLI away from the
-bridge. Codex is launched with `project_root_markers=[]`, so the
-workspace is its project root and no checkout above it is read.
+bridge. Codex finds its project root and its AGENTS.md files itself, walking up
+from the workspace to the nearest repository marker; a host whose
+`workspaceRoot` sits inside a repository may append
+`-c project_root_markers=[]` through `args`, so the workspace is the project
+root and no checkout above it is read.
+
+Each spec writes the turn's prompt to its CLI's stdin and closes it: `claude -p`
+with no prompt argument, `codex exec -` and dsh's headless `-` each read the
+prompt from there, and Pi takes it as an RPC frame on the same channel. A prompt
+passed as an argument fails the launch with `E2BIG` once it is past the 128 KiB
+the kernel allows one argument, and one that starts with `-` is read as an
+option; on stdin neither happens. How much a CLI reads there is its own limit:
+Claude Code takes up to 10 MB.
 
 Each spec hands its CLI the connection in the one form that CLI takes, and
 nothing else:
 
-| Harness     | Form               | Shape                                          |
-| ----------- | ------------------ | ---------------------------------------------- |
-| Codex       | `-c` overrides     | `mcp_servers.sharedos.url`, `required=true`    |
-| Claude Code | `.mcp.json`        | `{"type":"http","url":…}`                      |
-| DeepSeek    | `cordis.patch.yml` | one `@deepseek-ai/dsh-mcp-client` plugin entry |
-| Pi          | `.mcp.json`        | `{"url":…,"lifecycle":"eager"}`                |
+| Harness     | Form               | Shape                                                                                                 |
+| ----------- | ------------------ | ----------------------------------------------------------------------------------------------------- |
+| Codex       | `-c` overrides     | `mcp_servers.sharedos.url`, `required=true`, and `bearer_token_env_var` when the bridge takes a token |
+| Claude Code | `.mcp.json`        | `{"type":"http","url":…}`                                                                             |
+| DeepSeek    | `cordis.patch.yml` | one `@deepseek-ai/dsh-mcp-client` plugin entry                                                        |
+| Pi          | `.mcp.json`        | `{"url":…,"lifecycle":"eager"}`                                                                       |
 
 The DeepSeek overlay must use dsh's `insert:` form. A bare `id:` entry _overrides_
 a plugin already in the tree and does not add one; dsh warns `patch: entry "..."
@@ -325,34 +343,81 @@ plugin, it does not fetch one:
 dsh plugin --profile headless add @deepseek-ai/dsh-mcp-client
 ```
 
-### What each launch turns off
+### What each launch sets, and what it leaves alone
 
-Every spec launches its CLI with the flags that keep a measurement honest. Each
-is a permission-_prompt_ or tool-set decision rather than an authorization one:
-what secures the run is that every call is re-authorized by the kernel.
+SharedOS allows, denies or escalates the calls that reach it through MCP, and
+nothing else. It imposes no restriction on a harness's own tools or on which
+other MCP servers the harness loads: Claude Code keeps its file and shell tools
+and the MCP servers configured on the machine, and Codex and DeepSeek Harness
+keep theirs, as they always did. Pi's launch is the one exception, below: it
+still turns Pi's built-in tools off. A host that wants a restriction appends it
+through `args`, for example `--disallowedTools Bash,Edit,Write` or
+`--strict-mcp-config` for Claude Code.
 
-- **Claude Code.** `--strict-mcp-config` drops the machine's own MCP servers,
-  so a `strict` policy is checkable rather than merely declared, and the
-  disallowed-tools list removes the harness's own file and shell tools — a
-  probe that can edit files on the machine it is measuring is answering a
-  different question. `--allowedTools mcp__sharedos` auto-approves the server:
-  Claude separates prompting from authorization, and print mode has no human to
-  prompt. No `--max-turns` is set: like every other spec's, a Claude turn ends
-  at the host's tool-call and time limits, if it set any, and a host that
-  wants Claude's own cap passes it through `args`.
+A harness that reaches for its own tool instead of the catalogue's leaves no
+operation in the record. That is a finding about the harness, recorded as
+such: the row is `not exercised`, never a pass and never a kernel failure.
+
+What each launch does set is a permission-_prompt_ or connection decision
+rather than an authorization one: what secures the run is that every call is
+re-authorized by the kernel.
+
+- **Claude Code.** `--allowedTools mcp__sharedos` auto-approves the SharedOS
+  server and nothing else: Claude separates prompting from authorization, and
+  print mode has no human to prompt. No `--max-turns` is set: like every other
+  spec's, a Claude turn ends at the host's tool-call and time limits, if it set
+  any, and a host that wants Claude's own cap passes it through `args`.
 - **Codex.** `mcp_servers.sharedos.required=true` stops a run whose bridge
   failed to start rather than continuing with Codex's own tools, which would
-  look like a harness that declined the catalogue.
+  look like a harness that declined the catalogue. Codex says why only on
+  stderr (`required MCP servers failed to initialize: sharedos: ...`), so the
+  spec reads that line, fails the turn `harness_not_connected` with Codex's
+  reason and ends Codex. It is only as good as `required`, which Codex
+  honours from 0.99 and ignores before: an older Codex whose bridge failed
+  runs the turn alone with its own tools.
   `default_tools_approval_mode="approve"`, scoped to this one server, is the
   same decision as Claude's `--allowedTools`: Codex's default `auto` mode asks a
   human before any tool that is not read-only, `codex exec` has no human, and
   the refusal would happen inside Codex with the kernel never consulted.
-- **DeepSeek Harness.** The plugin overlay sets `failOnStartupError: true` for
-  the reason Codex's server is `required`: a run that quietly continued with
-  only the harness's own tools would be a different finding.
+- **DeepSeek Harness.** `--profile headless --patch <overlay> --json -`: the
+  overlay adds the MCP client entry on top of the profile and the owner's own
+  dsh configuration and removes nothing from either, and `--json` has the run
+  printed as events, of which the turn's outcome is read from `final`. The
+  overlay names the connection and sets no `failOnStartupError`; a host that
+  wants it adds it to the overlay it writes itself, though from dsh 0.1.6 it
+  stops nothing. A run whose client could not reach the bridge goes on with
+  only dsh's own tools, which would read as a harness that declined the
+  catalogue, so the spec reads dsh's stderr for the line naming the SharedOS
+  entry (`mcp-sharedos (@deepseek-ai/dsh-mcp-client): Error: ...`), which
+  dsh prints regardless of that key, fails the turn `harness_not_connected`
+  and ends dsh. An MCP server of the owner's own that fails to start is left
+  alone.
 - **Pi.** `--mode rpc --no-session --no-builtin-tools`: a session-less RPC run
   with Pi's own tools off, so what the model reaches is the extension's proxy
   tool and nothing else.
+
+### Versions
+
+SharedOS enforces no version floor on any CLI. It launches whatever is
+installed and records the version the CLI reports: `probeHarness` returns it
+with the line it was read from, and the conformance scripts write it beside
+each column. The floors below are what probes of each CLI found, recorded as
+information about where a launch starts to work as described, not as a check
+anything runs:
+
+| CLI            | From    | What                                                                  |
+| -------------- | ------- | --------------------------------------------------------------------- |
+| Codex          | 0.44    | The `codex exec --json` event shape the protocol reads                |
+| Codex          | 0.46    | `bearer_token_env_var`; an inline `bearer_token` is refused from here |
+| Codex          | 0.99    | `required` on an MCP server                                           |
+| Claude Code    | 2.1.221 | MCP servers connected before the first turn in `-p` mode              |
+| DeepSeek (dsh) | 0.1.6   | `-` reads the headless task from stdin, and `--json`                  |
+
+Where a CLI changed a shape the adapters read, both are read: a Claude Code
+`result` is a failure by its `subtype` on every version, though before 2.1.89
+`is_error` was `false` on a run Claude stopped, and dsh's headless `final`
+carries the run's last turn reason from 0.2.2, with the exit code deciding
+before it.
 
 ### Pi needs an extension, and which one is your choice
 
@@ -396,6 +461,17 @@ const http = await createStreamableHttpMcpServer({
 });
 ```
 
+Pass the token as `McpHarnessRuntimeOptions.token` and each spec hands it to its
+CLI in the form that CLI takes: a header in Claude Code's and DeepSeek's
+configuration, Pi's `bearerToken`, and for Codex the environment variable
+`SHAREDOS_MCP_TOKEN` (`SHAREDOS_MCP_TOKEN_VARIABLE`), which the Codex override
+names as `bearer_token_env_var`. None of these hides the token from the harness
+itself. Codex's default `shell_environment_policy` passes its environment,
+the variable included, to every shell command the model runs, as the other
+harnesses can read the workspace files their tokens are written to. That is
+safe for the reason below: the token identifies the session and carries no
+authority, and the bridge re-authorizes every call.
+
 `canonicalActor` renders an `Address` as `<kind>:<id>` — `agent:agent-bob` —
 which is the one string form a token's `actor` takes; it is compared by
 equality, never parsed back. The token identifies the broker session. It
@@ -428,7 +504,15 @@ set and is what a published result should come from. Output lands in
 
 `pnpm conformance:native` (`scripts/native-conformance.mjs`) is the other live
 script: it drives each installed CLI as a harness over its own stdio, and runs
-the model column when a key is present. It shares `--case`, `--harness` (which
+the model column when a key is present. It runs each CLI with its own tools,
+like any host that sets no restriction. Driven over its stdio a CLI runs those
+tools itself, Pi with no permission prompt at all, so a call naming one of them
+(a name with no `<namespace>.` prefix) has already happened when its frame is
+read: it is recorded as run by the harness, counted under `harnessRan` in
+`native-conformance.json`, and never handed to the envelope, so it is not
+recorded as refused. The row it stood in for reads `not exercised`. A call
+naming a SharedOS-shaped tool the CLI does not have is passed on and refused
+as before. It shares `--case`, `--harness` (which
 also takes `model`, for the model column alone), and `--config` (default
 `SHAREDOS_NATIVE_CONFIG`), has no `--limit` — it runs every case — and reads:
 
@@ -466,7 +550,10 @@ URLs, credentials, and per-vendor flags are not SharedOS's to know:
 
 `env` and `args` are passed to the harness process untouched; `${VAR}` is read
 from the ambient environment so a shared file can name a credential without
-containing one. Declaring `credentialVariables` also makes the credential
+containing one. `externalDirect` names the MCP servers the machine configures
+for that CLI, which the launch leaves loaded, and makes the column's declared
+policy `hybrid`; `harnessLocal` replaces the CLI's built-in tool list when
+`args` narrowed it. Declaring `credentialVariables` also makes the credential
 _required_ for that column — every harness here can otherwise fall back to a
 stored session login, and a stored session authenticates to the provider the
 harness normally uses, not the one the run pinned.
