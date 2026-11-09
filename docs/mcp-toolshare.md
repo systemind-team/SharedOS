@@ -495,11 +495,15 @@ set and is what a published result should come from. Output lands in
 
 `pnpm conformance:native` (`scripts/native-conformance.mjs`) is the other live
 script: it drives each installed CLI as a harness over its own stdio, and runs
-the model column when a key is present. Driven that way a CLI runs its own
-tools itself while the record calls the same call denied, so this script, as
-the conformance host, launches Claude Code with its file and shell tools
-denied and Pi with `--no-tools`. That is the script's choice for honest
-records and an untouched machine, not something the adapters impose. It shares `--case`, `--harness` (which
+the model column when a key is present. It runs each CLI with its own tools,
+like any host that sets no restriction. Driven over its stdio a CLI runs those
+tools itself, Pi with no permission prompt at all, so a call naming one of them
+(a name with no `<namespace>.` prefix) has already happened when its frame is
+read: it is recorded as run by the harness, counted under `harnessRan` in
+`native-conformance.json`, and never handed to the envelope, so it is not
+recorded as refused. The row it stood in for reads `not exercised`. A call
+naming a SharedOS-shaped tool the CLI does not have is passed on and refused
+as before. It shares `--case`, `--harness` (which
 also takes `model`, for the model column alone), and `--config` (default
 `SHAREDOS_NATIVE_CONFIG`), has no `--limit` — it runs every case — and reads:
 
