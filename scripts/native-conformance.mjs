@@ -276,7 +276,7 @@ const HARNESSES = [
     requirements: PI_REQUIREMENTS,
     launch: (extra = []) => ({
       command: PI_REQUIREMENTS.executable,
-      args: ["--mode", "rpc", "--no-session", ...extra],
+      args: ["--mode", "rpc", ...extra],
       openingFrame: (request) => ({
         id: request.executionId,
         type: "prompt",

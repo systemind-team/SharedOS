@@ -129,8 +129,12 @@ export const PI_VENDOR: HarnessVendor = defineHarnessVendor({
    */
   credentialVariables: ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "PI_API_KEY"],
   catalogueOutOfBand: true,
-  /** Named, not implied: Pi has no MCP client of its own. */
-  mcpMetadata: { mcpSupport: "extension", mcpExtension: "pi-mcp-adapter" },
+  /**
+   * Named, not implied. Pi has had an MCP client of its own since 0.99, and a
+   * record from before then names the extension that stood in for it, so a
+   * record from now on says which of the two it was.
+   */
+  mcpMetadata: { mcpSupport: "native" },
 });
 
 export const CODEX_HARNESS_ID = CODEX_VENDOR.id;

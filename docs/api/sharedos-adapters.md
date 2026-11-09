@@ -202,7 +202,7 @@ driven column can claim.
 | Codex       | `function` declarations, on the wire                       | The host          |
 | Claude Code | `input_schema` tools, on the wire                          | The host          |
 | DeepSeek    | Out of band — its `dsh-mcp-client` plugin, over MCP        | The host, via MCP |
-| Pi          | Out of band — an MCP extension, or `defineTool` in the SDK | The host, via MCP |
+| Pi          | Out of band, its own MCP client or `defineTool` in the SDK | The host, via MCP |
 
 Codex and Claude Code carry a tool catalogue in the protocol itself. DeepSeek
 Harness and Pi run their own tools and have no wire frame that means "here is
@@ -1775,7 +1775,7 @@ How the harness reached the catalogue.
 
 > `const` **CLAUDE\_CODE\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `CLAUDE_CODE_VENDOR.id`
 
-Defined in: [packages/adapters/src/vendors.ts:140](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L140)
+Defined in: [packages/adapters/src/vendors.ts:144](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L144)
 
 ---
 
@@ -1798,7 +1798,7 @@ part and are what this module translates. The `{type:"assistant"|"user"|
 
 > `const` **CLAUDE\_CODE\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `CLAUDE_CODE_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/vendors.ts:142](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L142)
+Defined in: [packages/adapters/src/vendors.ts:146](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L146)
 
 ---
 
@@ -1806,7 +1806,7 @@ Defined in: [packages/adapters/src/vendors.ts:142](https://github.com/systemind-
 
 > `const` **CLAUDE\_CODE\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `CLAUDE_CODE_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/vendors.ts:141](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L141)
+Defined in: [packages/adapters/src/vendors.ts:145](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L145)
 
 ---
 
@@ -1840,7 +1840,7 @@ Defined in: [packages/adapters/src/claude-code/protocol.ts:188](https://github.c
 
 > `const` **CODEX\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `CODEX_VENDOR.id`
 
-Defined in: [packages/adapters/src/vendors.ts:136](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L136)
+Defined in: [packages/adapters/src/vendors.ts:140](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L140)
 
 ---
 
@@ -1873,7 +1873,7 @@ of neither shape yields nothing as well.
 
 > `const` **CODEX\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `CODEX_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/vendors.ts:138](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L138)
+Defined in: [packages/adapters/src/vendors.ts:142](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L142)
 
 ---
 
@@ -1881,7 +1881,7 @@ Defined in: [packages/adapters/src/vendors.ts:138](https://github.com/systemind-
 
 > `const` **CODEX\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `CODEX_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/vendors.ts:137](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L137)
+Defined in: [packages/adapters/src/vendors.ts:141](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L141)
 
 ---
 
@@ -1921,7 +1921,7 @@ Defined in: [packages/adapters/src/codex/protocol.ts:131](https://github.com/sys
 
 > `const` **DEEPSEEK\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `DEEPSEEK_VENDOR.id`
 
-Defined in: [packages/adapters/src/vendors.ts:144](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L144)
+Defined in: [packages/adapters/src/vendors.ts:148](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L148)
 
 ---
 
@@ -1999,7 +1999,7 @@ that out-of-band channel carries, and no frame is emitted for it.
 
 > `const` **DEEPSEEK\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `DEEPSEEK_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/vendors.ts:146](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L146)
+Defined in: [packages/adapters/src/vendors.ts:150](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L150)
 
 ---
 
@@ -2007,7 +2007,7 @@ Defined in: [packages/adapters/src/vendors.ts:146](https://github.com/systemind-
 
 > `const` **DEEPSEEK\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `DEEPSEEK_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/vendors.ts:145](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L145)
+Defined in: [packages/adapters/src/vendors.ts:149](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L149)
 
 ---
 
@@ -2053,7 +2053,7 @@ Defined in: [packages/adapters/src/deepseek/protocol.ts:88](https://github.com/s
 
 > `const` **PI\_HARNESS\_ID**: `"codex"` \| `"claude-code"` \| `"deepseek"` \| `"pi"` = `PI_VENDOR.id`
 
-Defined in: [packages/adapters/src/vendors.ts:148](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L148)
+Defined in: [packages/adapters/src/vendors.ts:152](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L152)
 
 ---
 
@@ -2075,11 +2075,11 @@ authoritative, and reading both would issue every call twice.
 Two asymmetries are worth stating plainly, because both are properties of the
 harness rather than of this adapter:
 
-- Pi does not declare tools on the RPC wire, and ships no MCP client of its
-  own. Its path for a host-supplied tool is `defineTool` through the SDK, or
-  an extension such as `pi-mcp-adapter`, which is how the MCP column reaches
-  it; [HarnessProtocol.describeTools](#describetools) renders the `defineTool` shape and
-  no frame is emitted for it.
+- Pi does not declare tools on the RPC wire. Its paths for a host-supplied
+  tool are `defineTool` through the SDK and the native MCP client it has
+  shipped since 0.99, which is how the MCP column reaches it;
+  [HarnessProtocol.describeTools](#describetools) renders the `defineTool` shape and no
+  frame is emitted for it.
 - Pi executes its own tools. `tool_execution_start` announces a call Pi is
   already running, not a request for the host to run one, so it is not read
   as a tool call. The `toolCall` content block -- the model's actual request
@@ -2091,7 +2091,7 @@ harness rather than of this adapter:
 
 > `const` **PI\_REQUIREMENTS**: [`HarnessRequirements`](#harnessrequirements) = `PI_VENDOR.requirements`
 
-Defined in: [packages/adapters/src/vendors.ts:150](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L150)
+Defined in: [packages/adapters/src/vendors.ts:154](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L154)
 
 ---
 
@@ -2099,7 +2099,7 @@ Defined in: [packages/adapters/src/vendors.ts:150](https://github.com/systemind-
 
 > `const` **PI\_RUNTIME\_MANIFEST**: [`RuntimeManifest`](sharedos-contracts.md#runtimemanifest) = `PI_VENDOR.manifest`
 
-Defined in: [packages/adapters/src/vendors.ts:149](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L149)
+Defined in: [packages/adapters/src/vendors.ts:153](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/vendors.ts#L153)
 
 ---
 

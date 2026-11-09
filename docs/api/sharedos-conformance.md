@@ -1927,16 +1927,16 @@ Defined in: [conformance/src/judge.ts:128](https://github.com/systemind-team/Sha
 
 ### LiveColumnOptions
 
-Defined in: [conformance/src/columns.ts:802](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L802)
+Defined in: [conformance/src/columns.ts:801](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L801)
 
 #### Properties
 
 | Property                                                | Modifier   | Type                                                                       | Description                                                                                                                                                                                  | Defined in                                                                                                                      |
 | ------------------------------------------------------- | ---------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-createtransport"></a> `createTransport` | `readonly` | (`options`) => [`HarnessTransport`](sharedos-adapters.md#harnesstransport) | Opens the real harness. Kept as a callback so this package stays host-neutral: the process transport that spawns a CLI is Node-only and belongs to the caller, not to the conformance suite. | [conformance/src/columns.ts:811](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L811) |
-| <a id="property-id-4"></a> `id`                         | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:803](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L803) |
-| <a id="property-label-2"></a> `label`                   | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:804](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L804) |
-| <a id="property-protocol"></a> `protocol`               | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)                  | -                                                                                                                                                                                            | [conformance/src/columns.ts:805](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L805) |
+| <a id="property-createtransport"></a> `createTransport` | `readonly` | (`options`) => [`HarnessTransport`](sharedos-adapters.md#harnesstransport) | Opens the real harness. Kept as a callback so this package stays host-neutral: the process transport that spawns a CLI is Node-only and belongs to the caller, not to the conformance suite. | [conformance/src/columns.ts:810](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L810) |
+| <a id="property-id-4"></a> `id`                         | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:802](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L802) |
+| <a id="property-label-2"></a> `label`                   | `readonly` | `string`                                                                   | -                                                                                                                                                                                            | [conformance/src/columns.ts:803](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L803) |
+| <a id="property-protocol"></a> `protocol`               | `readonly` | [`HarnessProtocol`](sharedos-adapters.md#harnessprotocol)                  | -                                                                                                                                                                                            | [conformance/src/columns.ts:804](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L804) |
 
 ---
 
@@ -1979,29 +1979,29 @@ Defined in: [conformance/src/columns.ts:658](https://github.com/systemind-team/S
 
 ### ModelColumnOptions
 
-Defined in: [conformance/src/columns.ts:857](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L857)
+Defined in: [conformance/src/columns.ts:856](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L856)
 
 #### Properties
 
 | Property                              | Modifier   | Type                                              | Description                                                                                                                                                                               | Defined in                                                                                                                      |
 | ------------------------------------- | ---------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-client"></a> `client` | `readonly` | [`ModelClient`](sharedos-adapters.md#modelclient) | The model in the delegate seat. Supplied rather than constructed here so this package stays free of credentials and endpoints, exactly as the transport is for [liveColumn](#livecolumn). | [conformance/src/columns.ts:866](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L866) |
-| <a id="property-id-6"></a> `id`       | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:858](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L858) |
-| <a id="property-label-4"></a> `label` | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:859](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L859) |
+| <a id="property-client"></a> `client` | `readonly` | [`ModelClient`](sharedos-adapters.md#modelclient) | The model in the delegate seat. Supplied rather than constructed here so this package stays free of credentials and endpoints, exactly as the transport is for [liveColumn](#livecolumn). | [conformance/src/columns.ts:865](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L865) |
+| <a id="property-id-6"></a> `id`       | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:857](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L857) |
+| <a id="property-label-4"></a> `label` | `readonly` | `string`                                          | -                                                                                                                                                                                         | [conformance/src/columns.ts:858](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L858) |
 
 ---
 
 ### MovePromptOptions
 
-Defined in: [conformance/src/columns.ts:1098](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1098)
+Defined in: [conformance/src/columns.ts:1097](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1097)
 
 #### Properties
 
 | Property                                                                 | Modifier   | Type                                                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Defined in                                                                                                                        |
 | ------------------------------------------------------------------------ | ---------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-context-1"></a> `context`                                | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/columns.ts:1099](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1099) |
-| <a id="property-turn-3"></a> `turn`                                      | `readonly` | `number`                                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/columns.ts:1100](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1100) |
-| <a id="property-unknownnamesreachkernel"></a> `unknownNamesReachKernel?` | `readonly` | `boolean`                                                            | Say that the seat's tool-call channel carries any function name to the kernel. True of the model driver and of nothing else here: it passes back whatever name the model emits, so an uncatalogued call is issued and refused by the envelope. An MCP client's own router refuses an unlisted name before it is sent, so a column behind one must not say this. Left unsaid, a model that believes only defined functions can be called skips every uncatalogued attempt, reports it as refused, and the row about an unpublished name is graded `not exercised` without the kernel being asked. Measured on deepseek-v4-flash: the hidden-tool, rollback-unavailable, broker-ungranted, escalation, and record-completeness rows went from declined in most runs to issued in every one of ten. | [conformance/src/columns.ts:1115](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1115) |
+| <a id="property-context-1"></a> `context`                                | `readonly` | [`RuntimeVisibleContext`](sharedos-runtime.md#runtimevisiblecontext) | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/columns.ts:1098](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1098) |
+| <a id="property-turn-3"></a> `turn`                                      | `readonly` | `number`                                                             | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | [conformance/src/columns.ts:1099](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1099) |
+| <a id="property-unknownnamesreachkernel"></a> `unknownNamesReachKernel?` | `readonly` | `boolean`                                                            | Say that the seat's tool-call channel carries any function name to the kernel. True of the model driver and of nothing else here: it passes back whatever name the model emits, so an uncatalogued call is issued and refused by the envelope. An MCP client's own router refuses an unlisted name before it is sent, so a column behind one must not say this. Left unsaid, a model that believes only defined functions can be called skips every uncatalogued attempt, reports it as refused, and the row about an unpublished name is graded `not exercised` without the kernel being asked. Measured on deepseek-v4-flash: the hidden-tool, rollback-unavailable, broker-ungranted, escalation, and record-completeness rows went from declined in most runs to issued in every one of ten. | [conformance/src/columns.ts:1114](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1114) |
 
 ---
 
@@ -5655,7 +5655,7 @@ re-graded without re-running anything.
 
 > **liveColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:829](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L829)
+Defined in: [conformance/src/columns.ts:828](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L828)
 
 A vendor adapter driven by the vendor's own CLI, over the real wire.
 
@@ -5687,7 +5687,7 @@ something that did not happen.
 
 > **liveReceiptsFromRecord**(`move`, `turn`): readonly `object`[]
 
-Defined in: [conformance/src/columns.ts:1048](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1048)
+Defined in: [conformance/src/columns.ts:1047](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1047)
 
 Recover what a live turn attempted, correlating on the call rather than its id.
 
@@ -5735,7 +5735,7 @@ readonly `object`[]
 
 > **mcpColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:701](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L701)
+Defined in: [conformance/src/columns.ts:700](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L700)
 
 A vendor CLI running natively, against the SharedOS catalogue over MCP.
 
@@ -5748,9 +5748,8 @@ which claim each makes.
   harness reaches for its own tools and the kernel rows go unexercised.
 - This column leaves out nothing on either axis. The catalogue is served over
   MCP, which is the one interface every harness here accepts a host-supplied
-  tool set on -- Pi through an extension; the harness discovers it with its
-  own client, decides with its own model, and every call it makes is
-  re-authorized by the kernel.
+  tool set on. The harness discovers it with its own client, decides with its
+  own model, and every call it makes is re-authorized by the kernel.
 - A model column leaves out the vendor instead: see [modelColumn](#modelcolumn).
 
 What it gives up instead is control of the loop. The harness decides how many
@@ -5775,7 +5774,7 @@ make the cell green would be measuring the prompt rather than the kernel.
 
 > **mcpHarnessLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:767](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L767)
+Defined in: [conformance/src/columns.ts:766](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L766)
 
 What a natively-looping MCP harness cannot be tested on, and why.
 
@@ -5846,7 +5845,7 @@ throwing.
 
 > **modelColumn**(`options`): [`RuntimeColumn`](#runtimecolumn)
 
-Defined in: [conformance/src/columns.ts:991](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L991)
+Defined in: [conformance/src/columns.ts:990](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L990)
 
 A model API in the delegate seat, with no vendor between it and the kernel.
 
@@ -5901,7 +5900,7 @@ manifest would have suppressed had the column declared the row unreachable.
 
 > **modelLimits**(`move`, `condition`): [`ColumnLimits`](#columnlimits)
 
-Defined in: [conformance/src/columns.ts:910](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L910)
+Defined in: [conformance/src/columns.ts:909](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L909)
 
 What a model in the delegate seat cannot be tested on, and why.
 
@@ -6037,7 +6036,7 @@ lacks.
 
 > **movesToPrompt**(`moves`, `options`): `string`
 
-Defined in: [conformance/src/columns.ts:1131](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1131)
+Defined in: [conformance/src/columns.ts:1130](https://github.com/systemind-team/SharedOS/blob/main/packages/conformance/src/columns.ts#L1130)
 
 The declared attempts, written out as instructions a live harness can follow.
 

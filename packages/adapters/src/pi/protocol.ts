@@ -18,11 +18,11 @@ import { TextBlockSchema, UnknownBlockSchema, contentBlockSteps } from "../proto
  * Two asymmetries are worth stating plainly, because both are properties of the
  * harness rather than of this adapter:
  *
- * - Pi does not declare tools on the RPC wire, and ships no MCP client of its
- *   own. Its path for a host-supplied tool is `defineTool` through the SDK, or
- *   an extension such as `pi-mcp-adapter`, which is how the MCP column reaches
- *   it; {@link HarnessProtocol.describeTools} renders the `defineTool` shape and
- *   no frame is emitted for it.
+ * - Pi does not declare tools on the RPC wire. Its paths for a host-supplied
+ *   tool are `defineTool` through the SDK and the native MCP client it has
+ *   shipped since 0.99, which is how the MCP column reaches it;
+ *   {@link HarnessProtocol.describeTools} renders the `defineTool` shape and no
+ *   frame is emitted for it.
  * - Pi executes its own tools. `tool_execution_start` announces a call Pi is
  *   already running, not a request for the host to run one, so it is not read
  *   as a tool call. The `toolCall` content block -- the model's actual request

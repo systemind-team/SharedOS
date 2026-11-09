@@ -239,6 +239,44 @@ each entry calls out what a host has to update.
   under `/v1`, and existing records stay readable. ADR 0019 is revised and the
   `ProtocolVersionSchema` row in `docs/open-items.md` is closed.
 
+- **Breaking: Pi's MCP column runs on Pi's own MCP client.** Pi has shipped a
+  native MCP client since 0.99, and it reads neither a root `.mcp.json` nor
+  the shape `pi-mcp-adapter` takes. What a host has to update:
+  - The MCP column needs Pi 0.99 or newer and no extension. An extension that
+    replaces Pi's client, as `pi-mcp-adapter` does, stops Pi reading any
+    `mcp.json`, so a host drops it, or keeps it and configures it itself.
+  - `harnessMcpConfigFile("pi")` returns `.pi/mcp.json` (was `.mcp.json`), and
+    `piMcpConfig` writes `url`, the bearer token as `headers.Authorization`
+    with every `$` doubled, `timeout` in seconds when set, and
+    `exposure: "direct"`. `lifecycle`, `requestTimeoutMs`, `auth` and
+    `bearerToken` are gone. A host that writes the file itself makes `.pi/`
+    first; `createMcpHarnessRuntime` now makes a generated file's directory.
+  - Pi's model sees each tool as `mcp__<server>__<tool>`, `files.read` as
+    `mcp__sharedos__files_read`, rather than through one `mcp` tool, so
+    instructions telling it that `mcp` is its only tool are now wrong.
+  - `PI_MCP_HARNESS` passes `--approve`, so Pi trusts the scratch workspace
+    as a project for the run. That also loads `.pi` settings and resources,
+    installs missing project packages, runs project extensions, and loads
+    `.agents/skills` from the workspace and every directory above it
+    (`docs/mcp-toolshare.md` says what to keep out of the way).
+  - `PI_MCP_HARNESS` no longer passes `--no-builtin-tools`. Pi keeps its own
+    tools, `read`, `bash`, `edit` and `write`, beside the catalogue, and a host
+    may narrow them through `args` with `--tools`, as
+    `--tools 'mcp__sharedos__*'` does. `scripts/mcp-conformance.mjs` declares
+    those four as the Pi column's `harnessLocal` (was none).
+  - `PI_MCP_HARNESS` no longer passes `--no-session`, so its launch is
+    `--mode rpc --approve` and Pi keeps its own session records, as it would
+    for any user, under `~/.pi/agent/sessions/` by default. A host that does
+    not want them appends `--no-session` through `args`. The live Pi column in
+    `scripts/native-conformance.mjs` drops it too.
+  - Pi's MCP manifest says `mcpSupport: "native"` (was `"extension"`), and
+    `mcpExtension` is gone.
+  - `scripts/mcp-conformance.mjs` stamps the Pi column `native`. A host
+    configuration that loads an extension through `args` names it with
+    `mcpExtension` beside `mcpExtensionVersion`, and the column and its
+    records say `extension`; `mcpExtensionVersion` without `mcpExtension`
+    stops the run.
+
 ### Fixed
 
 - **A Codex run whose required bridge did not start fails

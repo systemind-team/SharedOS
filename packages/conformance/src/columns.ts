@@ -687,9 +687,8 @@ export interface McpColumnOptions {
  *   harness reaches for its own tools and the kernel rows go unexercised.
  * - This column leaves out nothing on either axis. The catalogue is served over
  *   MCP, which is the one interface every harness here accepts a host-supplied
- *   tool set on -- Pi through an extension; the harness discovers it with its
- *   own client, decides with its own model, and every call it makes is
- *   re-authorized by the kernel.
+ *   tool set on. The harness discovers it with its own client, decides with its
+ *   own model, and every call it makes is re-authorized by the kernel.
  * - A model column leaves out the vendor instead: see {@link modelColumn}.
  *
  * What it gives up instead is control of the loop. The harness decides how many

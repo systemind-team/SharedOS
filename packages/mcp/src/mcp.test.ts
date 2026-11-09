@@ -48,6 +48,7 @@ import {
   toCallToolResult,
   verifyExecutionToken,
   type ExecutionTokenClaims,
+  type HarnessMcpConnection,
   canonicalActor,
 } from "./index.js";
 import { createStreamableHttpMcpServer, serveMcpOverStdio } from "./node.js";
@@ -592,7 +593,7 @@ describe("harness configuration", () => {
     expect(harnessMcpConfigFile("codex", connection).filename).toBe("config.toml");
     expect(harnessMcpConfigFile("claude-code", connection).filename).toBe(".mcp.json");
     expect(harnessMcpConfigFile("deepseek", connection).filename).toBe("cordis.patch.yml");
-    expect(harnessMcpConfigFile("pi", connection).filename).toBe(".mcp.json");
+    expect(harnessMcpConfigFile("pi", connection).filename).toBe(".pi/mcp.json");
     expect(codexMcpConfig(connection)).toContain("required = true");
     expect(claudeAgentSdkMcpOptions(connection)["allowedTools"]).toEqual(["mcp__sharedos__*"]);
   });
@@ -627,13 +628,52 @@ describe("harness configuration", () => {
     expect(overlay).not.toContain("failOnStartupError");
   });
 
-  it("gives Pi an eager connection, because a lazy one may outlive the turn", () => {
+  it("gives Pi's own client a server whose tools are each declared to the model", () => {
     const config = piMcpConfig(connection);
     const server = (config["mcpServers"] as JsonObject)["sharedos"] as JsonObject;
 
-    expect(server["url"]).toBe(connection.url);
-    expect(server["lifecycle"]).toBe("eager");
+    // No token and no timeout write neither key, and Pi's own default applies.
+    // Nothing of the shape an extension read is left. Pi takes `auth` only as an
+    // object naming a provider, and not in a project file at all, so either way
+    // the server would be skipped.
+    expect(server).toEqual({ url: connection.url, exposure: "direct" });
     expect(JSON.stringify(config)).not.toContain("files.search");
+    expect(JSON.parse(harnessMcpConfigFile("pi", connection).contents)).toEqual(config);
+  });
+
+  it("puts Pi's bearer token in a header and its timeout in seconds", () => {
+    const server = (piConnection: HarnessMcpConnection): JsonObject =>
+      (piMcpConfig(piConnection)["mcpServers"] as JsonObject)["sharedos"] as JsonObject;
+
+    expect(server({ ...connection, token: "secret-bridge-token", timeoutSec: 30 })).toEqual({
+      url: connection.url,
+      headers: { Authorization: "Bearer secret-bridge-token" },
+      timeout: 30,
+      exposure: "direct",
+    });
+    expect(server({ ...connection, token: "secret-bridge-token" })).toEqual({
+      url: connection.url,
+      headers: { Authorization: "Bearer secret-bridge-token" },
+      exposure: "direct",
+    });
+    expect(server({ ...connection, timeoutSec: 30 })).toEqual({
+      url: connection.url,
+      timeout: 30,
+      exposure: "direct",
+    });
+  });
+
+  it("doubles each $ in Pi's bearer token, so Pi reads it back literally", () => {
+    const server = (
+      piMcpConfig({ ...connection, token: "tok$HOME${PATH}$$x" })["mcpServers"] as JsonObject
+    )["sharedos"] as JsonObject;
+
+    // Pi expands `$NAME` and `${NAME}` in a header value and reads `$$` as one
+    // `$`. Written as chosen, this token would arrive with the variables filled
+    // in, and the bridge would refuse it.
+    expect((server["headers"] as JsonObject)["Authorization"]).toBe(
+      "Bearer tok$$HOME$${PATH}$$$$x",
+    );
   });
 
   it("records the harness-side alias without ever authorizing against it", () => {
