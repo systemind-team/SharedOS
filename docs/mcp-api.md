@@ -252,6 +252,10 @@ the Agent SDK; `harnessToolAlias` reproduces the display name a harness will
 show. Pi's file is the shape `pi-mcp-adapter` reads, because Pi has no MCP client
 of its own; which extension a host installs is the host's choice.
 
+The DeepSeek overlay names the connection and nothing else: it sets no
+`failOnStartupError`, and a host that wants it adds it to the overlay it writes
+itself.
+
 For a connection that carries a token, Codex's table names the variable the
 token is read from rather than the token:
 

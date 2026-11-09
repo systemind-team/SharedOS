@@ -804,12 +804,13 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
  * `--json` has the headless profile print its run as events rather than only
  * the final answer, which is what `deepseekHeadlessProtocol` reads.
  *
- * The overlay's `failOnStartupError: true` no longer stops a run whose client
- * could not reach the bridge: from dsh 0.1.6 the run goes on with only dsh's
- * own tools, and the one sign of it is a line on stderr. `readDiagnostic`
- * reads that line, fails the turn `harness_not_connected` and ends dsh, so
- * the turn is not read as a harness that declined the catalogue and dsh does
- * not go on to run the task without it.
+ * A run whose client could not reach the bridge goes on with only dsh's own
+ * tools, and the one sign of it is a line dsh prints on stderr, whatever the
+ * overlay says: from dsh 0.1.6 even `failOnStartupError: true`, which the
+ * overlay does not set, stops nothing. `readDiagnostic` reads that line, fails
+ * the turn `harness_not_connected` and ends dsh, so the turn is not read as a
+ * harness that declined the catalogue and dsh does not go on to run the task
+ * without it.
  */
 export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: DEEPSEEK_VENDOR.id,
@@ -820,9 +821,8 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
   configFiles: (connection) => [harnessMcpConfigFile("deepseek", connection)],
   readDiagnostic: (text, stream, connection) => {
     // dsh reports an entry that did not activate as `<id> (<package>): <error>`
-    // on stderr, and since 0.1.6 goes on without it whatever
-    // `failOnStartupError` says. The SharedOS entry is matched by its id, so
-    // a failing MCP server of the owner's own is left to the owner.
+    // on stderr and goes on without it. The SharedOS entry is matched by its
+    // id, so a failing MCP server of the owner's own is left to the owner.
     const prefix = `${deepseekMcpEntryId(connection)} (@deepseek-ai/dsh-mcp-client): `;
     if (stream !== "stderr" || !text.startsWith(prefix)) {
       return undefined;

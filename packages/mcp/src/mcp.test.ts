@@ -622,6 +622,9 @@ describe("harness configuration", () => {
     expect(overlay).toContain("@deepseek-ai/dsh-mcp-client");
     expect(overlay).toContain("transport: streamable-http");
     expect(overlay).not.toMatch(/^- id:/mu);
+    // The connection and nothing else: whether a failed client stops the run
+    // is the host's to add.
+    expect(overlay).not.toContain("failOnStartupError");
   });
 
   it("gives Pi an eager connection, because a lazy one may outlive the turn", () => {

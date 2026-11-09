@@ -378,14 +378,15 @@ re-authorized by the kernel.
   overlay adds the MCP client entry on top of the profile and the owner's own
   dsh configuration and removes nothing from either, and `--json` has the run
   printed as events, of which the turn's outcome is read from `final`. The
-  overlay sets `failOnStartupError: true` for the reason Codex's server is
-  `required`: a run that quietly continued with only the harness's own tools
-  would be a different finding. From dsh 0.1.6 that setting no longer stops
-  the run, so the spec reads dsh's stderr for the line naming the SharedOS
-  entry (`mcp-sharedos (@deepseek-ai/dsh-mcp-client): Error: ...`), fails
-  the turn `harness_not_connected` and ends dsh, which would otherwise run
-  the task with its own tools. An MCP server of the owner's own that fails
-  to start is left alone.
+  overlay names the connection and sets no `failOnStartupError`; a host that
+  wants it adds it to the overlay it writes itself, though from dsh 0.1.6 it
+  stops nothing. A run whose client could not reach the bridge goes on with
+  only dsh's own tools, which would read as a harness that declined the
+  catalogue, so the spec reads dsh's stderr for the line naming the SharedOS
+  entry (`mcp-sharedos (@deepseek-ai/dsh-mcp-client): Error: ...`), which
+  dsh prints regardless of that key, fails the turn `harness_not_connected`
+  and ends dsh. An MCP server of the owner's own that fails to start is left
+  alone.
 - **Pi.** `--mode rpc --no-session --no-builtin-tools`: a session-less RPC run
   with Pi's own tools off, so what the model reaches is the extension's proxy
   tool and nothing else.
