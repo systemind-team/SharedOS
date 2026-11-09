@@ -199,6 +199,18 @@ each entry calls out what a host has to update.
 
 ### Fixed
 
+- **A Codex run whose required bridge did not start fails
+  `harness_not_connected` with Codex's reason.** Codex from 0.99 stops at
+  startup when a `required` MCP server fails, and says why only on stderr:
+  `required MCP servers failed to initialize: sharedos: ...`, first as a
+  `codex_core::session` ERROR line and then as the `Error: thread/start` line
+  it exits 1 on. The turn read `harness_exited_without_outcome` with the exit
+  code alone. `CODEX_MCP_HARNESS` now reads the first of those lines that
+  names the bridge's server, fails the turn with Codex's text after the
+  server name, and ends Codex; a line naming another server is left to
+  Codex's exit. Codex before 0.99 ignores `required` and runs the turn alone
+  with its own tools, which this cannot see. Checked on Codex 0.167.0.
+
 - **A DeepSeek Harness run that never reached the bridge fails
   `harness_not_connected`.** From dsh 0.1.6 a client that cannot reach the
   bridge does not stop the run, even with `failOnStartupError: true`, which

@@ -740,7 +740,12 @@ export const CLAUDE_CODE_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessS
  * `config.toml`, so nothing on the machine's real Codex configuration is touched
  * by a conformance run. `required = true` means a run whose bridge failed to
  * start stops rather than continuing with only Codex's own tools, which would
- * look like a harness that declined to use the catalogue.
+ * look like a harness that declined to use the catalogue. Codex says why on
+ * stderr only, and `readDiagnostic` reads it there, so the turn fails
+ * `harness_not_connected` with Codex's reason rather than with an exit code.
+ * The check is only as good as `required`, which Codex honours from 0.99 and
+ * ignores before: an older Codex whose bridge failed still runs the turn alone,
+ * with its own tools, and prints nothing this reads.
  *
  * A bridge that requires a token is reached through
  * `bearer_token_env_var`: the override names
@@ -755,6 +760,29 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: CODEX_VENDOR.id,
   manifest: CODEX_VENDOR.mcpManifest,
   protocol: CODEX_VENDOR.protocol,
+  readDiagnostic: (text, stream, connection) => {
+    // Codex reports a required server that failed twice on stderr, first as a
+    // `codex_core::session` ERROR line and then as the `Error: thread/start`
+    // line it exits on: `required MCP servers failed to initialize: <server>:
+    // <reason>`. The first of them ends the turn, so the second is never read.
+    // Only the bridge's own server counts: a required server of the owner's
+    // that failed is left to Codex's exit.
+    if (stream !== "stderr") {
+      return undefined;
+    }
+    const server = mcpServerName(connection).replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+    const reason = new RegExp(
+      `required MCP servers failed to initialize: (?:.*?[;,] )?${server}: (.*)$`,
+      "su",
+    ).exec(text)?.[1];
+    return reason === undefined
+      ? undefined
+      : {
+          code: "harness_not_connected",
+          message: `Codex did not connect to the SharedOS MCP server: ${reason}`,
+          retryable: false,
+        };
+  },
   launch: ({ prompt, workspace, connection }) => ({
     command: "codex",
     args: [

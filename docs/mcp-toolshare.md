@@ -369,7 +369,12 @@ re-authorized by the kernel.
   any, and a host that wants Claude's own cap passes it through `args`.
 - **Codex.** `mcp_servers.sharedos.required=true` stops a run whose bridge
   failed to start rather than continuing with Codex's own tools, which would
-  look like a harness that declined the catalogue.
+  look like a harness that declined the catalogue. Codex says why only on
+  stderr (`required MCP servers failed to initialize: sharedos: ...`), so the
+  spec reads that line, fails the turn `harness_not_connected` with Codex's
+  reason and ends Codex. It is only as good as `required`, which Codex
+  honours from 0.99 and ignores before: an older Codex whose bridge failed
+  runs the turn alone with its own tools.
   `default_tools_approval_mode="approve"`, scoped to this one server, is the
   same decision as Claude's `--allowedTools`: Codex's default `auto` mode asks a
   human before any tool that is not read-only, `codex exec` has no human, and
