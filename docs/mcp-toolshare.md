@@ -308,8 +308,11 @@ carries only the turn. The files are written before the CLI starts and are
 named in `configPaths`; a filename that would leave the workspace, or that is
 the name of the configuration the adapter generated for the CLI, fails the turn
 before launch, since a file under that name would point the CLI away from the
-bridge. Codex is launched with `project_root_markers=[]`, so the
-workspace is its project root and no checkout above it is read.
+bridge. Codex finds its project root and its AGENTS.md files itself, walking up
+from the workspace to the nearest repository marker; a host whose
+`workspaceRoot` sits inside a repository may append
+`-c project_root_markers=[]` through `args`, so the workspace is the project
+root and no checkout above it is read.
 
 Each spec writes the turn's prompt to its CLI's stdin and closes it: `claude -p`
 with no prompt argument, `codex exec -` and dsh's headless `-` each read the

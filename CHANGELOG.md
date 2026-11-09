@@ -50,9 +50,12 @@ each entry calls out what a host has to update.
   instruction file from, so a host can hand a vendor CLI its standing
   instructions as the `AGENTS.md` the CLI's own loader reads rather than as
   prompt text. A name that would leave the workspace, or that is the generated
-  configuration's own, fails the turn before launch. The Codex spec now passes `project_root_markers=[]`, so the scratch
-  workspace is the project root and a checkout anywhere above it is never
-  read as this turn's instructions. Nothing a host already does changes.
+  configuration's own, fails the turn before launch. A host whose
+  `workspaceRoot` sits inside a repository appends
+  `-c project_root_markers=[]` for Codex, so the workspace is Codex's project
+  root and a checkout above it is not read as this turn's instructions; the
+  spec does not set it (see the restrictions entry below). Nothing a host
+  already does changes.
 
 ### Changed
 
@@ -62,8 +65,10 @@ each entry calls out what a host has to update.
   `--disallowedTools ...` and `--strict-mcp-config`, so Claude Code keeps its
   file and shell tools and the MCP servers configured on the machine;
   `--allowedTools mcp__<server>` stays, since it only skips the approval
-  prompt for the SharedOS server. A host that wants a restriction appends it through
-  `args`. A harness that reaches for its own tool instead of the catalogue
+  prompt for the SharedOS server. `CODEX_MCP_HARNESS` drops
+  `-c project_root_markers=[]`, so Codex finds its project root and AGENTS.md
+  files itself; a host whose `workspaceRoot` sits inside a repository
+  restores it. A host that wants any of these appends it through `args`. A harness that reaches for its own tool instead of the catalogue
   leaves no operation behind, and the row is `not exercised`: a finding
   about the harness. `mcp-conformance` declares each CLI's built-in tools as
   `harnessLocal` and reads `externalDirect` and `harnessLocal` from the

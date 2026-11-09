@@ -761,13 +761,9 @@ export const CODEX_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
       "exec",
       "--json",
       "--skip-git-repo-check",
-      // The workspace is a scratch directory, not a repository. Codex finds its
-      // project root by walking up to the nearest `.git` and reads the AGENTS.md
-      // files from there down, so a checkout anywhere above the scratch
-      // directory would have its instructions read as this turn's. With no
-      // markers the working directory is the root, and the only directory read.
-      "-c",
-      "project_root_markers=[]",
+      // Codex finds its project root and AGENTS.md files itself; a host whose
+      // `workspaceRoot` sits inside a repository may append
+      // `-c project_root_markers=[]` through `args`.
       // One source with `codexMcpConfig`: the same settings, as overrides, so a
       // launch and an emitted `config.toml` cannot disagree. Why each setting is
       // there is on `codexMcpServerSettings`: `required`, the approval mode

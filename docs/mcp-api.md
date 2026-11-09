@@ -298,7 +298,9 @@ appends there is read by the headless app: its own options, such as
 `--permission-mode <preset>`, `--approval-policy <policy>` or
 `--add-dir <path>`, work, and a launcher flag such as `--patch` or a second
 task argument fails the run. Codex applies `-c` overrides placed after its
-`-`.
+`-`; a host whose `workspaceRoot` sits inside a repository may append
+`-c project_root_markers=[]`, since Codex otherwise finds its project root, and
+the AGENTS.md files it reads, by walking up from the workspace.
 
 Apart from Pi's `--no-builtin-tools`, none of these restricts the harness's own
 tools or the other MCP servers it loads: SharedOS decides the calls that reach
