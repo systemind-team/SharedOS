@@ -948,12 +948,12 @@ describe("the Codex spec", () => {
     ]);
   });
 
-  it("makes the scratch workspace the project root, so no checkout above it is read", () => {
+  it("leaves Codex to find its own project root, in the turn's workspace", () => {
+    // A host whose workspace sits inside a repository appends
+    // `-c project_root_markers=[]` itself; the spec sets nothing there.
     const connection = { url: "http://127.0.0.1:41234/mcp", name: "sharedos" };
     const launch = launchOf(CODEX_MCP_HARNESS, connection);
-    const at = launch.args.indexOf("project_root_markers=[]");
-    expect(at).toBeGreaterThan(0);
-    expect(launch.args[at - 1]).toBe("-c");
+    expect(launch.args.some((arg) => arg.startsWith("project_root_markers"))).toBe(false);
     expect(launch.cwd).toBe("/tmp/sharedos-test");
   });
 
