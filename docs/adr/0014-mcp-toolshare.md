@@ -263,4 +263,7 @@ produced the same 83 refused operations more expensively.
 > Note, 2026-11-08: Pi has shipped a native MCP client since 0.99, so its column
 > no longer needs an extension. `PI_MCP_HARNESS` writes `.pi/mcp.json`, launches
 > Pi with `--approve`, and its manifest stamps `mcpSupport: "native"`. An
-> extension such as `pi-mcp-adapter` remains a host option.
+> extension such as `pi-mcp-adapter` remains a host option. It no longer passes
+> `--no-builtin-tools` or `--no-session`: Pi keeps its own tools and session
+> records, and a host that wants either narrowed passes `--tools` or
+> `--no-session` through `args`.
