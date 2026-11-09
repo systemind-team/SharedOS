@@ -264,6 +264,11 @@ each entry calls out what a host has to update.
     may narrow them through `args` with `--tools`, as
     `--tools 'mcp__sharedos__*'` does. `scripts/mcp-conformance.mjs` declares
     those four as the Pi column's `harnessLocal` (was none).
+  - `PI_MCP_HARNESS` no longer passes `--no-session`, so its launch is
+    `--mode rpc --approve` and Pi keeps its own session records, as it would
+    for any user, under `~/.pi/agent/sessions/` by default. A host that does
+    not want them appends `--no-session` through `args`. The live Pi column in
+    `scripts/native-conformance.mjs` drops it too.
   - Pi's MCP manifest says `mcpSupport: "native"` (was `"extension"`), and
     `mcpExtension` is gone.
   - `scripts/mcp-conformance.mjs` stamps the Pi column `native`. A host

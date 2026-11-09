@@ -924,6 +924,10 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
  * option, loaded with flags appended through `args`, and what it reads and how
  * it names tools are then its own.
  *
+ * Pi also keeps its own session records, as it would for any user, under its
+ * agent directory by default. A host that does not want them appends
+ * `--no-session` through `args`.
+ *
  * The prompt goes in as an RPC frame rather than as an argument, because RPC
  * mode is the one whose frames `piProtocol` reads.
  */
@@ -934,7 +938,7 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   configFiles: (connection) => [harnessMcpConfigFile("pi", connection)],
   launch: ({ prompt, workspace, request }) => ({
     command: "pi",
-    args: ["--mode", "rpc", "--no-session", "--approve"],
+    args: ["--mode", "rpc", "--approve"],
     cwd: workspace,
     stdin: `${JSON.stringify({ id: request.executionId, type: "prompt", message: prompt })}\n`,
     // `--mode rpc` is a session: EOF on stdin ends it. See `keepStdinOpen`.

@@ -404,11 +404,13 @@ re-authorized by the kernel.
   dsh prints regardless of that key, fails the turn `harness_not_connected`
   and ends dsh. An MCP server of the owner's own that fails to start is left
   alone.
-- **Pi.** `--mode rpc --no-session --approve`: a session-less RPC run. Pi
-  keeps its own tools, `read`, `bash`, `edit` and `write`, and a host may
-  narrow them through `args` with `--tools`. `--approve` is what lets Pi read
-  the `.pi/mcp.json` written for the turn, and it trusts more than that file;
-  see [what `--approve` trusts](#what---approve-trusts).
+- **Pi.** `--mode rpc --approve`: an RPC run. Pi keeps its own tools, `read`,
+  `bash`, `edit` and `write`, and a host may narrow them through `args` with
+  `--tools`. Pi also keeps its own session records, as it would for any user,
+  under `~/.pi/agent/sessions/` by default; a host that does not want them
+  appends `--no-session` through `args`. `--approve` is what lets Pi read the
+  `.pi/mcp.json` written for the turn, and it trusts more than that file; see
+  [what `--approve` trusts](#what---approve-trusts).
 
 ### Versions
 
