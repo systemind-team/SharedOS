@@ -822,7 +822,7 @@ Defined in: [mcp/src/protocol.ts:79](https://github.com/systemind-team/SharedOS/
 
 > **McpHarnessId** = _typeof_ [`MCP_HARNESS_IDS`](#mcp_harness_ids)\[`number`\]
 
-Defined in: [mcp/src/harness-config.ts:260](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L260)
+Defined in: [mcp/src/harness-config.ts:263](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L263)
 
 ## Variables
 
@@ -946,7 +946,7 @@ Defined in: [mcp/src/protocol.ts:21](https://github.com/systemind-team/SharedOS/
 
 > `const` **MCP\_HARNESS\_IDS**: readonly \[`"codex"`, `"claude-code"`, `"deepseek"`, `"pi"`\]
 
-Defined in: [mcp/src/harness-config.ts:259](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L259)
+Defined in: [mcp/src/harness-config.ts:262](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L262)
 
 The harnesses this package emits a connection for, by id.
 
@@ -1227,7 +1227,7 @@ how a launch recognises its own client's failure among the owner's.
 
 > **harnessMcpConfigFile**(`harness`, `connection`): [`HarnessMcpConfigFile`](#harnessmcpconfigfile)
 
-Defined in: [mcp/src/harness-config.ts:263](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L263)
+Defined in: [mcp/src/harness-config.ts:266](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L266)
 
 Every emitter above, addressed by harness id.
 
@@ -1248,7 +1248,7 @@ Every emitter above, addressed by harness id.
 
 > **harnessToolAlias**(`serverName`, `tool`): `string`
 
-Defined in: [mcp/src/harness-config.ts:302](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L302)
+Defined in: [mcp/src/harness-config.ts:312](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L312)
 
 The harness-facing alias a tool is likely to appear under.
 
@@ -1483,7 +1483,7 @@ Defined in: [mcp/src/policy.ts:37](https://github.com/systemind-team/SharedOS/bl
 
 > **piMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:240](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L240)
+Defined in: [mcp/src/harness-config.ts:245](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L245)
 
 Pi's `.pi/mcp.json`, read by Pi's own MCP client.
 
