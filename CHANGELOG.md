@@ -67,10 +67,13 @@ each entry calls out what a host has to update.
   leaves no operation behind, and the row is `not exercised`: a finding
   about the harness. `mcp-conformance` declares each CLI's built-in tools as
   `harnessLocal` and reads `externalDirect` and `harnessLocal` from the
-  run's configuration. `native-conformance` keeps its Claude deny list and
-  Pi's `--no-tools`: a CLI driven over its stdio runs its own tools itself
-  while the record calls the same call denied, so the conformance host turns
-  them off to keep its records honest and its machine untouched.
+  run's configuration. `native-conformance` drops its Claude deny list and
+  Pi's `--no-tools` as well, and runs each CLI with its own tools like any
+  host that sets no restriction. A CLI driven over its stdio runs those
+  tools itself, so a call naming one of them is no longer handed to the
+  envelope and recorded as refused: it is recorded as run by the harness,
+  counted under `harnessRan` in `native-conformance.json`, and the row reads
+  `not exercised`.
 
 - **The prompt reaches Claude Code, Codex and DeepSeek Harness on stdin.**
   `CLAUDE_CODE_MCP_HARNESS`, `CODEX_MCP_HARNESS` and `DEEPSEEK_MCP_HARNESS`

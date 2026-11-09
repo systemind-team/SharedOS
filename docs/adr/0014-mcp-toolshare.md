@@ -174,6 +174,13 @@ the CLI's built-in tools. A harness that reaches for one of them instead of the
 catalogue leaves no operation behind, and the row is `not exercised`: a finding
 about the harness, never a pass and never a kernel failure.
 
+`native-conformance.mjs` runs each CLI with its own tools too. Driven over its
+stdio, a CLI runs those tools itself, so a call naming one is recorded as run
+by the harness (`harnessRan`) and is not handed to the envelope. The 83
+operations refused `tool_unavailable` in the Context above were calls of that
+kind, Claude's own `Grep` and `ToolSearch`, recorded as refused although Claude
+had run them.
+
 ## The MCP conformance column
 
 `mcpColumn` runs the installed CLI natively — its own loop, its own MCP client,
