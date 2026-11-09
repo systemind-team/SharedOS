@@ -205,6 +205,14 @@ each entry calls out what a host has to update.
   write after an effect that took more than a millisecond as timed out. Each
   is now waited out in steps, as a turn's deadline already was.
 
+- **On Bun, a model that thinks for more than 5 minutes is no longer cut
+  off.** Bun's fetch gives up after 5 minutes without data, in practice at
+  6, and the undici settings that switch Node's waits off do nothing on Bun,
+  whose built-in stand-in for undici ignores them. With no `fetch` passed,
+  `OpenAiCompatibleModelClient` now calls Bun's fetch with `timeout: false`,
+  which switches that wait off for the request. A host that passes its own
+  `fetch` is unchanged.
+
 ## 1.0.0-preview
 
 ### Changed — breaking

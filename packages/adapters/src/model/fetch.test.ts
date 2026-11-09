@@ -2,7 +2,7 @@ import { once } from "node:events";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { OpenAiCompatibleModelClient } from "./client.js";
 import { modelFetch, undiciFetch } from "./fetch.js";
@@ -91,5 +91,49 @@ describe("the fetch a model call uses by default", () => {
     );
 
     expect(reply).toEqual({ text: "thought it through", toolCalls: [] });
+  });
+});
+
+describe("the fetch a model call uses by default on Bun", () => {
+  // Bun's fetch gives up after 5 minutes without data, and Bun's stand-in for
+  // undici ignores the agent. The tests run on Node, so Bun is stood in for by
+  // the version it sets and a global fetch that records what it is handed.
+  afterEach(() => {
+    Reflect.deleteProperty(process.versions, "bun");
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  async function onBun(): Promise<{
+    fetch: typeof globalThis.fetch;
+    calls: (RequestInit | undefined)[];
+  }> {
+    Object.defineProperty(process.versions, "bun", { value: "1.4.4", configurable: true });
+    const calls: (RequestInit | undefined)[] = [];
+    vi.stubGlobal("fetch", async (_input: unknown, init?: RequestInit) => {
+      calls.push(init);
+      return new Response("{}");
+    });
+    // modelFetch keeps the fetch it picked, so a fresh copy of the module picks again.
+    vi.resetModules();
+    const fresh = await import("./fetch.js");
+    return { fetch: await fresh.modelFetch(), calls };
+  }
+
+  it("sends each request with Bun's idle wait switched off", async () => {
+    const { fetch, calls } = await onBun();
+    const signal = new AbortController().signal;
+
+    await fetch("http://provider.test/chat/completions", { method: "POST", body: "{}", signal });
+
+    expect(calls).toEqual([{ timeout: false, method: "POST", body: "{}", signal }]);
+  });
+
+  it("keeps a timeout the caller passes", async () => {
+    const { fetch, calls } = await onBun();
+
+    await fetch("http://provider.test/chat/completions", { timeout: 60_000 } as RequestInit);
+
+    expect(calls).toEqual([{ timeout: 60_000 }]);
   });
 });
