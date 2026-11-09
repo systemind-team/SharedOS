@@ -360,11 +360,11 @@ dsh plugin --profile headless add @deepseek-ai/dsh-mcp-client
 SharedOS allows, denies or escalates the calls that reach it through MCP, and
 nothing else. It imposes no restriction on a harness's own tools or on which
 other MCP servers the harness loads: Claude Code keeps its file and shell tools
-and the MCP servers configured on the machine, and Codex and DeepSeek Harness
-keep theirs, as they always did. Pi's launch is the one exception, below: it
-still turns Pi's built-in tools off. A host that wants a restriction appends it
-through `args`, for example `--disallowedTools Bash,Edit,Write` or
-`--strict-mcp-config` for Claude Code.
+and the MCP servers configured on the machine, Pi keeps its built-in tools,
+and Codex and DeepSeek Harness keep theirs, as they always did. A host that
+wants a restriction appends it through `args`, for example
+`--disallowedTools Bash,Edit,Write` or `--strict-mcp-config` for Claude Code
+and `--tools` for Pi.
 
 A harness that reaches for its own tool instead of the catalogue's leaves no
 operation in the record. That is a finding about the harness, recorded as
@@ -421,13 +421,14 @@ each column. The floors below are what probes of each CLI found, recorded as
 information about where a launch starts to work as described, not as a check
 anything runs:
 
-| CLI            | From    | What                                                                  |
-| -------------- | ------- | --------------------------------------------------------------------- |
-| Codex          | 0.44    | The `codex exec --json` event shape the protocol reads                |
-| Codex          | 0.46    | `bearer_token_env_var`; an inline `bearer_token` is refused from here |
-| Codex          | 0.99    | `required` on an MCP server                                           |
-| Claude Code    | 2.1.221 | MCP servers connected before the first turn in `-p` mode              |
-| DeepSeek (dsh) | 0.1.6   | `-` reads the headless task from stdin, and `--json`                  |
+| CLI            | From    | What                                                                             |
+| -------------- | ------- | -------------------------------------------------------------------------------- |
+| Codex          | 0.44    | The `codex exec --json` event shape the protocol reads                           |
+| Codex          | 0.46    | `bearer_token_env_var`; an inline `bearer_token` is refused from here            |
+| Codex          | 0.99    | `required` on an MCP server                                                      |
+| Claude Code    | 2.1.221 | MCP servers connected before the first turn in `-p` mode                         |
+| DeepSeek (dsh) | 0.1.6   | `-` reads the headless task from stdin, and `--json`                             |
+| Pi             | 0.99    | Its own MCP client, reading `.pi/mcp.json` in a project trusted with `--approve` |
 
 Where a CLI changed a shape the adapters read, both are read: a Claude Code
 `result` is a failure by its `subtype` on every version, though before 2.1.89
@@ -518,8 +519,8 @@ const http = await createStreamableHttpMcpServer({
 ```
 
 Pass the token as `McpHarnessRuntimeOptions.token` and each spec hands it to its
-CLI in the form that CLI takes: a header in Claude Code's and DeepSeek's
-configuration, Pi's `bearerToken`, and for Codex the environment variable
+CLI in the form that CLI takes: a header in Claude Code's, DeepSeek's and
+Pi's configuration, and for Codex the environment variable
 `SHAREDOS_MCP_TOKEN` (`SHAREDOS_MCP_TOKEN_VARIABLE`), which the Codex override
 names as `bearer_token_env_var`. None of these hides the token from the harness
 itself. Codex's default `shell_environment_policy` passes its environment,

@@ -295,7 +295,7 @@ CLI there, and reads its stdout for the turn's outcome:
 | Claude Code | `claude -p --allowedTools mcp__sharedos --mcp-config <file> --output-format stream-json --verbose` | stdin                  |
 | Codex       | `codex exec --json --skip-git-repo-check -c ... -`                                                 | stdin                  |
 | DeepSeek    | `dsh --profile headless --patch <file> --json -`                                                   | stdin                  |
-| Pi          | `pi --mode rpc --no-session --no-builtin-tools`                                                    | stdin, as an RPC frame |
+| Pi          | `pi --mode rpc --approve`                                                                          | stdin, as an RPC frame |
 
 The prompt always goes on stdin, so its length is not bounded by the 128 KiB
 one argument may hold and a prompt that starts with `-` is not read as an
@@ -310,10 +310,11 @@ task argument fails the run. Codex applies `-c` overrides placed after its
 `-c project_root_markers=[]`, since Codex otherwise finds its project root, and
 the AGENTS.md files it reads, by walking up from the workspace.
 
-Apart from Pi's `--no-builtin-tools`, none of these restricts the harness's own
-tools or the other MCP servers it loads: SharedOS decides the calls that reach
-it here, and nothing else. A host that wants a restriction appends it through
-`args`. A CLI's version is not checked;
+None of these restricts the harness's own tools or the other MCP servers it
+loads: SharedOS decides the calls that reach it here, and nothing else. A host
+that wants a restriction appends it through `args`. Pi keeps its own tools and
+session records; a host narrows the tools with `--tools` and appends
+`--no-session` to stop the records. A CLI's version is not checked;
 [MCP toolshare](mcp-toolshare.md#versions) records the versions each launch was
 found to need.
 
