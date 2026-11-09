@@ -115,7 +115,7 @@ export interface HarnessAvailability {
    * version is the harness's to state: nothing in this repository pins the
    * installed binary, and a number carried in a runbook is a claim about what
    * someone typed rather than about what ran. Absent when the executable
-   * declined to report one -- see {@link HarnessRequirements.versionArguments}.
+   * declined to report one; see {@link HarnessRequirements.versionArguments}.
    */
   readonly version?: string;
   /** Includes `versionOutput`, the line `version` was read from, verbatim. */
