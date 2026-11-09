@@ -822,7 +822,7 @@ Defined in: [mcp/src/protocol.ts:79](https://github.com/systemind-team/SharedOS/
 
 > **McpHarnessId** = _typeof_ [`MCP_HARNESS_IDS`](#mcp_harness_ids)\[`number`\]
 
-Defined in: [mcp/src/harness-config.ts:261](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L261)
+Defined in: [mcp/src/harness-config.ts:260](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L260)
 
 ## Variables
 
@@ -946,7 +946,7 @@ Defined in: [mcp/src/protocol.ts:21](https://github.com/systemind-team/SharedOS/
 
 > `const` **MCP\_HARNESS\_IDS**: readonly \[`"codex"`, `"claude-code"`, `"deepseek"`, `"pi"`\]
 
-Defined in: [mcp/src/harness-config.ts:260](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L260)
+Defined in: [mcp/src/harness-config.ts:259](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L259)
 
 The harnesses this package emits a connection for, by id.
 
@@ -1183,11 +1183,11 @@ activates a plugin; it does not fetch one.
 schemas, and registers each result through `ctx.tools.register()`. Nothing in
 this file describes a tool, for the same reason as the others.
 
-`failOnStartupError` is set for the same reason Codex's server is `required`:
-a run that quietly continued with only the harness's own tools would look like
-a harness that declined to use the catalogue, which is a different finding.
-From dsh 0.1.6 it no longer stops the run: dsh reports the entry that did not
-activate on stderr, under [deepseekMcpEntryId](#deepseekmcpentryid), and goes on without it.
+The entry names the connection and nothing else: no `failOnStartupError`. A
+host that wants it adds it to the overlay it writes itself; from dsh 0.1.6 it
+no longer stops the run in any case. Either way dsh reports an entry that did
+not activate on stderr, under [deepseekMcpEntryId](#deepseekmcpentryid), and goes on
+without it.
 
 #### Parameters
 
@@ -1205,7 +1205,7 @@ activate on stderr, under [deepseekMcpEntryId](#deepseekmcpentryid), and goes on
 
 > **deepseekMcpEntryId**(`connection`): `string`
 
-Defined in: [mcp/src/harness-config.ts:213](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L213)
+Defined in: [mcp/src/harness-config.ts:212](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L212)
 
 The id of the plugin entry [deepseekMcpConfig](#deepseekmcpconfig) inserts. dsh names an
 entry by its id when it reports that the entry did not activate, so this is
@@ -1227,7 +1227,7 @@ how a launch recognises its own client's failure among the owner's.
 
 > **harnessMcpConfigFile**(`harness`, `connection`): [`HarnessMcpConfigFile`](#harnessmcpconfigfile)
 
-Defined in: [mcp/src/harness-config.ts:264](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L264)
+Defined in: [mcp/src/harness-config.ts:263](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L263)
 
 Every emitter above, addressed by harness id.
 
@@ -1248,7 +1248,7 @@ Every emitter above, addressed by harness id.
 
 > **harnessToolAlias**(`serverName`, `tool`): `string`
 
-Defined in: [mcp/src/harness-config.ts:303](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L303)
+Defined in: [mcp/src/harness-config.ts:302](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L302)
 
 The harness-facing alias a tool is likely to appear under.
 
@@ -1479,7 +1479,7 @@ Defined in: [mcp/src/policy.ts:37](https://github.com/systemind-team/SharedOS/bl
 
 > **piMcpConfig**(`connection`): [`JsonObject`](sharedos-contracts.md#jsonobject)
 
-Defined in: [mcp/src/harness-config.ts:241](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L241)
+Defined in: [mcp/src/harness-config.ts:240](https://github.com/systemind-team/SharedOS/blob/main/packages/mcp/src/harness-config.ts#L240)
 
 Pi's `.mcp.json`, read by an MCP extension.
 
