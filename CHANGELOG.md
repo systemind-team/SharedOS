@@ -68,7 +68,11 @@ each entry calls out what a host has to update.
   prompt for the SharedOS server. `CODEX_MCP_HARNESS` drops
   `-c project_root_markers=[]`, so Codex finds its project root and AGENTS.md
   files itself; a host whose `workspaceRoot` sits inside a repository
-  restores it. A host that wants any of these appends it through `args`. A harness that reaches for its own tool instead of the catalogue
+  restores it. A host that wants any of these appends it through `args`.
+  The emitted DeepSeek overlay names the connection and nothing else:
+  `deepseekMcpConfig` drops `failOnStartupError: true`, which from dsh
+  0.1.6 stopped nothing. A host that wants it adds it to the overlay it
+  writes itself. A harness that reaches for its own tool instead of the catalogue
   leaves no operation behind, and the row is `not exercised`: a finding
   about the harness. `mcp-conformance` declares each CLI's built-in tools as
   `harnessLocal` and reads `externalDirect` and `harnessLocal` from the
@@ -196,8 +200,9 @@ each entry calls out what a host has to update.
 ### Fixed
 
 - **A DeepSeek Harness run that never reached the bridge fails
-  `harness_not_connected`.** From dsh 0.1.6 the overlay's
-  `failOnStartupError: true` no longer stops the run: dsh prints
+  `harness_not_connected`.** From dsh 0.1.6 a client that cannot reach the
+  bridge does not stop the run, even with `failOnStartupError: true`, which
+  the overlay no longer sets: dsh prints
   `dsh: warning: 1 entry did not activate` and `mcp-sharedos
 (@deepseek-ai/dsh-mcp-client): Error: mcp-client(sharedos): initial
 connection or tool synchronization failed` on stderr and carries on with

@@ -1718,8 +1718,8 @@ describe("DeepSeek Harness's headless run, on the MCP toolshare path", () => {
   });
 
   it("fails a run whose SharedOS client did not activate, though dsh went on and completed", async () => {
-    // `failOnStartupError: true` stops nothing from dsh 0.1.6: the run goes on
-    // with dsh's own tools and completes, and stderr is the only witness.
+    // dsh goes on with its own tools and completes, as it does from 0.1.6
+    // even with `failOnStartupError: true`, and stderr is the only witness.
     const diagnostics: string[] = [];
     const result = await new SharedOSExecutor(
       kernel(),

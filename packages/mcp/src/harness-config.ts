@@ -175,11 +175,11 @@ export function claudeAgentSdkMcpOptions(connection: HarnessMcpConnection): Json
  * schemas, and registers each result through `ctx.tools.register()`. Nothing in
  * this file describes a tool, for the same reason as the others.
  *
- * `failOnStartupError` is set for the same reason Codex's server is `required`:
- * a run that quietly continued with only the harness's own tools would look like
- * a harness that declined to use the catalogue, which is a different finding.
- * From dsh 0.1.6 it no longer stops the run: dsh reports the entry that did not
- * activate on stderr, under {@link deepseekMcpEntryId}, and goes on without it.
+ * The entry names the connection and nothing else: no `failOnStartupError`. A
+ * host that wants it adds it to the overlay it writes itself; from dsh 0.1.6 it
+ * no longer stops the run in any case. Either way dsh reports an entry that did
+ * not activate on stderr, under {@link deepseekMcpEntryId}, and goes on
+ * without it.
  */
 export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
   const name = mcpServerName(connection);
@@ -191,7 +191,6 @@ export function deepseekMcpConfig(connection: HarnessMcpConnection): string {
     `        serverName: ${name}`,
     "        transport: streamable-http",
     `        url: ${JSON.stringify(connection.url)}`,
-    "        failOnStartupError: true",
     ...(connection.timeoutSec === undefined
       ? []
       : [`        toolCallTimeoutMs: ${connection.timeoutSec * 1_000}`]),
