@@ -7,6 +7,7 @@ import type {
   ExecutionRequest,
   ToolCall,
   ToolDefinition,
+  ToolResult,
 } from "@aicoo/sharedos-contracts";
 import { SharedOSKernel } from "@aicoo/sharedos-core";
 
@@ -463,6 +464,69 @@ describe("a turn that drains before its deadline", () => {
     expect(ledger).toEqual(["call-1: debit A", "call-1: credit B"]);
     expect(operation(trail, "call-1")).toMatchObject({ outcome: "succeeded" });
     expect((await result).events.filter(({ type }) => type === "tool.completed")).toHaveLength(1);
+  });
+
+  it("tells the model a call refused in the grace is refused for the deadline", async () => {
+    const { kernel } = world(10);
+    let refusal: ToolResult | undefined;
+    const plugin: RuntimePlugin = {
+      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+      run: async (_input, host) => {
+        await new Promise((resolve) => host.draining?.addEventListener("abort", resolve));
+        refusal = await host.invokeTool(call("call-late"));
+        return { type: "complete", output: {} };
+      },
+    };
+    const result = executor(kernel, plugin, 5_000).execute(request());
+
+    await realPause();
+    await vi.advanceTimersByTimeAsync(115_000);
+    await until(() => refusal !== undefined);
+
+    expect(refusal).toMatchObject({
+      status: "denied",
+      error: {
+        code: "turn_draining",
+        message:
+          "The turn is ending at its deadline and takes no new calls to these tools; finish with what you have.",
+      },
+    });
+    await expect(result).resolves.toMatchObject({ status: "succeeded" });
+  });
+
+  it("does not blame the deadline for a drain an audit outage began", async () => {
+    const { kernel, state } = world(
+      3_000,
+      (event) => event.type === "authorization.checked" && event.operationId === "call-2",
+    );
+    let refusal: ToolResult | undefined;
+    const plugin: RuntimePlugin = {
+      manifest: { id: "test.runtime", version: "1.0.0", protocolVersion: "1" },
+      run: async (_input, host) => {
+        void host.invokeTool(call("call-1")).catch(() => undefined);
+        await until(() => state.entered === 1);
+        await host.invokeTool(call("call-2")).catch(() => undefined);
+        refusal = await host.invokeTool(call("call-3"));
+        return { type: "complete", output: {} };
+      },
+    };
+    const result = executor(kernel, plugin, 5_000).execute(request());
+
+    await until(() => refusal !== undefined);
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    expect(refusal).toMatchObject({
+      status: "denied",
+      error: {
+        code: "turn_draining",
+        message:
+          "The turn is ending and takes no new calls to these tools; finish with what you have.",
+      },
+    });
+    await expect(result).resolves.toMatchObject({
+      status: "failed",
+      error: { code: "audit_unavailable" },
+    });
   });
 
   describe("a sibling call that meets the outage after its turn has closed", () => {

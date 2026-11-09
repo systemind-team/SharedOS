@@ -32,8 +32,10 @@ import {
   ESCALATION_TOOL_NAMESPACE,
   SharedOSExecutor,
   createEscalationTool,
+  describeLimits,
   type RuntimeHost,
   type RuntimeTurnRequest,
+  type SharedOSExecutorOptions,
 } from "@aicoo/sharedos-runtime";
 import {
   SHAREDOS_MCP_TOKEN_VARIABLE,
@@ -351,6 +353,10 @@ async function runTurn(
   calls: readonly unknown[],
   options: McpHarnessRuntimeOptions = {},
   execute: Parameters<SharedOSExecutor["execute"]>[1] = {},
+  limits: Pick<
+    SharedOSExecutorOptions,
+    "defaultMaxSteps" | "defaultMaxToolCalls" | "defaultTimeoutMs"
+  > = {},
 ): Promise<{
   status: string;
   output: Record<string, unknown>;
@@ -360,6 +366,7 @@ async function runTurn(
   const executor = new SharedOSExecutor(
     kernel(),
     createMcpHarnessRuntime(fakeHarness(calls), options),
+    limits,
   );
   const result = await executor.execute(executionRequest(), execute);
   const text =
@@ -1132,6 +1139,47 @@ describe("what the harness is told at initialize", () => {
     expect(instructions).not.toContain(EXECUTION_NAMESPACE);
   }, 30_000);
 
+  it("is told the call budget and deadline the host set, and no step budget, since none binds it", async () => {
+    const plain = (await runTurn([])).output["instructions"] as string;
+    const turn = await runTurn(
+      [
+        { name: "files.read", arguments: { path: GRANTED } },
+        { name: "files.read", arguments: { path: GRANTED } },
+      ],
+      {},
+      {},
+      { defaultMaxSteps: 6, defaultMaxToolCalls: 1, defaultTimeoutMs: 120_000 },
+    );
+    const instructions = turn.output["instructions"] as string;
+
+    expect(plain).not.toContain("Limits the host set");
+    // Named as calls to this server's tools: the harness has tools of its own,
+    // and the budget neither counts nor refuses those.
+    expect(instructions).toBe(
+      `${plain}\n\nLimits the host set on this turn. You may make at most 1 call to this ` +
+        "server's tools. Once that budget is used up, every further call to them this turn is " +
+        "refused, so finish with what you have. The turn ends 2 minutes after it began, " +
+        "whether or not you have answered, so answer before then.",
+    );
+    expect(instructions).toBe(
+      `${plain}\n\n${String(
+        describeLimits({ maxToolCalls: 1, timeoutMs: 120_000 }, { mcpServer: true }),
+      )}`,
+    );
+    expect(instructions).not.toContain("step");
+
+    // The call past the budget reaches the harness in the envelope's own words.
+    const [, refused] = turn.output["calls"] as Record<string, unknown>[];
+    expect(refused?.["isError"]).toBe(true);
+    const [content] = refused?.["content"] as { text: string }[];
+    expect(JSON.parse(content?.text ?? "null")).toMatchObject({
+      status: "denied",
+      code: "tool_call_limit_exceeded",
+      message:
+        "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn; finish with what you have.",
+    });
+  }, 30_000);
+
   it("places the host's standing guidance before the turn's reach", async () => {
     const turn = await runTurn([], { instructions: "A refusal is an expected result." });
     const instructions = turn.output["instructions"] as string;
@@ -1364,6 +1412,9 @@ describe("a harness connected over MCP toolshare, on a turn that drains", () => 
     expect(late?.["isError"]).toBe(true);
     expect((late?.["_meta"] as Record<string, unknown>)["sharedos/status"]).toBe("denied");
     expect(JSON.stringify(late)).toContain("turn_draining");
+    expect(JSON.stringify(late)).toContain(
+      "The turn is ending at its deadline and takes no new calls to these tools; finish with what you have.",
+    );
     expect(transfers(trail)).toMatchObject([
       { outcome: "succeeded" },
       { outcome: "denied", reason: "turn_draining", source: "envelope" },

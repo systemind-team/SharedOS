@@ -1,6 +1,7 @@
 import type { JsonObject, ToolCall } from "@aicoo/sharedos-contracts";
 import { hashJson } from "@aicoo/sharedos-core";
 import {
+  describeLimits,
   describeReach,
   escalationOffered,
   escalationRequest,
@@ -30,14 +31,28 @@ export interface SeatTextOptions {
    * server's initialize instructions, a harness's preamble.
    *
    * By default it is `request.context.reach` rendered by `describeReach`: where
-   * this turn's tools may operate, with the authority left out. The prompt
-   * carries the task and this carries the environment the task runs in. A
-   * string is the host's standing guidance, placed before the turn's reach so a
-   * seat that shows its model one block reads the guidance before the map. A
-   * function replaces the composition and says exactly what the seat is told;
+   * this turn's tools may operate, with the authority left out. After it come
+   * the limits the host set on the turn, rendered by `describeLimits` from
+   * `request.options`, and nothing when it set none. The prompt carries the
+   * task and this carries the environment the task runs in. A string is the
+   * host's standing guidance, placed before the turn's reach so a seat that
+   * shows its model one block reads the guidance before the map. A function
+   * replaces the composition and says exactly what the seat is told;
    * returning `undefined` hands over no instructions at all.
    */
   readonly instructions?: string | ((request: RuntimeTurnRequest) => string | undefined);
+}
+
+/** What about the seat itself changes what it is told. */
+export interface SeatKind {
+  /**
+   * Whether the seat is a harness reached over MCP rather than a seat in the
+   * standard loop. Such a harness keeps its own loop and declares no step, so
+   * `maxSteps` does not bound it and it is not told one. It also has tools of
+   * its own, which no SharedOS budget counts, so its call budget is named as
+   * calls to the server's tools.
+   */
+  readonly mcpServer: boolean;
 }
 
 /** The two texts a seat is handed, and their identity. */
@@ -59,8 +74,9 @@ export interface SeatText {
 export async function seatText(
   options: SeatTextOptions,
   request: RuntimeTurnRequest,
+  seat: SeatKind = { mcpServer: false },
 ): Promise<SeatText> {
-  const instructions = turnInstructions(options.instructions, request);
+  const instructions = turnInstructions(options.instructions, request, seat);
   const prompt = (options.prompt ?? defaultPrompt)(request);
   return { instructions, prompt, promptHash: await handedPromptHash(instructions, prompt) };
 }
@@ -68,12 +84,20 @@ export async function seatText(
 function turnInstructions(
   configured: SeatTextOptions["instructions"],
   request: RuntimeTurnRequest,
+  seat: SeatKind,
 ): string | undefined {
   if (typeof configured === "function") {
     return configured(request);
   }
-  const reach = describeReach(request.context.reach);
-  return configured === undefined ? reach : `${configured}\n\n${reach}`;
+  const limits = describeLimits(
+    seat.mcpServer ? { ...request.options, maxSteps: undefined } : request.options,
+    { escalation: escalationOffered(request.tools), mcpServer: seat.mcpServer },
+  );
+  const environment = [
+    describeReach(request.context.reach),
+    ...(limits === undefined ? [] : [limits]),
+  ];
+  return [...(configured === undefined ? [] : [configured]), ...environment].join("\n\n");
 }
 
 /**

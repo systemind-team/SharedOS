@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type {
+  ExecutionOptions,
   ExecutionRequest,
   JsonObject,
   ToolDefinition,
@@ -15,6 +16,8 @@ import {
   PROMPT_HASH_ANNOTATION,
   SharedOSExecutor,
   createStandardRuntime,
+  describeLimits,
+  describeReach,
   type AgentTurnDriver,
 } from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
@@ -146,9 +149,13 @@ const createPiDriver = driverFor(PI_VENDOR);
 /**
  * Run one turn. With `escalation`, the affordance is registered, granted, and
  * its namespace enabled; without it the tool is still registered in the world,
- * so what an ungranted turn lacks is exactly the grant.
+ * so what an ungranted turn lacks is exactly the grant. `limits` are the
+ * request's own.
  */
-async function runWith(driver: AgentTurnDriver, options: { readonly escalation?: boolean } = {}) {
+async function runWith(
+  driver: AgentTurnDriver,
+  options: { readonly escalation?: boolean; readonly limits?: ExecutionOptions } = {},
+) {
   const escalation = options.escalation === true;
   const { kernel, audit } = createTestKernel({ grants: grants(escalation) });
   kernel.registerTool({
@@ -175,7 +182,10 @@ async function runWith(driver: AgentTurnDriver, options: { readonly escalation?:
   });
   const result = await new SharedOSExecutor(kernel, createStandardRuntime({ driver }), {
     clock: () => NOW,
-  }).execute(request(escalation));
+  }).execute({
+    ...request(escalation),
+    ...(options.limits === undefined ? {} : { options: options.limits }),
+  });
   return { result, audit };
 }
 
@@ -688,6 +698,72 @@ describe("a harness driven as a SharedOS turn", () => {
     expect(silent.opened[0]).not.toHaveProperty("instructions");
     expect(result.metadata?.[PROMPT_HASH_ANNOTATION]).toBe(
       await handedPromptHash(undefined, silent.opened[0]?.prompt ?? ""),
+    );
+  });
+
+  it("tells the harness the limits the host set after the reach, and nothing when it set none", async () => {
+    const plain = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport: plain }));
+    const opened = plain.opened[0];
+    // No limit set: the reach, and nothing after it.
+    expect(opened?.instructions).toBe(
+      describeReach(opened?.context.reach ?? { status: "computed", reach: [] }),
+    );
+
+    const limits = { maxSteps: 6, maxToolCalls: 4, timeoutMs: 120_000 };
+    const limited = new TranscriptTransport(codexTranscript);
+    const { result } = await runWith(createCodexDriver({ transport: limited }), { limits });
+    expect(limited.opened[0]?.instructions).toBe(
+      `${String(opened?.instructions)}\n\n${String(describeLimits(limits))}`,
+    );
+    // The evaluation driver sits in the standard loop, which counts steps.
+    expect(limited.opened[0]?.instructions).toContain("You may take at most 6 steps");
+    expect(result.metadata?.[PROMPT_HASH_ANNOTATION]).toBe(
+      await handedPromptHash(limited.opened[0]?.instructions, limited.opened[0]?.prompt ?? ""),
+    );
+  });
+
+  it("hands over the host's guidance, then the reach, then the limits", async () => {
+    const limits = { maxSteps: 6, maxToolCalls: 4 };
+    const transport = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport, instructions: "Read before you write." }), {
+      limits,
+    });
+    const opened = transport.opened[0];
+
+    expect(opened?.instructions).toBe(
+      [
+        "Read before you write.",
+        describeReach(opened?.context.reach ?? { status: "computed", reach: [] }),
+        String(describeLimits(limits)),
+      ].join("\n\n"),
+    );
+  });
+
+  it("tells the harness nothing about limits when an instructions function says what it is told", async () => {
+    const transport = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport, instructions: () => "Only this." }), {
+      limits: { maxSteps: 6, maxToolCalls: 4, timeoutMs: 120_000 },
+    });
+
+    expect(transport.opened[0]?.instructions).toBe("Only this.");
+  });
+
+  it("names asking for a human as still open once the call budget is spent, where the turn offers it", async () => {
+    const offered = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport: offered }), {
+      escalation: true,
+      limits: { maxToolCalls: 4 },
+    });
+    const notOffered = new TranscriptTransport(codexTranscript);
+    await runWith(createCodexDriver({ transport: notOffered }), { limits: { maxToolCalls: 4 } });
+
+    expect(offered.opened[0]?.instructions).toContain(
+      "every further tool call this turn is refused, except asking for a human with " +
+        "sharedos.escalate, so finish with what you have.",
+    );
+    expect(notOffered.opened[0]?.instructions).toContain(
+      "every further tool call this turn is refused, so finish with what you have.",
     );
   });
 
@@ -1499,6 +1575,31 @@ describe("the DeepSeek and Pi harnesses driven as SharedOS turns", () => {
       expect(harness.manifest.metadata).toMatchObject({ catalogueDelivery: "out-of-band" });
     });
   }
+
+  it("hands Pi a spent call budget in the envelope's own words", async () => {
+    const transport = new TranscriptTransport({
+      batches: [
+        [piFrameWriter.toolCall("call-1", "files.read", { path: ["Workspace", "notes.md"] })],
+        [piFrameWriter.toolCall("call-2", "files.read", { path: ["Workspace", "notes.md"] })],
+        [piFrameWriter.complete()],
+      ],
+    });
+    const { result } = await runWith(createPiDriver({ transport }), {
+      limits: { maxToolCalls: 1 },
+    });
+
+    expect(result.status).toBe("succeeded");
+    const refused = transport.written[1] as { content: { text: string }[]; isError: boolean };
+    expect(refused.isError).toBe(true);
+    expect(JSON.parse(refused.content[0]?.text ?? "null")).toEqual({
+      status: "denied",
+      error: {
+        code: "tool_call_limit_exceeded",
+        message:
+          "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn; finish with what you have.",
+      },
+    });
+  });
 
   it("pairs each writer with the protocol that reads it", () => {
     expect(deepseekFrameWriter.protocolId).toBe(deepseekProtocol.id);

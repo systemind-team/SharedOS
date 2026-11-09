@@ -83,6 +83,19 @@ model:
 | Vendor CLI over MCP | The server's initialize `instructions`, which a harness that honours them puts where its model reads        |
 | Evaluation driver   | `HarnessTurnRequest.instructions`, which the transport hands over; `harnessTurnText` is the two as one text |
 
+After the reach comes what the turn may spend: the limits the host set,
+rendered by `describeLimits` from `request.options`, which the executor fills
+with the request's own limits or its defaults. Only a limit that is set is
+spoken, and with none set nothing is added. The model is told the number of tool
+calls it may make, and that once they are used up every further one this turn
+is refused, so it should finish with what it has; where the turn offers
+`sharedos.escalate`, asking for a human is named as the call that still works.
+It is told the number of steps, and to keep the last for its answer, since a
+turn whose last step is a tool call ends without one; and the deadline, as a
+length of time. A vendor CLI over MCP keeps its own loop and declares no step,
+so it is not told a step budget, and its call budget is named as calls to the
+server's tools, since its own tools count against nothing.
+
 Every path takes the same `instructions` option (`SeatTextOptions`): a string is
 the host's standing guidance, placed before the turn's reach; a function says
 exactly what the seat is told, and `undefined` from it hands over nothing. What

@@ -14,8 +14,11 @@ import {
   ESCALATION_TOOL_NAMESPACE,
   SharedOSExecutor,
   createStandardRuntime,
+  describeLimits,
+  describeReach,
   type AgentTurnDriver,
   type RuntimeTurnRequest,
+  type SharedOSExecutorOptions,
   createEscalationTool,
 } from "@aicoo/sharedos-runtime";
 import { createTestGrant, createTestKernel } from "@aicoo/sharedos-testkit";
@@ -891,6 +894,100 @@ describe("a model driving a SharedOS turn", () => {
       model: "test-model",
       inputTokens: 40,
       outputTokens: 12,
+    });
+  });
+});
+
+/**
+ * What the model is told about its budget.
+ *
+ * The limits the host set reach the driver on the request, the executor's
+ * defaults included, and go into the system message after the reach, so the
+ * model knows its budget before it spends it. A call past the budget is
+ * answered in words that say no later call will run either. The turn still
+ * ends when the model says so, or at `maxSteps` or the deadline.
+ */
+describe("what the model is told about its limits", () => {
+  async function systemMessage(limits: SharedOSExecutorOptions): Promise<string | undefined> {
+    const client = scriptedClient([{ text: "done", toolCalls: [] }]);
+    const { kernel } = testKernel();
+    await new SharedOSExecutor(
+      kernel,
+      createStandardRuntime({ driver: new StandardTurnDriver({ manifest: MANIFEST, client }) }),
+      { clock: () => NOW, ...limits },
+    ).execute(request());
+    const [system] = client.seen[0]?.messages ?? [];
+    return system?.role === "system" ? system.content : undefined;
+  }
+
+  it("is told the limits the host set as executor defaults, after its reach", async () => {
+    const plain = await systemMessage({});
+    const limited = await systemMessage({
+      defaultMaxSteps: 6,
+      defaultMaxToolCalls: 4,
+      defaultTimeoutMs: 120_000,
+    });
+
+    expect(plain).not.toContain("Limits the host set");
+    // The turn offers the escalate affordance, so the call budget names it as
+    // the one call that still works once the budget is spent.
+    expect(limited).toBe(
+      `${String(plain)}\n\n${String(
+        describeLimits({ maxSteps: 6, maxToolCalls: 4, timeoutMs: 120_000 }, { escalation: true }),
+      )}`,
+    );
+    expect(limited).toContain("except asking for a human with sharedos.escalate");
+  });
+
+  it("is told its reach and nothing more when the host set no limit", async () => {
+    const client = scriptedClient([{ text: "done", toolCalls: [] }]);
+    const turn = turnRequest();
+    const signal = new AbortController().signal;
+
+    const session = await new StandardTurnDriver({ manifest: MANIFEST, client }).open(turn, signal);
+    await session.next({ type: "start" }, signal);
+
+    expect(client.seen[0]?.messages[0]).toEqual({
+      role: "system",
+      content: describeReach(turn.context.reach),
+    });
+  });
+
+  it("hears a spent call budget in the envelope's words, and decides itself when to end", async () => {
+    const client = scriptedClient([
+      {
+        text: "",
+        toolCalls: [{ id: "call-1", name: "files_read", arguments: '{"path":["Workspace","a"]}' }],
+      },
+      {
+        text: "",
+        toolCalls: [{ id: "call-2", name: "files_read", arguments: '{"path":["Workspace","b"]}' }],
+      },
+      { text: "done with what I have", toolCalls: [] },
+    ]);
+    const { kernel } = testKernel();
+    const result = await new SharedOSExecutor(
+      kernel,
+      createStandardRuntime({ driver: new StandardTurnDriver({ manifest: MANIFEST, client }) }),
+      { clock: () => NOW, defaultMaxToolCalls: 1 },
+    ).execute(request());
+
+    expect(toolMessagesShown(client, 2).at(-1)).toEqual({
+      toolCallId: "call-2",
+      content: {
+        status: "denied",
+        error: {
+          code: "tool_call_limit_exceeded",
+          message:
+            "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn, except asking for a human with sharedos.escalate; finish with what you have.",
+        },
+      },
+    });
+    // Told, and asked again: the refusal does not end the turn, the model does.
+    expect(client.seen).toHaveLength(3);
+    expect(result).toMatchObject({
+      status: "succeeded",
+      output: { text: "done with what I have" },
     });
   });
 });

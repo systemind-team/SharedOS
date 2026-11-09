@@ -18,6 +18,7 @@ import {
   type RuntimeLimits,
   type RuntimePlugin,
   type RuntimeTurnRequest,
+  type SharedOSExecutorOptions,
   type TurnErrorContext,
   type TurnKernel,
 } from "./index.js";
@@ -354,12 +355,15 @@ describe("RuntimePlugin security envelope", () => {
         });
       const first = await call("call-1");
       const second = await call("call-2");
+      const third = await call("call-3");
       return {
         type: "complete",
         output: {
           first: first.status,
           second: second.status,
           secondCode: second.status === "succeeded" ? null : second.error.code,
+          secondMessage: second.status === "succeeded" ? null : second.error.message,
+          thirdCode: third.status === "succeeded" ? null : third.error.code,
         },
       };
     });
@@ -376,6 +380,11 @@ describe("RuntimePlugin security envelope", () => {
         first: "succeeded",
         second: "denied",
         secondCode: "tool_call_limit_exceeded",
+        // The model reads this. It names the budget and says the next call
+        // fares no better, so it has no reason to keep asking.
+        secondMessage:
+          "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn; finish with what you have.",
+        thirdCode: "tool_call_limit_exceeded",
       });
     }
     expect(runtimeKernel.invokeTool).toHaveBeenCalledOnce();
@@ -402,6 +411,7 @@ describe("RuntimePlugin security envelope", () => {
         output: {
           first: first.status,
           second: second.status === "succeeded" ? null : second.error.code,
+          secondMessage: second.status === "succeeded" ? null : second.error.message,
           third: third.status,
         },
       };
@@ -419,10 +429,93 @@ describe("RuntimePlugin security envelope", () => {
       expect(result.output).toEqual({
         first: "succeeded",
         second: "step_limit_exceeded",
+        // True of what happened: the call named a step past the budget, and a
+        // call at a step inside it, the third, still ran.
+        secondMessage:
+          "This call named step 1, past this turn's budget of 1 step, and did not run; no call past that budget will run this turn.",
         third: "succeeded",
       });
     }
     expect(runtimeKernel.invokeTool).toHaveBeenCalledTimes(2);
+  });
+
+  it("names asking for a human as the one call a spent budget leaves, where the turn offers it", async () => {
+    const plugin = runtime(async (_input, host) => {
+      const call = (id: string) =>
+        host.invokeTool({
+          id,
+          tool: tool.name,
+          arguments: {},
+          traceId: context.traceId,
+          requestedAt: now,
+        });
+      await call("call-1");
+      const refused = await call("call-2");
+      return {
+        type: "complete",
+        output: { message: refused.status === "succeeded" ? null : refused.error.message },
+      };
+    });
+    const run = (escalation: boolean) =>
+      new SharedOSExecutor(kernel(undefined, { escalation }), plugin, {
+        clock: () => now,
+        createId: () => "event-1",
+        defaultMaxToolCalls: 1,
+      }).execute(request({ escalation }));
+
+    // An escalation ends the turn without coming through the envelope's
+    // budgets, so it still works, and the model is told so.
+    await expect(run(true)).resolves.toMatchObject({
+      status: "succeeded",
+      output: {
+        message:
+          "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn, except asking for a human with sharedos.escalate; finish with what you have.",
+      },
+    });
+    await expect(run(false)).resolves.toMatchObject({
+      status: "succeeded",
+      output: {
+        message:
+          "This turn's budget of 1 tool call is used up. No further call to these tools will run this turn; finish with what you have.",
+      },
+    });
+  });
+
+  it("names asking for a human as still open while the turn drains to its deadline", async () => {
+    const plugin = runtime(async (_input, host) => {
+      // A grace as long as the limit drains the turn from its start.
+      await new Promise((resolve) => host.draining?.addEventListener("abort", resolve));
+      const refused = await host.invokeTool({
+        id: "call-late",
+        tool: tool.name,
+        arguments: {},
+        traceId: context.traceId,
+        requestedAt: now,
+      });
+      return {
+        type: "complete",
+        output: {
+          code: refused.status === "succeeded" ? null : refused.error.code,
+          message: refused.status === "succeeded" ? null : refused.error.message,
+        },
+      };
+    });
+
+    const result = await new SharedOSExecutor(kernel(undefined, { escalation: true }), plugin, {
+      clock: () => now,
+      createId: () => "event-1",
+      defaultTimeoutMs: 5_000,
+      drainGraceMs: 5_000,
+    }).execute(request({ escalation: true }));
+
+    expect(result).toMatchObject({
+      status: "succeeded",
+      output: {
+        code: "turn_draining",
+        message:
+          "The turn is ending at its deadline and takes no new calls to these tools, except asking for a human with sharedos.escalate; finish with what you have.",
+      },
+    });
   });
 
   it("leaves a plugin that declares no step bounded by its call ceiling alone", async () => {
@@ -493,6 +586,42 @@ describe("RuntimePlugin security envelope", () => {
       expect(result.output).toEqual({ results: Array.from({ length: 40 }, () => "succeeded") });
     }
     expect(runtimeKernel.invokeTool).toHaveBeenCalledTimes(40);
+  });
+
+  it("hands the runtime the limits the turn runs under, and none the host did not set", async () => {
+    const seen: RuntimeTurnRequest[] = [];
+    const plugin = runtime(async (input) => {
+      seen.push(input);
+      return { type: "complete", output: {} };
+    });
+    const run = (options: SharedOSExecutorOptions, input: ExecutionRequest) =>
+      new SharedOSExecutor(kernel(), plugin, {
+        clock: () => now,
+        createId: () => "event-1",
+        ...options,
+      }).execute(input);
+
+    // The executor's defaults, which a driver handed only the request would
+    // otherwise never see, and so never tell its model.
+    await run({ defaultMaxSteps: 8, defaultMaxToolCalls: 4, defaultTimeoutMs: 60_000 }, request());
+    // The request's own over the default, and the default where it set none.
+    await run(
+      { defaultMaxSteps: 8, defaultMaxToolCalls: 4 },
+      { ...request(), options: { maxToolCalls: 2 } },
+    );
+    // Neither set any.
+    await run({}, request());
+    await run({}, { ...request(), options: {} });
+
+    expect(seen.map((input) => input.options)).toEqual([
+      { maxSteps: 8, maxToolCalls: 4, timeoutMs: 60_000 },
+      { maxSteps: 8, maxToolCalls: 2 },
+      undefined,
+      {},
+    ]);
+    expect(seen[2]).not.toHaveProperty("options");
+    // JSON as it was: no key is carried with nothing in it.
+    expect(JSON.parse(JSON.stringify(seen[1]))).toEqual(seen[1]);
   });
 
   it("does not stand a step limit in for a call limit the host left unset", async () => {
