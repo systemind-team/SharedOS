@@ -215,8 +215,8 @@ A `strict` policy that also lists `externalDirect` entries is rejected by the
 schema, rather than producing a run whose headline claim its own manifest
 contradicts. `harnessLocal` stays permitted under `strict`, since most CLIs keep
 tools of their own, but the entries must be named, and a launch that leaves the
-harness none of its own, as Pi's does with `--no-builtin-tools`, declares `[]`:
-what Pi's MCP client declares in their place is the catalogue, not a local tool.
+harness none of its own, as a host's `--tools 'mcp__sharedos__*'` does for Pi,
+declares `[]`: the catalogue Pi's MCP client declares is not a local tool.
 No spec drops the other MCP servers a CLI loads, so a column run on a machine
 that configures servers of its own for the CLI declares them as
 `externalDirect`, and is `hybrid`.
@@ -404,10 +404,11 @@ re-authorized by the kernel.
   dsh prints regardless of that key, fails the turn `harness_not_connected`
   and ends dsh. An MCP server of the owner's own that fails to start is left
   alone.
-- **Pi.** `--mode rpc --no-session --no-builtin-tools --approve`: a
-  session-less RPC run with Pi's built-in tools off. `--approve` is what lets
-  Pi read the `.pi/mcp.json` written for the turn, and it trusts more than that
-  file; see [what `--approve` trusts](#what---approve-trusts).
+- **Pi.** `--mode rpc --no-session --approve`: a session-less RPC run. Pi
+  keeps its own tools, `read`, `bash`, `edit` and `write`, and a host may
+  narrow them through `args` with `--tools`. `--approve` is what lets Pi read
+  the `.pi/mcp.json` written for the turn, and it trusts more than that file;
+  see [what `--approve` trusts](#what---approve-trusts).
 
 ### Versions
 
@@ -444,11 +445,13 @@ config file. `PI_MCP_HARNESS` writes `.pi/mcp.json` into the turn's scratch
 workspace, and since Pi reads a project file only for a project it trusts, the
 launch passes `--approve`. Nothing is written to the agent directory.
 
-SharedOS passes no flag that narrows what Pi offers its model beyond turning off
-its built-in tools. Unless the host restricts them, the model also sees the
-tools of any servers in the agent directory's `mcp.json`, which Pi connects as
-well, and Pi's `codemode` tool, which Pi turns on when a server it connects has
-`codemode` exposure, Pi's default. A host that wants Pi's model kept to the
+SharedOS passes no flag that narrows what Pi offers its model. Unless the host
+restricts them, the model sees beside the catalogue Pi's own built-in tools,
+`read`, `bash`, `edit` and `write`, the tools of any servers in the agent
+directory's `mcp.json`, which Pi connects as well, and Pi's `codemode` tool,
+which Pi turns on when a server it connects has `codemode` exposure, Pi's
+default. A host may narrow them through `args` with `--tools`, and one that
+wants Pi's model kept to the
 catalogue appends `--tools 'mcp__sharedos__*'` through `args` (with its own
 server name if it set one). Pi still connects the other servers, and declares
 only the catalogue's tools to the model.

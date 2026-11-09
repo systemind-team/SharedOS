@@ -913,17 +913,19 @@ export const DEEPSEEK_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec
  * bridge is an ordinary `tools/call` naming the canonical tool, authorized like
  * any other.
  *
- * Nothing else about what Pi offers its model is narrowed here. A host that
- * wants it kept to the catalogue, without the tools of servers in Pi's own
- * `mcp.json` or Pi's `codemode` tool, appends `--tools 'mcp__<server>__*'`
- * through `args`. An extension that replaces Pi's client, such as
- * `pi-mcp-adapter`, is likewise a host's option, loaded with flags appended
- * through `args`, and what it reads and how it names tools are then its own.
+ * Pi keeps its own tools, as every harness here does: SharedOS decides the
+ * calls that reach it over MCP and sets nothing on the rest. Beside the
+ * catalogue, Pi's model sees its built-in `read`, `bash`, `edit` and `write`,
+ * the tools of any servers in Pi's own `mcp.json`, and Pi's `codemode` tool
+ * when a server it connects has `codemode` exposure. A host that wants a
+ * narrower surface appends `--tools` through `args`, and
+ * `--tools 'mcp__<server>__*'` keeps the model to the catalogue. An extension
+ * that replaces Pi's client, such as `pi-mcp-adapter`, is likewise a host's
+ * option, loaded with flags appended through `args`, and what it reads and how
+ * it names tools are then its own.
  *
- * `--no-builtin-tools` drops Pi's own file and shell tools while keeping MCP and
- * extension tools, which is exactly the split a conformance run needs. The
- * prompt goes in as an RPC frame rather than as an argument, because RPC mode is
- * the one whose frames `piProtocol` reads.
+ * The prompt goes in as an RPC frame rather than as an argument, because RPC
+ * mode is the one whose frames `piProtocol` reads.
  */
 export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   id: PI_VENDOR.id,
@@ -932,7 +934,7 @@ export const PI_MCP_HARNESS: McpHarnessSpec = Object.freeze<McpHarnessSpec>({
   configFiles: (connection) => [harnessMcpConfigFile("pi", connection)],
   launch: ({ prompt, workspace, request }) => ({
     command: "pi",
-    args: ["--mode", "rpc", "--no-session", "--no-builtin-tools", "--approve"],
+    args: ["--mode", "rpc", "--no-session", "--approve"],
     cwd: workspace,
     stdin: `${JSON.stringify({ id: request.executionId, type: "prompt", message: prompt })}\n`,
     // `--mode rpc` is a session: EOF on stdin ends it. See `keepStdinOpen`.

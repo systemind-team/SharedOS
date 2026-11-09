@@ -158,15 +158,15 @@ const {
 /**
  * What each harness keeps for itself, declared rather than assumed.
  *
- * Apart from Pi's, the launches restrict nothing of the harness's own:
- * SharedOS decides the calls that reach it over MCP, and a harness keeps its
- * built-in tools and whatever other MCP servers its machine configures.
- * `harnessLocal` names the built-in tools each CLI starts with, because a run
- * that claimed an empty local surface would be misdeclaring itself. The
- * machine's own MCP servers are the operator's to name, as `externalDirect` in
- * the run's configuration; a column that names any is `hybrid`, and one that
- * names none is `strict`. An operator who wants a narrower surface passes the
- * CLI's own flags through `args` and declares what is left as `harnessLocal`.
+ * The launches restrict nothing of the harness's own: SharedOS decides the
+ * calls that reach it over MCP, and a harness keeps its built-in tools and
+ * whatever other MCP servers its machine configures. `harnessLocal` names the
+ * built-in tools each CLI starts with, because a run that claimed an empty
+ * local surface would be misdeclaring itself. The machine's own MCP servers
+ * are the operator's to name, as `externalDirect` in the run's configuration;
+ * a column that names any is `hybrid`, and one that names none is `strict`.
+ * An operator who wants a narrower surface passes the CLI's own flags through
+ * `args` and declares what is left as `harnessLocal`.
  *
  * A harness that reaches for one of its own tools instead of the catalogue
  * leaves no operation behind, and the row is `not exercised`: a finding about
@@ -243,8 +243,13 @@ const DECLARED_HARNESSES = [
     spec: PI_MCP_HARNESS,
     label: "Pi",
     requirements: PI_REQUIREMENTS,
-    /** `--no-builtin-tools` leaves only the catalogue's tools, which are not local. */
-    harnessLocal: [],
+    /**
+     * The built-in tools Pi turns on by default (pi-coding-agent 1.5.0);
+     * `grep`, `find` and `ls` are built in too and are on only when `--tools`
+     * names them. The catalogue's tools, which Pi's MCP client declares, are
+     * not local.
+     */
+    harnessLocal: ["read", "bash", "edit", "write"],
     /** Pi's own client since 0.99; before that this column needed an extension. */
     mcpSupport: "native",
   },

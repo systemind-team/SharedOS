@@ -259,6 +259,11 @@ each entry calls out what a host has to update.
     installs missing project packages, runs project extensions, and loads
     `.agents/skills` from the workspace and every directory above it
     (`docs/mcp-toolshare.md` says what to keep out of the way).
+  - `PI_MCP_HARNESS` no longer passes `--no-builtin-tools`. Pi keeps its own
+    tools, `read`, `bash`, `edit` and `write`, beside the catalogue, and a host
+    may narrow them through `args` with `--tools`, as
+    `--tools 'mcp__sharedos__*'` does. `scripts/mcp-conformance.mjs` declares
+    those four as the Pi column's `harnessLocal` (was none).
   - Pi's MCP manifest says `mcpSupport: "native"` (was `"extension"`), and
     `mcpExtension` is gone.
   - `scripts/mcp-conformance.mjs` stamps the Pi column `native`. A host

@@ -1125,14 +1125,9 @@ describe("the Pi spec", () => {
     // Pi reads `.pi/mcp.json` from where it runs, and only for a trusted
     // project; RPC mode cannot ask, so without `--approve` the server is
     // skipped and the turn reads as a harness that declined every tool.
+    // Nothing narrows Pi's own tools: a host that wants that passes `--tools`.
     expect(launch.command).toBe("pi");
-    expect(launch.args).toEqual([
-      "--mode",
-      "rpc",
-      "--no-session",
-      "--no-builtin-tools",
-      "--approve",
-    ]);
+    expect(launch.args).toEqual(["--mode", "rpc", "--no-session", "--approve"]);
     expect(launch.cwd).toBe("/tmp/sharedos-test");
     expect(JSON.parse(launch.stdin ?? "")).toEqual({
       id: "execution-1",
