@@ -1240,7 +1240,7 @@ Defined in: [packages/runtime/src/standard-runtime.ts:157](https://github.com/sy
 
 > `const` **TURN\_DRAINING**: `"turn_draining"` = `"turn_draining"`
 
-Defined in: [packages/runtime/src/executor.ts:1059](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1059)
+Defined in: [packages/runtime/src/executor.ts:1096](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1096)
 
 The code a new tool call is refused under once the turn takes nothing new.
 
@@ -1572,7 +1572,7 @@ offers the same hook.
 
 > **terminalSource**(`events`): `"envelope"` \| `"runtime"` \| `undefined`
 
-Defined in: [packages/runtime/src/executor.ts:1122](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1122)
+Defined in: [packages/runtime/src/executor.ts:1159](https://github.com/systemind-team/SharedOS/blob/main/packages/runtime/src/executor.ts#L1159)
 
 Whether the envelope refused the turn or the runtime reported its own failure.
 
