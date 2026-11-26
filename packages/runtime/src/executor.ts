@@ -226,7 +226,15 @@ export class SharedOSExecutor implements TurnExecutionPort {
     }
 
     const request = parsed.data;
-    const result = await this.#runTurn(request, options);
+    // Keep the internal turn input shaped with an array-valued `tools`, while
+    // remembering whether the caller actually supplied one: an omitted catalogue
+    // means "use everything the lease resolves", not "no tools".
+    const toolsSpecified = request.tools !== undefined;
+    const normalizedRequest: ExecutionRequest & { readonly tools: readonly ToolDefinition[] } = {
+      ...request,
+      tools: request.tools ?? [],
+    };
+    const result = await this.#runTurn(normalizedRequest, options, toolsSpecified);
     await this.#recordTurnEnd(request, result);
     return result;
   }
@@ -289,8 +297,9 @@ export class SharedOSExecutor implements TurnExecutionPort {
   }
 
   async #runTurn(
-    request: ExecutionRequest,
+    request: ExecutionRequest & { readonly tools: readonly ToolDefinition[] },
     options: ExecuteTurnOptions = {},
+    toolsSpecified: boolean = true,
   ): Promise<ExecutionResult> {
     const startedAt = this.#clock();
     const events: ExecutionEvent[] = [];
@@ -461,8 +470,11 @@ export class SharedOSExecutor implements TurnExecutionPort {
       // (the HTTP handler, which has no catalogue of its own) takes the whole
       // catalogue the kernel resolves inside this turn's lease. An explicit
       // list still narrows it, and an explicit empty list still means no tools.
-      const requestedNames =
-        request.tools === undefined ? undefined : new Set(request.tools.map(({ name }) => name));
+      // An omitted catalogue means "use everything the lease resolves"; an
+      // explicit list (including an explicit empty one) narrows it.
+      const requestedNames = toolsSpecified
+        ? new Set(request.tools.map(({ name }) => name))
+        : undefined;
       const effectiveTools =
         requestedNames === undefined
           ? [...allowedTools]
