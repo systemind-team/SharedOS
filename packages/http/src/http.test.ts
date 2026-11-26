@@ -67,7 +67,7 @@ function createApi(): SharedOSApi {
 }
 
 describe("createSharedOSHandler", () => {
-  it("builds remote turns from server context and permission-filtered tools", async () => {
+  it("builds remote turns from server context; the catalogue is resolved in the turn", async () => {
     const kernel = new SharedOSKernel({
       grantSource: {
         async load() {
@@ -107,7 +107,7 @@ describe("createSharedOSHandler", () => {
       },
     });
 
-    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ context, tools: [] }), {});
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ context }), {});
   });
 
   it("resolves authority server-side before listing tools", async () => {

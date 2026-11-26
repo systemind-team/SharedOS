@@ -8,6 +8,7 @@ import {
   type RuntimeManifest,
   type RuntimeTurnOutcome,
   type ToolCall,
+  type ToolDefinition,
   type ToolResult,
 } from "@aicoo/sharedos-contracts";
 
@@ -123,8 +124,10 @@ export interface RuntimeVisibleContext {
  * because a driver is handed the request and not the host, and a seat tells
  * its model the budget it is held to (see `describeLimits`).
  */
-export type RuntimeTurnRequest = Omit<ExecutionRequest, "context"> & {
+export type RuntimeTurnRequest = Omit<ExecutionRequest, "context" | "tools"> & {
   readonly context: RuntimeVisibleContext;
+  /** The effective catalogue for this turn; always present at runtime. */
+  readonly tools: readonly ToolDefinition[];
 };
 
 /**

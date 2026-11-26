@@ -282,8 +282,10 @@ Authorized against the _recipient_: namespace `sharedos.messaging`, action
 
 ### `POST /v1/turns`
 
-One bounded agent turn. The server lists the visible tools itself, which is why
-`tools` is absent from the wire schema.
+One bounded agent turn. The server lists the visible tools itself, inside the
+turn's authority lease, which is why `tools` is absent from the wire schema and
+why a transient authority outage ends the turn instead of running it with no
+tools.
 
 ```json
 {
