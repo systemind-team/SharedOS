@@ -825,6 +825,18 @@ describe("a model driving a SharedOS turn", () => {
     expect(client.seen).toHaveLength(1);
   });
 
+  it("fails the turn when the provider stops for a non-normal reason", async () => {
+    const client = scriptedClient([
+      { text: "partial", toolCalls: [], finishReason: "content_filter" },
+    ]);
+    const { result } = await runWith(client);
+
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" ? result.error.code : undefined).toBe(
+      "model_output_filtered",
+    );
+  });
+
   it("records why the model stopped and what the provider billed for the turn", async () => {
     const client = scriptedClient([
       {

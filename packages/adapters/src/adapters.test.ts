@@ -1229,6 +1229,13 @@ describe("the DeepSeek Harness protocol", () => {
         type: "failed",
       });
     }
+    expect(
+      deepseekProtocol.interpret(
+        event("turn/end", {
+          reason: { kind: "max-steps", error: { code: "X", message: "gave up" } },
+        }),
+      )[0],
+    ).toMatchObject({ type: "failed", error: { code: "X", message: "gave up" } });
   });
 
   it("marks a refused call so the harness knows it was refused", () => {
