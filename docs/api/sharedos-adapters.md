@@ -1565,7 +1565,7 @@ before the next one is sent.
 
 > **ModelToolCallReading** = \{ `reason`: `string`; `type`: `"escalate"`; \} \| \{ `call`: [`ToolCall`](sharedos-contracts.md#toolcall); `type`: `"tool_call"`; \} \| \{ `refusal`: [`ToolResult`](sharedos-contracts.md#toolresult); `type`: `"malformed"`; \}
 
-Defined in: [packages/adapters/src/model/driver.ts:416](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L416)
+Defined in: [packages/adapters/src/model/driver.ts:434](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L434)
 
 Where one call the model asked for goes once it has been read.
 
@@ -2236,7 +2236,7 @@ harness whose opening frame carries a single message.
 
 > **modelToolResultMessage**(`result`): [`ModelMessage`](#modelmessage)
 
-Defined in: [packages/adapters/src/model/driver.ts:468](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L468)
+Defined in: [packages/adapters/src/model/driver.ts:486](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L486)
 
 The message that answers one call, in the shape the model reads it back.
 
@@ -2256,7 +2256,7 @@ The message that answers one call, in the shape the model reads it back.
 
 > **readModelToolCall**(`call`, `codec`, `offered`, `context`): [`ModelToolCallReading`](#modeltoolcallreading)
 
-Defined in: [packages/adapters/src/model/driver.ts:437](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L437)
+Defined in: [packages/adapters/src/model/driver.ts:455](https://github.com/systemind-team/SharedOS/blob/main/packages/adapters/src/model/driver.ts#L455)
 
 Read one call off a reply: the provider's alphabet back to the catalogue's,
 the argument blob parsed, and the escalate affordance recognised by name when

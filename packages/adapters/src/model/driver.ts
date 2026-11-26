@@ -287,6 +287,24 @@ class ModelSession implements AgentTurnSession {
           this.#metadata(),
         );
       }
+      // A finish reason that is neither a normal ending nor a length cut is
+      // the provider stopping generation for its own reason (content filter,
+      // error, resource exhaustion, ...). Such a reply is not a decision the
+      // model finished making, so it must not be graded as a completed turn.
+      if (
+        reply.finishReason !== undefined &&
+        reply.finishReason !== "stop" &&
+        reply.finishReason !== "tool_calls"
+      ) {
+        const reason = reply.finishReason;
+        const code =
+          reason === "content_filter" ? "model_output_filtered" : `model_stopped_${reason}`;
+        return failed(
+          code,
+          `The model's reply stopped before it finished deciding (finish reason: ${reason}).`,
+          this.#metadata(),
+        );
+      }
 
       this.#messages.push({
         role: "assistant",

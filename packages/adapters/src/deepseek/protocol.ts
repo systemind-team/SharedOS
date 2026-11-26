@@ -148,16 +148,19 @@ export const deepseekProtocol: HarnessProtocol = {
       // as a quiet completion, so a harness that gave up cannot be mistaken
       // for one that answered.
       const kind = end.data.reason.kind;
-      const failure = TURN_END_FAILURES[kind];
-      if (failure === undefined) {
+      if (kind === "completed") {
         return [{ type: "complete" }];
       }
+      const failure = TURN_END_FAILURES[kind];
       return [
         {
           type: "failed",
           error: {
             code: end.data.reason.error?.code ?? turnEndCode(kind),
-            message: end.data.reason.error?.message ?? failure,
+            message:
+              end.data.reason.error?.message ??
+              failure ??
+              `The DeepSeek Harness turn ended without completing (${kind}).`,
             retryable: true,
           },
         },
