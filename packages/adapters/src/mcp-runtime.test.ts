@@ -229,7 +229,9 @@ function kernel(
   });
 }
 
-function executionRequest(escalation = false): ExecutionRequest {
+function executionRequest(
+  escalation = false,
+): ExecutionRequest & { tools: readonly ToolDefinition[] } {
   return {
     version: "1",
     executionId: "execution-1",

@@ -63,7 +63,7 @@ const MANIFEST = {
   protocolVersion: "1",
 } as const;
 
-function request(): ExecutionRequest {
+function request(): ExecutionRequest & { tools: readonly ToolDefinition[] } {
   return {
     version: "1",
     executionId: "execution-1",

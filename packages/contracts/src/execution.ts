@@ -31,7 +31,7 @@ export const ExecutionRequestSchema = z
     agent: AgentAddressSchema,
     context: AccessContextSchema,
     message: MessageEnvelopeSchema,
-    tools: z.array(ToolDefinitionSchema),
+    tools: z.array(ToolDefinitionSchema).optional(),
     state: JsonObjectSchema.optional(),
     options: ExecutionOptionsSchema.optional(),
     metadata: JsonObjectSchema.optional(),

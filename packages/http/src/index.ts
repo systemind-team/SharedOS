@@ -104,9 +104,11 @@ export function createKernelSharedOSApi(options: KernelSharedOSApiOptions): Shar
     sendMessage: (context, envelope, callOptions) =>
       options.kernel.sendMessage(context, envelope, callOptions),
     executeTurn: async (context, request, callOptions) => {
-      const tools = await options.kernel.listTools(context, callOptions);
+      // The catalogue is resolved inside the turn's authority lease by the
+      // executor, so a transient failure to load authority ends the turn
+      // closed instead of silently running it with no tools.
       return options.turns.execute(
-        { ...request, context, tools: [...tools] },
+        { ...request, context },
         callOptions?.signal === undefined ? {} : { signal: callOptions.signal },
       );
     },

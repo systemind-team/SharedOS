@@ -457,8 +457,16 @@ export class SharedOSExecutor implements TurnExecutionPort {
         watchAudit(this.#kernel.listTools(executionContext, { signal: abort.signal })),
         abort.signal,
       );
-      const requestedNames = new Set(request.tools.map(({ name }) => name));
-      const effectiveTools = allowedTools.filter(({ name }) => requestedNames.has(name));
+      // `tools` is optional on an `ExecutionRequest`: a caller that omits it
+      // (the HTTP handler, which has no catalogue of its own) takes the whole
+      // catalogue the kernel resolves inside this turn's lease. An explicit
+      // list still narrows it, and an explicit empty list still means no tools.
+      const requestedNames =
+        request.tools === undefined ? undefined : new Set(request.tools.map(({ name }) => name));
+      const effectiveTools =
+        requestedNames === undefined
+          ? [...allowedTools]
+          : allowedTools.filter(({ name }) => requestedNames.has(name));
       const effectiveToolNames = new Set(effectiveTools.map(({ name }) => name));
       const repeatableToolNames = new Set(
         effectiveTools.filter(isSafeToRepeat).map(({ name }) => name),

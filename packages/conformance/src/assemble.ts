@@ -103,7 +103,7 @@ export function assembleExecutionRecord(input: AssembleExecutionRecordInput): Ex
       ...escalationAsked(result),
       ...callsAfterEscalation(result),
       exposedTools: exposedTools(result.events),
-      requestedTools: request.tools.map(({ name }) => name),
+      requestedTools: (request.tools ?? []).map(({ name }) => name),
       decisions: decisions(audit),
       operations: operations(audit, result.events),
       events: [...result.events],
