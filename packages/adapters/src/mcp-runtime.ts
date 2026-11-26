@@ -278,36 +278,38 @@ export function createMcpHarnessRuntime(
       // declares no step, so it is told no step budget: none binds it. Its own
       // tools count against no budget, so the call budget is named as calls to
       // this server's tools.
-      const { instructions, prompt, promptHash } = await seatText(options, request, {
-        mcpServer: true,
-      });
-      host.annotate(PROMPT_HASH_ANNOTATION, promptHash);
-      const server = new McpToolServer({
-        invoker: bridge,
-        serverInfo: {
-          name: serverName,
-          version: manifest.version,
-        },
-        ...(instructions === undefined ? {} : { instructions }),
-      });
-
-      const http = await createStreamableHttpMcpServer({
-        server,
-        ...(options.onDiagnostic === undefined
-          ? {}
-          : { onError: (error: unknown) => options.onDiagnostic?.(spec.id, String(error)) }),
-        ...(options.token === undefined
-          ? {}
-          : { authorize: (token: string | undefined) => token === options.token }),
-      });
-      const connection: HarnessMcpConnection = {
-        url: http.url,
-        name: serverName,
-        ...(options.token === undefined ? {} : { token: options.token }),
-      };
-
-      const workspace = await mkdtemp(join(options.workspaceRoot ?? tmpdir(), `sharedos-mcp-`));
+      let http: Awaited<ReturnType<typeof createStreamableHttpMcpServer>> | undefined;
+      let workspace: string | undefined;
       try {
+        const { instructions, prompt, promptHash } = await seatText(options, request, {
+          mcpServer: true,
+        });
+        host.annotate(PROMPT_HASH_ANNOTATION, promptHash);
+        const server = new McpToolServer({
+          invoker: bridge,
+          serverInfo: {
+            name: serverName,
+            version: manifest.version,
+          },
+          ...(instructions === undefined ? {} : { instructions }),
+        });
+
+        http = await createStreamableHttpMcpServer({
+          server,
+          ...(options.onDiagnostic === undefined
+            ? {}
+            : { onError: (error: unknown) => options.onDiagnostic?.(spec.id, String(error)) }),
+          ...(options.token === undefined
+            ? {}
+            : { authorize: (token: string | undefined) => token === options.token }),
+        });
+        const connection: HarnessMcpConnection = {
+          url: http.url,
+          name: serverName,
+          ...(options.token === undefined ? {} : { token: options.token }),
+        };
+
+        workspace = await mkdtemp(join(options.workspaceRoot ?? tmpdir(), `sharedos-mcp-`));
         const configPaths: Record<string, string> = {};
         for (const file of spec.configFiles?.(connection) ?? []) {
           const path = join(workspace, file.filename);
@@ -346,10 +348,16 @@ export function createMcpHarnessRuntime(
       } finally {
         // Step 7 of the lifecycle. Order matters: the bridge is shut before the
         // port is, so a harness still mid-call is refused by a closed bridge
-        // rather than by a connection that vanished.
+        // rather than by a connection that vanished. Each cleanup step runs on
+        // its own so one rejection cannot skip the rest (e.g. a failing close
+        // leaving the generated workspace on disk).
         bridge.close();
-        await http.close();
-        await rm(workspace, { recursive: true, force: true });
+        await Promise.allSettled([
+          http?.close() ?? Promise.resolve(),
+          workspace !== undefined
+            ? rm(workspace, { recursive: true, force: true })
+            : Promise.resolve(),
+        ]);
       }
     },
   };
