@@ -50,6 +50,13 @@ export async function serveMcpOverStdio(
   }
 
   const lines = createInterface({ input: options.input });
+  // A signal that is already aborted must not be served: close the input and
+  // return at once rather than waiting for EOF.
+  if (controller.signal.aborted) {
+    lines.close();
+    options.signal?.removeEventListener("abort", abort);
+    return;
+  }
   // Messages are answered in arrival order. MCP permits interleaving, but a
   // bridge that answered out of order would let a harness observe two calls
   // resolving against one turn in an order the audit trail does not show.
@@ -87,6 +94,7 @@ export async function serveMcpOverStdio(
     const finish = (): void => resolve();
     lines.once("close", finish);
     controller.signal.addEventListener("abort", finish, { once: true });
+    if (controller.signal.aborted) finish();
   });
 
   await queue;

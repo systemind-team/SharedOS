@@ -807,6 +807,26 @@ describe("a harness talking to the real transport", () => {
     const tools = (answered["result"] as JsonObject)["tools"] as JsonObject[];
     expect(tools.map((tool) => tool["name"])).toContain("files.search");
   });
+
+  it("returns without waiting for input when the signal is already aborted", async () => {
+    const { PassThrough } = await import("node:stream");
+    const ac = new AbortController();
+    ac.abort();
+    const input = new PassThrough();
+    const output = new PassThrough();
+    const served = serveMcpOverStdio(
+      new McpToolServer({
+        invoker: kernelToolBridge({
+          kernel: kernelWith([]),
+          context: context(),
+          executionId: "exec-1",
+        }),
+      }),
+      { input, output, signal: ac.signal },
+    );
+    await expect(served).resolves.toBeUndefined();
+    input.end();
+  });
 });
 
 describe("canonicalActor", () => {
